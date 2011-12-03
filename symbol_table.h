@@ -33,7 +33,7 @@ struct SCOPE_T
 scope_t *st_init(scope_t *scope);
 scope_t *st_destroy(scope_t *scope);
 int st_typedef_register(const typedefs_entry_t *entry, scope_t *scope);
-typedefs_entry_t* st_typedef_exists(const char *name, const scope_t *scope);
+typedefs_entry_t* st_typedef_find(const char *name, const scope_t *scope);
 var_t* st_var_define(char* id, data_type_t type, scope_t *scope);
 var_t* st_var_find(const char *id, const scope_t *scope);
 func_t *st_func_define(char *id, data_type_t type, parameters_t *params, int size, scope_t *scope);

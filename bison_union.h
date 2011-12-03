@@ -4,7 +4,6 @@ typedef struct CONSTANT_T constant_t;
 typedef struct VARIABLE_T variable_t;
 typedef struct PARAMETERS_T parameters_t;
 
-enum LimitType { LT_Iconst, LT_Cconst, LT_Bconst, LT_Id };
 typedef struct
 {
   int type;
@@ -39,7 +38,7 @@ typedef struct // array of structs that hold limits ( dimensions )
 
 typedef struct
 {
-	int dataType; 	// see symbol_table.h
+	int dataType; 	// see constants.h
 	char *userType; // only used when @variableType = VT_User;
 } data_type_t;
 
@@ -58,23 +57,25 @@ typedef struct
 
 
 typedef variabledefs_t fields_t; 	// it's basically the same information
+typedef fields_t record_t; 				// >>
 //=====================================================//
-enum TypedefType { TT_Array, TT_List, TT_Set, TT_Record, TT_Range };
 typedef struct 
 {
 	int typedefType;
 	data_type_t typename;
 	limits_t dims;
 } array_t;
+
 typedef struct
 {
 	data_type_t typename;
 } list_t;
+
 typedef struct
 {
 	data_type_t typename;
 }set_t;
-typedef fields_t record_t; 				// >>
+
 typedef struct
 {
 	limit_t from, to;
@@ -108,7 +109,6 @@ typedef struct
 	variabledefs_t vardefs;
 } declarations_t;
 
-enum ConstantType { CT_Iconst, CT_Cconst, CT_Bconst, CT_Rconst };
 struct CONSTANT_T
 {
 	int type;
@@ -131,7 +131,6 @@ typedef struct
 } expression_binary_t;
 
 
-enum EpressionType { ET_Binary, ET_Constant, ET_Not, ET_Variable };
 struct EXPRESSION_T
 {
 	int type;
@@ -142,25 +141,24 @@ struct EXPRESSION_T
 		expression_constant_t constant;
 		expression_t *notExpr;
 		variable_t *variable;
-	};
+  };
 
-	expression_t *next, *prev;
+  expression_t *next, *prev;
 };
 
 
 typedef struct {
-	expression_t *exprs;
-	int size;
+  expression_t *exprs;
+  int size;
 } expressions_t;
 
 struct VARIABLE_T
 {
-	char *id;
-	int variableType;
-	char *userType; // only used when variableType = VT_User;
-	
-	expressions_t expr; // used in case of limits
-	variable_t *parent; // in case of records
+  char *id;
+  data_type_t type;
+  
+  expressions_t expr; // used in case of limits
+  variable_t *child; // in case of records
 };
 
 struct PARAMETERS_T

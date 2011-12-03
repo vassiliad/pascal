@@ -13,11 +13,11 @@ scope_t *st_init(scope_t *scope)
 
 scope_t *st_destroy(scope_t *scope)
 {
-//TODO kane edw kati
+  //TODO free the contents of the scope
   return scope->parent;
 }
 
-typedefs_entry_t* st_typedef_exists(const char *name, const scope_t *scope)
+typedefs_entry_t* st_typedef_find(const char *name, const scope_t *scope)
 {
 	int i;
 	
@@ -33,7 +33,7 @@ typedefs_entry_t* st_typedef_exists(const char *name, const scope_t *scope)
 
 int st_typedef_register(const typedefs_entry_t *entry, scope_t *scope)
 {
-	typedefs_entry_t *found = st_typedef_exists(entry->name, scope);
+	typedefs_entry_t *found = st_typedef_find(entry->name, scope);
 
 	if ( found ) {
 		printf("typedef %s is already defined\n", entry->name);
@@ -43,7 +43,7 @@ int st_typedef_register(const typedefs_entry_t *entry, scope_t *scope)
 	scope->typedefs = ( typedefs_entry_t* ) realloc( scope->typedefs,
 									sizeof(typedefs_entry_t) * ( scope->typedefs_size +1 ));
 	scope->typedefs[ scope->typedefs_size ++ ] = *entry;
-
+  printf("registered type %s\n", entry->name);
 	return Success;
 }
 
@@ -74,6 +74,9 @@ var_t *st_var_define(char* id, data_type_t type, scope_t *scope)
 var_t* st_var_find(const char *id, const scope_t *scope)
 {
   int i;
+  
+  if ( id == NULL )
+    return NULL;
 
   for ( ; scope; scope = scope->parent ) {
     for ( i = 0; i < scope->vars_size; i ++ )

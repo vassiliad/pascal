@@ -2,10 +2,10 @@ all: ce432
 
 cloc:
 	make clean
-	cloc --exclude-lang=Pascal,make ./
+	cloc --exclude-lang=Pascal,make,"Bourne Shell" ./
 
 ce432: symbol_table.o expressions.o parser.tab.o lex.yy.o
-	gcc symbol_table.o expressions.o lex.yy.o parser.tab.o -Wall -ggdb -lm -o ce432
+	gcc -Wall -g -ggdb symbol_table.o expressions.o lex.yy.o parser.tab.o -lm -o ce432
 
 parser.tab.o: parser.y constants.h bison_union.h expressions.h
 	bison -v --defines=parser.h parser.y
