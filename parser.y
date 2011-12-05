@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "constants.h"
 #include "bison_union.h"
 #include "expressions.h"
@@ -65,6 +66,7 @@ scope_t *scope;
   sub_header_t sub_header;
   int pass;
   parameter_list_t params;
+  constdefs_t constdefs;
 }
 
 %type <id> ID header
@@ -90,16 +92,18 @@ scope_t *scope;
 %type <sub_header> sub_header
 %type <pass> pass
 %type <params> parameter_list formal_parameters
+%type <constdefs> constdefs constant_defs
 %error-verbose
 %%
 
 program : header declarations subprograms comp_statement DOT 
 ;
 
-header : PROGRAM ID SEMI  {
-           $$ = $2;
-           scope = st_init(NULL); //global scope
-         }
+header : PROGRAM ID SEMI
+{
+  $$ = $2;
+  scope = st_init(NULL); //global scope
+}
 
 ;
 declarations : constdefs typedefs vardefs 
@@ -110,6 +114,13 @@ declarations : constdefs typedefs vardefs
 
   $$.vardefs = $3;
   $$.typedefs = $2;
+  $$.constdefs = $1;
+  
+  printf("Declarations::constdefs %d\n", $1.size);
+  for ( i = 0 ; i < $1.size; i ++ ) {
+    st_const_define($1.ids[i], $1.constants+i, scope);
+    printf("constant: %s (%d)\n", $1.ids[i], $1.constants[i].type);
+  }
 
   printf("Declarations::vardefs %d\n", $3.size);
   for ( i=0; i<$3.size; i++ ) {
@@ -130,11 +141,41 @@ declarations : constdefs typedefs vardefs
 }
 ;
 
-constdefs : CONST constant_defs SEMI 
-| 
+constdefs : CONST constant_defs SEMI
+{
+  $$ = $2;
+}
+|
+{
+  $$.size = 0;
+}
 ;
 constant_defs : constant_defs SEMI ID EQU expression 
+{
+  constant_t temp;
+  if ( expression_evaluate($5, &temp) == Failure ) {
+    yyerror("constant_defs invalid expression\n");
+  } else {
+    $$ = $1;
+    $$.constants = ( constant_t* ) realloc($$.constants, ($$.size+1) * sizeof(constant_t));
+    $$.ids = ( char** ) realloc($$.ids, ($$.size+1) * sizeof(char*));
+    $$.ids[ $$.size ] = $3;
+    $$.constants[ $$.size ++ ] = temp;
+  }
+}
 | ID EQU expression 
+{
+  constant_t temp;
+  if ( expression_evaluate($3, &temp) == Failure ) {
+    yyerror("constant_defs invalid expression\n");
+  } else {
+    $$.size = 1;
+    $$.ids = ( char** ) calloc(1, sizeof(char*));
+    $$.ids[0] = $1;
+    $$.constants = ( constant_t* ) calloc(1, sizeof(constant_t));
+    $$.constants[0] = temp;
+  }
+}
 ;
 
 expression : expression RELOP expression 
@@ -243,6 +284,10 @@ variable : ID
   p->expr = $3;
 }
 | LISTFUNC LPAREN expression RPAREN 
+{
+  $$ = NULL;
+#warning  hack
+}
 ;
 
 expressions : expressions COMMA expression 
@@ -252,12 +297,21 @@ expressions : expressions COMMA expression
   //TODO auto prepei na fugei
   if ( $3 )
     $$.exprs[ $$.size++ ] = *$3;
-  else
+  else {
     printf("sapio expressions comma expression\n");
+    //hack
+    memset( $$.exprs + $$.size++, 0, sizeof(expression_t));
+  }
 }
 | expression
 {
-  $$.exprs = $1;
+  if ( $1 == NULL ) {
+    printf("sapio expression\n");
+    // hack;
+    $$.exprs = ( expression_t* ) calloc(1, sizeof(expression_t));
+  } else
+    $$.exprs = $1;
+
   $$.size = 1;
 }
 ;
@@ -572,8 +626,29 @@ sub_header : FUNCTION ID formal_parameters COLON standard_type
   $$.size = $3.size;
 }
 | FUNCTION ID formal_parameters COLON LIST 
+{
+  #warning unfinished
+  $$.id = $2;
+  $$.type.dataType = 0;
+  $$.params = $3.params;
+  $$.size= $3.size;
+}
 | PROCEDURE ID formal_parameters 
+{
+#warning unfinished
+  $$.id = $2;
+  $$.type.dataType = 0;
+  $$.params = $3.params;
+  $$.size= $3.size;
+}
 | FUNCTION ID  
+{
+  #warning unfinished
+  $$.id = $2;
+  $$.type.dataType = 0;
+  $$.size= 0;
+  $$.params = NULL;
+}
 ;
 
 formal_parameters : LPAREN parameter_list RPAREN
@@ -708,7 +783,9 @@ write_item : expression
 | STRING
 ;
 
-  %%
+%%
+
+
 void yyerror(const char *err)
 {
   printf("Error[%d]: %s\n", yylineno, err);

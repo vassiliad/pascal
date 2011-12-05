@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "expressions.h"
+
 
 
 /*TODO
@@ -158,7 +160,7 @@ expression_t *expression_variable(variable_t *var, const scope_t *scope)
       }
 
     } else if ( p->expr.size ) { 
-       /*
+      /*
          This is an array, first we make sure the type is defined as an array
          then we update the variable's datatype as well as current variableType
          then we assert that the limits given match the definition's dimensions
@@ -194,22 +196,21 @@ expression_t *expression_variable(variable_t *var, const scope_t *scope)
 
            }  
          */
-
-         switch ( p->expr.exprs[i].dataType )
-         {
+        switch ( p->expr.exprs[i].dataType )
+        {
           case VT_Char:
           case VT_Boolean:
           case VT_Integer:
-          break;
+            break;
           default:
             printf("%d: Invalid type for limit\n", yylineno);
             return NULL;
-          break;
-         }
+            break;
+        }
       }
-        p->type=parent->type = type->array.typename;
-        variableType = parent->type.dataType;
-        
+      p->type=parent->type = type->array.typename;
+      variableType = parent->type.dataType;
+
     } else {
       printf("%d: Unknown variable\n", yylineno);
       return NULL;
@@ -223,5 +224,467 @@ expression_t *expression_variable(variable_t *var, const scope_t *scope)
   ret->dataType = variableType;
 
   return ret;
+}
+
+int expression_evaluate(expression_t *expr, constant_t *result)
+{
+  constant_t ret, temp1, temp2;
+
+  if ( expr == NULL ) {
+    printf("expression_evaluate() expr=NULL\n");
+    return Failure;
+  }
+
+  switch ( expr->type ) {
+    case ET_Constant:
+      ret = expr->constant;
+      break;
+
+    case ET_Not:
+      if ( expression_evaluate(expr->notExpr, &temp1) == Success ) {
+        ret = temp1;
+        if ( ret.type != CT_Bconst ) {
+          printf("expression_evaluate: NOT operator is only applied to BCONST\n");
+          return 0;
+        }
+        ret.bconst = !temp1.bconst;
+      } else {
+        printf("expression_evaluate: Invalid notExpr\n");
+        return 0;
+      }
+      break;
+
+    case ET_Variable:
+      printf("Constant expressions cannot use non-constant variables\n");
+      return 0;
+      break;
+
+    case ET_Binary:
+      if ( expression_evaluate(expr->binary.left, &temp1) != Success ) {
+        printf("expression_evaluate: Binary expression has invalid left operand\n");
+        return 0;
+      }
+      if ( expression_evaluate(expr->binary.right, &temp2) != Success ) {
+        printf("expression_evaluate: Binary expression has invalid right operand\n");
+        return 0;
+      }
+
+#warning Should we allow bconst+iconst ? etc
+
+
+      ret = temp1;
+
+      switch ( expr->binary.op ) {
+        case AddopP:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          } 
+
+          switch( ret.type ) {
+            case CT_Iconst:
+              ret.iconst+= temp2.iconst;
+              break;
+
+            case CT_Bconst:
+              printf("expression_evaluate: BCONST + BCONST is invalid\n");
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.cconst += temp2.cconst;
+              break;
+
+            case CT_Rconst:
+              ret.rconst += temp2.rconst;
+              break;
+          }
+          break;
+
+        case AddopM:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          switch( ret.type ) {
+            case CT_Iconst:
+              ret.iconst-= temp2.iconst;
+              break;
+
+            case CT_Bconst:
+              printf("expression_evaluate: BCONST - BCONST is invalid\n");
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.cconst -= temp2.cconst;
+              break;
+
+            case CT_Rconst:
+              ret.rconst -= temp2.rconst;
+              break;
+          }
+          break;
+
+        case RelopG:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              // ret.bconst = temp1.bconst > temp2.bconst;
+#warning prepei na koitaw booleans gia REL
+              printf("expression_evaluate: Cannot compare booleans for RelopG\n");
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.bconst = temp1.cconst > temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.bconst = temp1.iconst > temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.bconst = temp1.rconst > temp2.rconst;
+              break;
+          }
+
+          break;
+
+        case RelopGE:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              // ret.bconst = temp1.bconst > temp2.bconst;
+#warning prepei na koitaw booleans gia REL
+              printf("expression_evaluate: Cannot compare booleans for RelopGE\n");
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.bconst = temp1.cconst >= temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.bconst = temp1.iconst >= temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.bconst = temp1.rconst >= temp2.rconst;
+              break;
+          }
+          break;
+
+        case RelopL:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              // ret.bconst = temp1.bconst > temp2.bconst;
+#warning prepei na koitaw booleans gia REL
+              printf("expression_evaluate: Cannot compare booleans for RelopL\n");
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.bconst = temp1.cconst < temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.bconst = temp1.iconst < temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.bconst = temp1.rconst < temp2.rconst;
+              break;
+          }
+
+          break;
+
+        case RelopLE:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              // ret.bconst = temp1.bconst > temp2.bconst;
+#warning prepei na koitaw booleans gia REL
+              printf("expression_evaluate: Cannot compare booleans for RelopLE\n");
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.bconst = temp1.cconst <= temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.bconst = temp1.iconst <= temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.bconst = temp1.rconst <= temp2.rconst;
+              break;
+          }
+
+          break;
+
+        case RelopD:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              ret.bconst = temp1.bconst != temp2.bconst;
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.bconst = temp1.cconst != temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.bconst = temp1.iconst != temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.bconst = temp1.rconst != temp2.rconst;
+              break;
+          }
+
+          break;
+
+        case Orop:
+          if ( temp1.type != CT_Bconst ) {
+            printf("expression_evaluate: OROP's left operand must be CT_Bconst\n");
+            return 0;
+          }
+
+          if ( temp2.type != CT_Bconst ) {
+            printf("expression_evaluate: OROP's right operand must be CT_Bconst\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+          ret.bconst = temp1.bconst | temp2.bconst;
+          break;
+
+        case MuldivandopM:
+
+#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret = temp1;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              printf("expression_evaluate: MuldivandopM cannot have BCONST as operands\n");
+              return 0;
+            break;
+
+            case CT_Cconst:
+              ret.cconst *= temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.iconst *= temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.rconst *= temp2.rconst;
+              break;
+          }
+
+
+          break;
+
+        case MuldivandopDiv:
+#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret = temp1;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              printf("expression_evaluate: MuldivandopDiv cannot have BCONST as operands\n");
+              return 0;
+            break;
+
+            case CT_Cconst:
+              ret.cconst /= temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.iconst /= temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.rconst /= temp2.rconst;
+              break;
+          }
+
+
+          break;
+
+        case MuldivandopD:
+#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret = temp1;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              printf("expression_evaluate: MuldivandopDiv cannot have BCONST as operands\n");
+              return 0;
+            break;
+
+            case CT_Cconst:
+              ret.cconst /= temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.iconst /= temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.rconst = floor(ret.rconst/temp2.rconst);
+              
+              break;
+          }
+
+          break;
+
+        case MuldivandopAnd:
+          if ( temp1.type != CT_Bconst ) {
+            printf("expression_evaluate: MuldivandopAnd's left operand must be CT_Bconst\n");
+            return 0;
+          }
+
+          if ( temp2.type != CT_Bconst ) {
+            printf("expression_evaluate: MuldivandopAnd's right operand must be CT_Bconst\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+          ret.bconst = temp1.bconst & temp2.bconst;
+
+          break;
+
+        case MuldivandopMod:
+#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret = temp1;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              printf("expression_evaluate: MuldivandopMod cannot have BCONST as operands\n");
+              return 0;
+            break;
+
+            case CT_Cconst:
+              ret.cconst %= temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.iconst %= temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              printf("expression_evaluate: MuldivandopMod cannot have either operands as RCONST\n");
+              return 0;
+              break;
+          }
+
+
+          break;
+        case Inop:
+#warning NOT IMPLEMENTED
+          printf("expression_evaluate: Inop is not implemented yet\n");
+          return 0;
+          break;
+
+        case  Equop:
+          if ( temp1.type != temp2.type ) {
+            printf("expression_evaluate: Missmatching left/right operand types\n");
+            return 0;
+          }
+
+          ret.type = CT_Bconst;
+
+          switch ( temp1.type ) {
+            case CT_Bconst:
+              ret.bconst = temp1.bconst == temp2.bconst;
+              return 0;
+              break;
+
+            case CT_Cconst:
+              ret.bconst = temp1.cconst == temp2.cconst;
+              break;
+
+            case CT_Iconst:
+              ret.bconst = temp1.iconst == temp2.iconst;
+              break;
+
+            case CT_Rconst:
+              ret.bconst = temp1.rconst == temp2.rconst;
+              break;
+          }
+
+
+          break;
+
+        default:
+          printf("expression_evaluate: unknown binary operator\n");
+          return 0;
+          break;
+      }
+      break;
+
+    default:
+      printf("Unknown expression time in expression_evaluate\n");
+      return 0;
+      break;
+  }
+
+  *result = ret;
+  return Success;
 }
 

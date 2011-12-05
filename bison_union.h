@@ -99,6 +99,13 @@ typedef struct
 	typedefs_entry_t *typedefs;
 	int size;
 } typedefs_t;
+
+typedef struct 
+{
+  constant_t *constants;
+  char **ids;
+  int size;
+} constdefs_t;
 //=====================================================//
 
 
@@ -107,6 +114,7 @@ typedef struct
 {
 	typedefs_t typedefs;
 	variabledefs_t vardefs;
+  constdefs_t constdefs;
 } declarations_t;
 
 struct CONSTANT_T

@@ -108,3 +108,32 @@ func_t *st_func_define(char *id, data_type_t type, parameters_t *params, int siz
   return func;
 }
 
+const_t* st_const_define(char *id, constant_t *constant, scope_t *scope)
+{
+  if ( st_const_find(id, scope) ) {
+    printf("constdef %s is already defined\n", id);
+    return NULL;
+  }
+
+  scope->consts = ( const_t* ) realloc( scope->consts, (scope->consts_size+1) * sizeof(const_t));
+  scope->consts[ scope->consts_size ].id = id;
+  scope->consts[ scope->consts_size ].constant = *constant;
+
+  return scope->consts + ( scope->consts_size++ );
+}
+
+const_t* st_const_find(char *id, scope_t *scope)
+{
+  int i;
+  scope_t *p;
+
+  for ( p = scope; p; p = p->parent )
+    for ( i = 0; i < p->consts_size; i ++ )
+      if ( !strcasecmp(id, p->consts[i].id) ) {
+        return p->consts+i;
+      }
+    
+  return NULL;
+}
+
+
