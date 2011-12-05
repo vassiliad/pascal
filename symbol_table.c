@@ -31,9 +31,11 @@ typedefs_entry_t* st_typedef_find(const char *name, const scope_t *scope)
 		return NULL;
 }
 
+#warning prepei na elegxw gia ta arrays an uparxoun oi diastaseis tous kai gia ta records an exoun fields
+#warning pou einai array an uparxei to ka8e typedef gia to antistoixo field pou einai array ...
 int st_typedef_register(const typedefs_entry_t *entry, scope_t *scope)
 {
-	typedefs_entry_t *found = st_typedef_find(entry->name, scope);
+  typedefs_entry_t *found = st_typedef_find(entry->name, scope);
 
 	if ( found ) {
 		printf("typedef %s is already defined\n", entry->name);

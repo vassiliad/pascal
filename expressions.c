@@ -97,7 +97,7 @@ expression_t *expression_variable(variable_t *var, const scope_t *scope)
 {
   expression_t *ret;
   variable_t *p, *parent;
-  var_t *st_var;
+  var_t *st_var, temp;
   typedefs_entry_t *type;
   int variableType = var->type.dataType;
   int i, j, found;
@@ -111,10 +111,34 @@ expression_t *expression_variable(variable_t *var, const scope_t *scope)
   // first see if the top-level variable is defined
   st_var = st_var_find(var->id, scope);
 
-
+#warning na to kanw constant? h kanoniko???
   if ( st_var == NULL ) {
-    printf("%d: %s is not defined\n", yylineno, var->id);
-    return NULL;
+    const_t *constant = st_const_find(var->id, scope);
+
+    if ( constant ) {
+      st_var = &temp;
+      temp.id = constant->id;
+      switch ( constant->constant.type ) {
+        case CT_Bconst:
+          temp.type.dataType = VT_Boolean;
+        break;
+          
+        case CT_Iconst:
+          temp.type.dataType = VT_Integer;
+        break;
+
+        case CT_Rconst:
+          temp.type.dataType = VT_Real;
+        break;
+
+        case CT_Cconst:
+          temp.type.dataType = VT_Char;
+        break;
+      }
+    } else {
+      printf("%d: %s is not defined\n", yylineno, var->id);
+      return NULL;
+    }
   }
 
   var->type = st_var->type;
