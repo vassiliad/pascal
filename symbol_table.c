@@ -17,7 +17,7 @@ scope_t *st_destroy(scope_t *scope)
   return scope->parent;
 }
 
-typedefs_entry_t* st_typedef_find(const char *name, const scope_t *scope)
+typedefs_entry_t* st_typedef_find(char *name, scope_t *scope)
 {
 	int i;
 	
@@ -33,7 +33,7 @@ typedefs_entry_t* st_typedef_find(const char *name, const scope_t *scope)
 
 #warning prepei na elegxw gia ta arrays an uparxoun oi diastaseis tous kai gia ta records an exoun fields
 #warning pou einai array an uparxei to ka8e typedef gia to antistoixo field pou einai array ...
-int st_typedef_register(const typedefs_entry_t *entry, scope_t *scope)
+int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
 {
   typedefs_entry_t *found = st_typedef_find(entry->name, scope);
 
@@ -73,7 +73,7 @@ var_t *st_var_define(char* id, data_type_t type, scope_t *scope)
   return scope->vars + (scope->vars_size++);
 }
 
-var_t* st_var_find(const char *id, const scope_t *scope)
+var_t* st_var_find(char *id, scope_t *scope)
 {
   int i;
   

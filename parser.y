@@ -5,7 +5,9 @@
       *should have been taken care of with the addition of the
       matched/unmatched rules.
 	[1] Constants are not defined atm, expressions should be built first.
+  [2] With should shadow its parent definitions
 */
+#warning WITH is not currently implemented
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,7 +88,7 @@ scope_t *scope;
 %type <typedefs> typedefs type_defs
 %type <type_def> type_def
 %type <expr> expression
-%type <expressions> expressions
+%type <expressions> expressions setlistexpression
 %type <constant> constant
 %type <variable> variable
 %type <sub_header> sub_header
@@ -215,10 +217,10 @@ expression : expression RELOP expression
     //TODO negative $2 ( quick hack )
     expression_t *neg = calloc(1, sizeof(expression_t));
     neg->type = ET_Constant;
-    neg->constant.type = CT_Iconst;
+    neg->constant.type = VT_Iconst;
     neg->constant.iconst = -1;
     neg->dataType = VT_Integer;
-    neg->next = NULL;
+    //neg->next = NULL;
 
     $$ = expression_binary(neg, $2, MuldivandopM); 
     //$$ = NULL;
@@ -254,7 +256,9 @@ expression : expression RELOP expression
 }
 | setlistexpression 
 {
-  $$ = NULL;
+  expressions_t *exprs = ( expressions_t* ) calloc(1, sizeof(expressions_t));
+  *exprs = $1;
+  $$ = expression_set(exprs);
 }
 ;
 
@@ -286,6 +290,8 @@ variable : ID
 | LISTFUNC LPAREN expression RPAREN 
 {
   $$ = NULL;
+  printf("%d) Listfunc is not supported\n", yylineno);
+  exit(0);
 #warning  hack
 }
 ;
@@ -318,29 +324,36 @@ expressions : expressions COMMA expression
 
 constant : ICONST 
 {
-  $$.type = CT_Iconst;
+  $$.type = VT_Iconst;
   $$.iconst = $1;
 }
 | RCONST
 
 {
-  $$.type = CT_Rconst;
+  $$.type = VT_Rconst;
   $$.rconst = $1;
 }
 | BCONST 
 {
-  $$.type = CT_Bconst;
+  $$.type = VT_Bconst;
   $$.bconst = $1;
 }
 | CCONST 
 {
-  $$.type = CT_Cconst;
+  $$.type = VT_Cconst;
   $$.cconst = $1;
 }
 ;
 
-setlistexpression : LBRACK expressions RBRACK 
-| LBRACK RBRACK 
+setlistexpression : LBRACK expressions RBRACK
+{
+  $$ = $2;
+}
+| LBRACK RBRACK
+{
+  $$.size = 0;
+  $$.exprs = 0;
+}
 ;
 
 typedefs : TYPE type_defs SEMI 
@@ -757,7 +770,10 @@ iter_space : expression TO expression
 | expression DOWNTO expression 
 ;
 
-with_statement : WITH variable DO statement 
+with_statement : WITH variable DO statement {
+  printf("%d) With is not currently implemented\n", yylineno);
+  exit(0);
+}
 ;
 
 subprogram_call : ID 

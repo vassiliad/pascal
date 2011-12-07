@@ -3,6 +3,7 @@
 typedef struct CONSTANT_T constant_t;
 typedef struct VARIABLE_T variable_t;
 typedef struct PARAMETERS_T parameters_t;
+typedef struct EXPRESSIONS_T expressions_t;
 
 typedef struct
 {
@@ -148,17 +149,18 @@ struct EXPRESSION_T
 		expression_binary_t binary;
 		expression_constant_t constant;
 		expression_t *notExpr;
+    expressions_t *exprs;
 		variable_t *variable;
   };
 
-  expression_t *next, *prev;
+  //expression_t *next, *prev;
 };
 
 
-typedef struct {
+struct EXPRESSIONS_T {
   expression_t *exprs;
   int size;
-} expressions_t;
+};
 
 struct VARIABLE_T
 {

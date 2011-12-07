@@ -15,9 +15,12 @@ begin
   
   if ( x > a ) then
     begin
-     d := x + 5 ;
-     e := 6;
-     a := 9;
+      if ( 1 in [ 1, 2, 3 ] ) then
+        begin
+         d := x + 5 ;
+         e := 6;
+         a := 9;
+        end
     end
   else
       x := a*3;

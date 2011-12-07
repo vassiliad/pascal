@@ -4,34 +4,120 @@
 #include <math.h>
 #include "expressions.h"
 
-
-
 /*TODO
   [0] Error checking for the operators
  */
+
 extern int yylineno;
+
+int types_compatible(int type1, int type2)
+{
+  switch ( type1 ) 
+  {
+    case VT_Iconst:
+    case VT_Integer:
+      if ( type2 == VT_Iconst || type2 == VT_Integer )
+        return 1;
+      else
+        return 0;
+    break;
+
+    case VT_Rconst:
+    case VT_Real:
+      if ( type2 == VT_Rconst || type2 == VT_Real )
+        return 1;
+      else
+        return 0;
+    break;
+
+    case VT_Cconst:
+    case VT_Char:
+      if ( type2 == VT_Cconst || type2 == VT_Char ) 
+        return 1;
+      else
+        return 0;
+    break;
+  }
+
+  return 0;
+}
+
+
+expression_t *expression_set(expressions_t *exprs)
+{
+  expression_t *expr;
+  expressions_t *p;
+  int i;
+  int type;
+
+  if ( exprs == NULL ) {
+    printf("%d) expression_set:: sapio exprs\n", yylineno);
+    return 0;
+  }
+
+  p = exprs->exprs;
+  
+  if ( p->size == 0 ) {
+    printf("%d) expression_set:: einai adeio\n", yylineno);
+    return 0;
+  }
+  
+  type = p->exprs[0].dataType;
+  if ( type == VT_User ) {
+    printf("%d) expression_set:: Den mporw na exw userTypes mesa sto set\n", yylineno);
+    return 0;
+  }
+  
+
+  for ( i = 1; i < p->size; i ++ ) {
+    if ( types_compatible(type, p->exprs[i].dataType) == 0 ) {
+      printf("%d) expression_set:: Prepei na einai idia ta melh tou set\n");
+      return 0;
+    }
+  }
+  
+  expr = ( expression_t * ) calloc(1, sizeof(expression_t));
+  expr->dataType = type;
+  expr->exprs = exprs;
+
+  return expr;
+}
 
 expression_t *expression_binary(expression_t* left, expression_t *right, int op)
 {
   expression_t *ret;
+  
 
   if ( !left || !right ) {
     printf("%d expression_binary::sapio left/right\n", yylineno);
     return NULL;
   }
 
-  if ( left->dataType != right->dataType )  {
-    printf("expression_binary::sapio datatype (%d-%d)\n", left->dataType, right->dataType);
-    return NULL;
+  if ( op != Inop ) {
+    
+    if ( left->dataType != right->dataType )  {
+      printf("%d) expression_binary::sapio datatype (%d-%d) gia praksh %d\n",yylineno, left->dataType, right->dataType, op);
+      return NULL;
+    }
+
+    ret = (expression_t*) calloc(1, sizeof(expression_t));
+    ret->dataType = left->dataType;
+    ret->binary.left = left;
+    ret->binary.right = right;
+    ret->binary.op = op;
+
+  } else {
+    int i = 0;
+
+    if ( right->type != ET_Set) {
+      printf("%d) expression_binary::inop Sapio deksi melos\n", yylineno);
+      return NULL;
+    }
+
+
+    for ( i = 0 ; i < right->exprs->size; i++ ) {
+    }
   }
-
-  ret = (expression_t*) calloc(1, sizeof(expression_t));
-
-  ret->dataType = left->dataType;
-  ret->binary.left = left;
-  ret->binary.right = right;
-  ret->binary.op = op;
-  ret->next = NULL;
 
   return ret;
 }
@@ -41,36 +127,37 @@ expression_t *expression_constant(int type, void *data)
   expression_t *ret;
 
   switch ( type ) {
-    case CT_Cconst:
+    case VT_Cconst:
       ret = (expression_t*) calloc(1, sizeof(expression_t));
       ret->constant.cconst = *((char*)(data));
       ret->dataType = VT_Char;
       break;
 
-    case CT_Bconst:
+    case VT_Bconst:
       ret = (expression_t*) calloc(1, sizeof(expression_t));
       ret->constant.bconst = *((char*)data);
       ret->dataType = VT_Boolean;
       break;
 
-    case CT_Rconst:
+    case VT_Rconst:
       ret = (expression_t*) calloc(1, sizeof(expression_t));
       ret->constant.rconst = *((float*)data);
       ret->dataType = VT_Real;
       break;
 
-    case CT_Iconst:
+    case VT_Iconst:
       ret = (expression_t*) calloc(1, sizeof(expression_t));
       ret->constant.iconst = *((int*)data);
       ret->dataType = VT_Integer;
       break;
 
     default:
+      printf("%d) Is not a constant\n", yylineno);
       return NULL;
   }
   ret->type = ET_Constant;
   ret->constant.type = type;
-  ret->next = NULL;
+  //ret->next = NULL;
 
   return ret;
 }
@@ -87,13 +174,13 @@ expression_t *expression_not(expression_t *notExpr)
   expr = (expression_t*) calloc(1, sizeof(expression_t));
   expr->type = ET_Not;
   expr->notExpr = notExpr;
-  expr->next = NULL;
+  //expr->next = NULL;
 
   return expr;
 }
 
 
-expression_t *expression_variable(variable_t *var, const scope_t *scope)
+expression_t *expression_variable(variable_t *var, scope_t *scope)
 {
   expression_t *ret;
   variable_t *p, *parent;
@@ -118,23 +205,7 @@ expression_t *expression_variable(variable_t *var, const scope_t *scope)
     if ( constant ) {
       st_var = &temp;
       temp.id = constant->id;
-      switch ( constant->constant.type ) {
-        case CT_Bconst:
-          temp.type.dataType = VT_Boolean;
-        break;
-          
-        case CT_Iconst:
-          temp.type.dataType = VT_Integer;
-        break;
-
-        case CT_Rconst:
-          temp.type.dataType = VT_Real;
-        break;
-
-        case CT_Cconst:
-          temp.type.dataType = VT_Char;
-        break;
-      }
+      temp.type.dataType = constant->constant.type;
     } else {
       printf("%d: %s is not defined\n", yylineno, var->id);
       return NULL;
@@ -267,7 +338,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
     case ET_Not:
       if ( expression_evaluate(expr->notExpr, &temp1) == Success ) {
         ret = temp1;
-        if ( ret.type != CT_Bconst ) {
+        if ( ret.type != VT_Bconst ) {
           printf("expression_evaluate: NOT operator is only applied to BCONST\n");
           return 0;
         }
@@ -306,20 +377,20 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           } 
 
           switch( ret.type ) {
-            case CT_Iconst:
+            case VT_Iconst:
               ret.iconst+= temp2.iconst;
               break;
 
-            case CT_Bconst:
+            case VT_Bconst:
               printf("expression_evaluate: BCONST + BCONST is invalid\n");
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.cconst += temp2.cconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.rconst += temp2.rconst;
               break;
           }
@@ -332,20 +403,20 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           }
 
           switch( ret.type ) {
-            case CT_Iconst:
+            case VT_Iconst:
               ret.iconst-= temp2.iconst;
               break;
 
-            case CT_Bconst:
+            case VT_Bconst:
               printf("expression_evaluate: BCONST - BCONST is invalid\n");
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.cconst -= temp2.cconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.rconst -= temp2.rconst;
               break;
           }
@@ -357,25 +428,25 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
 #warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopG\n");
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.bconst = temp1.cconst > temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.bconst = temp1.iconst > temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.bconst = temp1.rconst > temp2.rconst;
               break;
           }
@@ -388,25 +459,25 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
 #warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopGE\n");
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.bconst = temp1.cconst >= temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.bconst = temp1.iconst >= temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.bconst = temp1.rconst >= temp2.rconst;
               break;
           }
@@ -418,25 +489,25 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
 #warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopL\n");
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.bconst = temp1.cconst < temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.bconst = temp1.iconst < temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.bconst = temp1.rconst < temp2.rconst;
               break;
           }
@@ -449,25 +520,25 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
 #warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopLE\n");
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.bconst = temp1.cconst <= temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.bconst = temp1.iconst <= temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.bconst = temp1.rconst <= temp2.rconst;
               break;
           }
@@ -480,23 +551,23 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               ret.bconst = temp1.bconst != temp2.bconst;
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.bconst = temp1.cconst != temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.bconst = temp1.iconst != temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.bconst = temp1.rconst != temp2.rconst;
               break;
           }
@@ -504,17 +575,17 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           break;
 
         case Orop:
-          if ( temp1.type != CT_Bconst ) {
-            printf("expression_evaluate: OROP's left operand must be CT_Bconst\n");
+          if ( temp1.type != VT_Bconst ) {
+            printf("expression_evaluate: OROP's left operand must be VT_Bconst\n");
             return 0;
           }
 
-          if ( temp2.type != CT_Bconst ) {
-            printf("expression_evaluate: OROP's right operand must be CT_Bconst\n");
+          if ( temp2.type != VT_Bconst ) {
+            printf("expression_evaluate: OROP's right operand must be VT_Bconst\n");
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
           ret.bconst = temp1.bconst | temp2.bconst;
           break;
 
@@ -529,20 +600,20 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           ret = temp1;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               printf("expression_evaluate: MuldivandopM cannot have BCONST as operands\n");
               return 0;
-            break;
+              break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.cconst *= temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.iconst *= temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.rconst *= temp2.rconst;
               break;
           }
@@ -560,20 +631,20 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           ret = temp1;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               printf("expression_evaluate: MuldivandopDiv cannot have BCONST as operands\n");
               return 0;
-            break;
+              break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.cconst /= temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.iconst /= temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.rconst /= temp2.rconst;
               break;
           }
@@ -591,39 +662,39 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           ret = temp1;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               printf("expression_evaluate: MuldivandopDiv cannot have BCONST as operands\n");
               return 0;
-            break;
+              break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.cconst /= temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.iconst /= temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.rconst = floor(ret.rconst/temp2.rconst);
-              
+
               break;
           }
 
           break;
 
         case MuldivandopAnd:
-          if ( temp1.type != CT_Bconst ) {
-            printf("expression_evaluate: MuldivandopAnd's left operand must be CT_Bconst\n");
+          if ( temp1.type != VT_Bconst ) {
+            printf("expression_evaluate: MuldivandopAnd's left operand must be VT_Bconst\n");
             return 0;
           }
 
-          if ( temp2.type != CT_Bconst ) {
-            printf("expression_evaluate: MuldivandopAnd's right operand must be CT_Bconst\n");
+          if ( temp2.type != VT_Bconst ) {
+            printf("expression_evaluate: MuldivandopAnd's right operand must be VT_Bconst\n");
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
           ret.bconst = temp1.bconst & temp2.bconst;
 
           break;
@@ -638,20 +709,20 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           ret = temp1;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               printf("expression_evaluate: MuldivandopMod cannot have BCONST as operands\n");
               return 0;
-            break;
+              break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.cconst %= temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.iconst %= temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               printf("expression_evaluate: MuldivandopMod cannot have either operands as RCONST\n");
               return 0;
               break;
@@ -671,23 +742,23 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             return 0;
           }
 
-          ret.type = CT_Bconst;
+          ret.type = VT_Bconst;
 
           switch ( temp1.type ) {
-            case CT_Bconst:
+            case VT_Bconst:
               ret.bconst = temp1.bconst == temp2.bconst;
               return 0;
               break;
 
-            case CT_Cconst:
+            case VT_Cconst:
               ret.bconst = temp1.cconst == temp2.cconst;
               break;
 
-            case CT_Iconst:
+            case VT_Iconst:
               ret.bconst = temp1.iconst == temp2.iconst;
               break;
 
-            case CT_Rconst:
+            case VT_Rconst:
               ret.bconst = temp1.rconst == temp2.rconst;
               break;
           }
