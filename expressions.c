@@ -20,7 +20,7 @@ int types_compatible(int type1, int type2)
         return 1;
       else
         return 0;
-    break;
+      break;
 
     case VT_Rconst:
     case VT_Real:
@@ -28,7 +28,7 @@ int types_compatible(int type1, int type2)
         return 1;
       else
         return 0;
-    break;
+      break;
 
     case VT_Cconst:
     case VT_Char:
@@ -36,7 +36,7 @@ int types_compatible(int type1, int type2)
         return 1;
       else
         return 0;
-    break;
+      break;
   }
 
   return 0;
@@ -45,79 +45,71 @@ int types_compatible(int type1, int type2)
 
 expression_t *expression_set(expressions_t *exprs)
 {
-  expression_t *expr;
-  expressions_t *p;
   int i;
-  int type;
+  expression_t *ret;
+
 
   if ( exprs == NULL ) {
     printf("%d) expression_set:: sapio exprs\n", yylineno);
     return 0;
   }
 
-  p = exprs->exprs->exprs;
-  
-  if ( p->size == 0 ) {
+
+  if ( exprs->size == 0 ) {
     printf("%d) expression_set:: einai adeio\n", yylineno);
     return 0;
   }
-  
-  type = p->exprs[0].dataType;
-  if ( type == VT_User ) {
+
+
+  if ( exprs->exprs[0].dataType == VT_User ) {
     printf("%d) expression_set:: Den mporw na exw userTypes mesa sto set\n", yylineno);
     return 0;
   }
-  
 
-  for ( i = 1; i < p->size; i ++ ) {
-    if ( types_compatible(type, p->exprs[i].dataType) == 0 ) {
+
+  for ( i = 1; i < exprs->size; i ++ ) {
+    if ( types_compatible(exprs->exprs[i-1].dataType, exprs->exprs[i].dataType) == 0 ) {
       printf("%d) expression_set:: Prepei na einai symvata ta melh tou set\n", yylineno);
       return 0;
-    }
+    } 
   }
-  
-  expr = ( expression_t * ) calloc(1, sizeof(expression_t));
-  expr->dataType = type;
-  expr->exprs = exprs;
 
-  return expr;
+  ret= ( expression_t * ) calloc(1, sizeof(expression_t));
+  ret->type = ET_Set;
+  ret->dataType = exprs->exprs->dataType;
+  ret->exprs = exprs;
+
+  return ret;
 }
 
 expression_t *expression_binary(expression_t* left, expression_t *right, int op)
 {
   expression_t *ret;
-  
+
 
   if ( !left || !right ) {
     printf("%d expression_binary::sapio left/right\n", yylineno);
     return NULL;
   }
 
-  if ( op != Inop ) {
-    
-    if ( left->dataType != right->dataType )  {
-      printf("%d) expression_binary::sapio datatype (%d-%d) gia praksh %d\n",yylineno, left->dataType, right->dataType, op);
-      return NULL;
-    }
-
-    ret = (expression_t*) calloc(1, sizeof(expression_t));
-    ret->dataType = left->dataType;
-    ret->binary.left = left;
-    ret->binary.right = right;
-    ret->binary.op = op;
-
-  } else {
-    int i = 0;
-
-    if ( right->type != ET_Set) {
-      printf("%d) expression_binary::inop Sapio deksi melos\n", yylineno);
-      return NULL;
-    }
-
-
-    for ( i = 0 ; i < right->exprs->size; i++ ) {
-    }
+  if ( left->dataType != right->dataType )  {
+    printf("%d) expression_binary::sapio datatype (%d-%d) gia praksh %d\n",
+        yylineno, left->dataType, right->dataType, op);
+    return NULL;
   }
+
+
+  if ( op == Inop && right->type != ET_Set) {
+    printf("%d) expression_binary::inop Sapio deksi melos (%d)\n", yylineno, right->type);
+    return NULL;
+  }
+
+  ret = (expression_t*) calloc(1, sizeof(expression_t));
+  ret->dataType = op==Inop ? VT_Boolean : left->dataType; // if op is inop then the result is boolean
+  ret->binary.left = left;
+  ret->binary.right = right;
+  ret->binary.op = op;
+
 
   return ret;
 }
@@ -198,7 +190,7 @@ expression_t *expression_variable(variable_t *var, scope_t *scope)
   // first see if the top-level variable is defined
   st_var = st_var_find(var->id, scope);
 
-#warning na to kanw constant? h kanoniko???
+  //#warning na to kanw constant? h kanoniko???
   if ( st_var == NULL ) {
     const_t *constant = st_const_find(var->id, scope);
 
@@ -584,7 +576,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
         case MuldivandopM:
 
-#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
             printf("expression_evaluate: Missmatching left/right operand types\n");
             return 0;
@@ -615,7 +607,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           break;
 
         case MuldivandopDiv:
-#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
             printf("expression_evaluate: Missmatching left/right operand types\n");
             return 0;
@@ -646,7 +638,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           break;
 
         case MuldivandopD:
-#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
             printf("expression_evaluate: Missmatching left/right operand types\n");
             return 0;
@@ -693,7 +685,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           break;
 
         case MuldivandopMod:
-#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
+          //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
             printf("expression_evaluate: Missmatching left/right operand types\n");
             return 0;
@@ -724,7 +716,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
           break;
         case Inop:
-#warning NOT IMPLEMENTED
+          //#warning NOT IMPLEMENTED
           printf("expression_evaluate: Inop is not implemented yet\n");
           return 0;
           break;

@@ -10,10 +10,10 @@ begin
   a := 5;
   b := 10;
   
-  a :=  try_me(x,b);
+  {a :=  try_me(x,b);}
   c := a*x;
   
-  if ( x > a ) then
+if ( x > a ) then
     begin
       if ( 1 in [ 1, 2, 3 ] ) then
         begin
@@ -36,5 +36,4 @@ begin
     begin
       x := a*3;
   end
-
 end.

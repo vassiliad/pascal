@@ -16,6 +16,7 @@
 #include "bison_union.h"
 #include "expressions.h"
 #include "symbol_table.h"
+#include "statements.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -196,7 +197,7 @@ expression : expression RELOP expression
 
 | expression INOP expression  
 {
-  $$ = NULL; // result here is a boolean
+  $$ = expression_binary($1, $3, $2);
 }
 
 | expression OROP expression  
@@ -241,15 +242,18 @@ expression : expression RELOP expression
 }
 | ID LPAREN expressions RPAREN 
 {
-  $$ = NULL;
+  printf("%d ", yylineno);
+  yyerror("Oxi id lparen expressions rparen\n");
 }
 | LENGTH LPAREN expression RPAREN
 {
-  $$ = NULL;
+  printf("%d ", yylineno);
+  yyerror("Oxi length lparen expression rparen\n");
 }
 | NEW LPAREN expression RPAREN 
 {
-  $$ = NULL;
+  printf("%d ", yylineno);
+  yyerror("NEW LPAREN expression RPAREN\n");
 }
 | constant 
 {
@@ -262,7 +266,8 @@ expression : expression RELOP expression
 | setlistexpression 
 {
   expressions_t *exprs = ( expressions_t* ) calloc(1, sizeof(expressions_t));
-  *exprs = $1;
+  exprs->exprs = $1.exprs;
+  exprs->size = $1.size;
   $$ = expression_set(exprs);
 }
 ;
@@ -805,7 +810,8 @@ matched_if_statement: IF expression THEN matched ELSE matched
 ;
 
 unmatched: IF expression THEN statement
-{
+{ 
+  printf("cond: %p, _true; %p\n", $2, $4);
   $$ = statement_if($2, $4, NULL);
 }
 | IF expression THEN matched ELSE unmatched
