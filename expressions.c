@@ -55,7 +55,7 @@ expression_t *expression_set(expressions_t *exprs)
     return 0;
   }
 
-  p = exprs->exprs;
+  p = exprs->exprs->exprs;
   
   if ( p->size == 0 ) {
     printf("%d) expression_set:: einai adeio\n", yylineno);
@@ -71,7 +71,7 @@ expression_t *expression_set(expressions_t *exprs)
 
   for ( i = 1; i < p->size; i ++ ) {
     if ( types_compatible(type, p->exprs[i].dataType) == 0 ) {
-      printf("%d) expression_set:: Prepei na einai idia ta melh tou set\n");
+      printf("%d) expression_set:: Prepei na einai symvata ta melh tou set\n", yylineno);
       return 0;
     }
   }
@@ -364,9 +364,6 @@ int expression_evaluate(expression_t *expr, constant_t *result)
         return 0;
       }
 
-#warning Should we allow bconst+iconst ? etc
-
-
       ret = temp1;
 
       switch ( expr->binary.op ) {
@@ -433,7 +430,6 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-#warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopG\n");
               return 0;
               break;
@@ -464,7 +460,6 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-#warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopGE\n");
               return 0;
               break;
@@ -494,7 +489,6 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-#warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopL\n");
               return 0;
               break;
@@ -525,7 +519,6 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-#warning prepei na koitaw booleans gia REL
               printf("expression_evaluate: Cannot compare booleans for RelopLE\n");
               return 0;
               break;

@@ -1,12 +1,12 @@
 %{
-/*
-  TODO
-	[0] Fix dangling else
-      *should have been taken care of with the addition of the
-      matched/unmatched rules.
-	[1] Constants are not defined atm, expressions should be built first.
-  [2] With should shadow its parent definitions
-*/
+  /*
+     TODO
+     [0] Fix dangling else
+   *should have been taken care of with the addition of the
+   matched/unmatched rules.
+   [1] Constants are not defined atm, expressions should be built first.
+   [2] With should shadow its parent definitions
+   */
 #warning WITH is not currently implemented
 
 #include <stdio.h>
@@ -69,6 +69,7 @@ scope_t *scope;
   int pass;
   parameter_list_t params;
   constdefs_t constdefs;
+  statement_t *statement;
 }
 
 %type <id> ID header
@@ -76,6 +77,7 @@ scope_t *scope;
 %type <rconst> RCONST
 %type <cconst> CCONST
 %type <bconst> BCONST
+%type <string> STRING
 %type <sign> sign
 %type <op> ADDOP MULDIVANDOP INOP RELOP OROP EQU
 %type <limit> limit
@@ -95,6 +97,9 @@ scope_t *scope;
 %type <pass> pass
 %type <params> parameter_list formal_parameters
 %type <constdefs> constdefs constant_defs
+%type <statement> statement matched unmatched matched_if_statement case_statement while_statement
+%type <statement> for_statement with_statement subprogram_call io_statement comp_statement 
+%type <statement> assignment statements
 %error-verbose
 %%
 
@@ -117,7 +122,7 @@ declarations : constdefs typedefs vardefs
   $$.vardefs = $3;
   $$.typedefs = $2;
   $$.constdefs = $1;
-  
+
   printf("Declarations::constdefs %d\n", $1.size);
   for ( i = 0 ; i < $1.size; i ++ ) {
     st_const_define($1.ids[i], $1.constants+i, scope);
@@ -531,7 +536,7 @@ fields : fields SEMI field
 
   if ($1.types[ $1.size-1 ].dataType== VT_User )
     printf("new field: %s\n", $1.types [$1.size-1].userType);
-  
+
 
   $$ = $1;
 }
@@ -640,7 +645,7 @@ sub_header : FUNCTION ID formal_parameters COLON standard_type
 }
 | FUNCTION ID formal_parameters COLON LIST 
 {
-  #warning unfinished
+#warning unfinished
   $$.id = $2;
   $$.type.dataType = 0;
   $$.params = $3.params;
@@ -656,7 +661,7 @@ sub_header : FUNCTION ID formal_parameters COLON standard_type
 }
 | FUNCTION ID  
 {
-  #warning unfinished
+#warning unfinished
   $$.id = $2;
   $$.type.dataType = 0;
   $$.size= 0;
@@ -702,38 +707,121 @@ pass : VAR
 }
 ;
 comp_statement : T_BEGIN statements END 
+{
+  $$ = $2;
+}
 ;
 
 statements : statements SEMI statement 
+{
+  statement_t *p, *t;
+  $$ = $1;
+
+  for ( p = $$; p && p->next; p = p->next );
+
+  if ( p ) {
+    p->next = $3;
+    p->join = $3;
+#warning edw na valw join gia ta statements
+    switch ( p->type )
+    {
+      case ST_If:
+        for (t = p->_if._true; t && t->next; t = t->next );
+
+        if ( t )
+          t->join = $3;
+
+        for (t = p->_if._false; t && t->next; t = t->next );
+
+        if ( t )
+          t->join = $3;
+        break;
+    }
+  }
+}
 | statement 
+{
+  $$ = $1;
+}
 ;
 
 statement : matched
+{
+  $$ = $1;
+}
 | unmatched
+{
+  $$ = $1;
+}
 ;
 
 matched: assignment 
+{
+  $$ = $1;
+}
 | matched_if_statement
+{
+  $$ = $1;
+}
 | case_statement 
+{
+  $$ = $1;
+}
 | while_statement 
+{
+  $$ = $1;
+}
 | for_statement 
+{
+  $$ = $1;
+}
 | with_statement 
+{
+  $$ = $1;
+}
 | subprogram_call 
+{
+  $$ = $1;
+}
 | io_statement 
+{
+  $$ = $1;
+}
 | comp_statement
+{
+  $$ = $1;
+}
 |
+{
+  $$ = NULL;
+}
 ;
 
 
 matched_if_statement: IF expression THEN matched ELSE matched
+{
+  $$ = statement_if($2, $4, $6);
+}
 ;
 
 unmatched: IF expression THEN statement
+{
+  $$ = statement_if($2, $4, NULL);
+}
 | IF expression THEN matched ELSE unmatched
+{
+  $$ = statement_if($2, $4, $6);
+}
 ;
 
 assignment : variable ASSIGN expression 
+{
+  $$ = statement_assignment($1, $3, scope);
+}
 | variable ASSIGN STRING 
+{
+  $$ = statement_assignment_str($1, $3, scope);
+}
 ;
 
 case_statement : CASE expression OF cases case_tail END 
@@ -771,9 +859,9 @@ iter_space : expression TO expression
 ;
 
 with_statement : WITH variable DO statement {
-  printf("%d) With is not currently implemented\n", yylineno);
-  exit(0);
-}
+                   printf("%d) With is not currently implemented\n", yylineno);
+                   exit(0);
+                 }
 ;
 
 subprogram_call : ID 

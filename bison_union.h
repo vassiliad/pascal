@@ -4,6 +4,13 @@ typedef struct CONSTANT_T constant_t;
 typedef struct VARIABLE_T variable_t;
 typedef struct PARAMETERS_T parameters_t;
 typedef struct EXPRESSIONS_T expressions_t;
+typedef struct STATEMENT_T statement_t;
+typedef struct STATEMENT_IF_T statement_if_t;
+typedef struct STATEMENT_WHILE_T statement_while_t;
+typedef struct STATEMENT_ASSIGNMENT_T statement_assignment_t;
+typedef struct STATEMENT_FOR_T statement_for_t;
+typedef struct STATEMENT_CASE_T statement_case_t;
+typedef struct STATEMENT_CALL_T statement_call_t;
 
 typedef struct
 {
@@ -192,4 +199,53 @@ typedef struct
   int size;
 } sub_header_t;
 
+struct STATEMENT_IF_T
+{
+  statement_t *_true;
+  statement_t *_false;
+  expression_t *condition;
+};
+
+struct STATEMENT_WHILE_T
+{
+  statement_t* loop;
+  expression_t *condition;
+};
+
+struct STATEMENT_ASSIGNMENT_T
+{ 
+  int type;
+  expression_t *var;
+  union
+  {
+    expression_t *expr;
+    char *string;
+  };
+};
+
+struct STATEMENT_FOR_T
+{
+};
+
+struct STATEMENT_CASE_T
+{
+};
+
+struct STATEMENT_CALL_T
+{
+};
+
+struct STATEMENT_T
+{
+  int type;
+  union {
+    statement_if_t _if;
+    statement_while_t _while;
+    statement_assignment_t assignment;
+    statement_for_t _for;
+    statement_case_t _case;
+    statement_call_t call;
+  };
+  statement_t *next, *prev, *join;
+};
 #endif // __BISON_UNION

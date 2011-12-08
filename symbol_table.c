@@ -28,7 +28,7 @@ typedefs_entry_t* st_typedef_find(char *name, scope_t *scope)
 		scope = scope->parent;
 	}
 	
-		return NULL;
+	return NULL;
 }
 
 #warning prepei na elegxw gia ta arrays an uparxoun oi diastaseis tous kai gia ta records an exoun fields
