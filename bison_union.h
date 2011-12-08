@@ -199,6 +199,12 @@ typedef struct
   int size;
 } sub_header_t;
 
+typedef struct
+{
+  expression_t *from, *to;
+  int type;
+} iter_space_t;
+
 struct STATEMENT_IF_T
 {
   statement_t *_true;
@@ -223,8 +229,21 @@ struct STATEMENT_ASSIGNMENT_T
   };
 };
 
+struct VAR_T
+{
+	data_type_t type;
+	char *id;
+  int pass;
+  struct VAR_T* reference; // used only when pass == 1
+};
+
 struct STATEMENT_FOR_T
 {
+  int type;
+  expression_t *from, *to;
+  struct VAR_T *var;
+  int forType;
+  statement_t *loop;
 };
 
 struct STATEMENT_CASE_T
@@ -248,4 +267,7 @@ struct STATEMENT_T
   };
   statement_t *next, *prev, *join;
 };
+
+
+
 #endif // __BISON_UNION

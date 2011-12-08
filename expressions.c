@@ -37,6 +37,12 @@ int types_compatible(int type1, int type2)
       else
         return 0;
       break;
+    case VT_Boolean:
+    case VT_Bconst:
+      if ( type2 == VT_Boolean || type2 == VT_Bconst )
+        return 1;
+      else
+        return 0;
   }
 
   return 0;
@@ -105,11 +111,23 @@ expression_t *expression_binary(expression_t* left, expression_t *right, int op)
   }
 
   ret = (expression_t*) calloc(1, sizeof(expression_t));
-  ret->dataType = op==Inop ? VT_Boolean : left->dataType; // if op is inop then the result is boolean
   ret->binary.left = left;
   ret->binary.right = right;
   ret->binary.op = op;
 
+  switch ( op )
+  {
+    case Inop:
+    case RelopG:
+    case RelopL:
+    case RelopLE:
+    case RelopD:
+      ret->dataType = VT_Boolean;
+    break;
+    default:
+      ret->dataType = left->dataType; // if op is inop then the result is boolean
+    break;
+  }
 
   return ret;
 }
@@ -149,7 +167,6 @@ expression_t *expression_constant(int type, void *data)
   }
   ret->type = ET_Constant;
   ret->constant.type = type;
-  //ret->next = NULL;
 
   return ret;
 }

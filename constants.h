@@ -1,6 +1,7 @@
 #ifndef __CONSTANTS_H
 #define __CONSTANTS_H
 enum {Success, Failure};
+enum ForStepType { FT_DownTo, FT_To };
 enum StatementType { ST_If, ST_While, ST_For, ST_Call, ST_Assignment, ST_Case };
 enum AssignmentType { AT_Expression, AT_String };
 enum VariableType { VT_Integer, VT_Real, VT_Boolean, VT_Char, VT_User, 

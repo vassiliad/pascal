@@ -12,13 +12,6 @@ struct CONST_T
   constant_t constant;
 };
 
-struct VAR_T
-{
-	data_type_t type;
-	char *id;
-  int pass;
-  struct VAR_T* reference; // used only when pass == 1
-};
 
 struct SCOPE_T
 {

@@ -11,5 +11,6 @@ expression_t *expression_variable(variable_t *var, scope_t *scope);
 expression_t *expression_set(expressions_t *expr);
 
 int expression_evaluate(expression_t *expr, constant_t *result);
+int types_compatible(int type1, int type2);
 
 #endif // __EXPRESSIONS_H

@@ -71,6 +71,7 @@ scope_t *scope;
   parameter_list_t params;
   constdefs_t constdefs;
   statement_t *statement;
+  iter_space_t iter_space;
 }
 
 %type <id> ID header
@@ -101,6 +102,7 @@ scope_t *scope;
 %type <statement> statement matched unmatched matched_if_statement case_statement while_statement
 %type <statement> for_statement with_statement subprogram_call io_statement comp_statement 
 %type <statement> assignment statements
+%type <iter_space> iter_space
 %error-verbose
 %%
 
@@ -855,13 +857,29 @@ case_tail : SEMI OTHERWISE COLON statement
 ;
 
 while_statement : WHILE expression DO statement 
+{
+  $$ = statement_while($2, $4);
+}
 ;
 
 for_statement : FOR ID ASSIGN iter_space DO statement 
+{
+  $$ = statement_for($2, &$4, $6, scope);
+}
 ;
 
-iter_space : expression TO expression 
+iter_space : expression TO expression
+{
+  $$.from = $1;
+  $$.to = $3;
+  $$.type = FT_To;
+}
 | expression DOWNTO expression 
+{
+  $$.from = $1;
+  $$.to = $3;
+  $$.type = FT_DownTo;
+}
 ;
 
 with_statement : WITH variable DO statement {
