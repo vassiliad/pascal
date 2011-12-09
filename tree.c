@@ -49,6 +49,66 @@ node_t *tree_generate_sconst(char *string)
 
 node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 {
+  node_t *node = NULL;
+
+  switch ( expr->type )
+  {
+    case ET_Binary:
+    {
+      switch ( expr->binary.op )
+      {
+        case AddopM:
+        case MuldivandopDiv:
+        case MuldivandopM:
+        case MuldivandopMod:
+        case AddopP: {
+          expression_t *e_left, *e_right;
+          node_t *left, *right;
+          
+          // have constants always on the right site ( might prove usefull )
+          if ( expr->binary.left->type == ET_Constant ) {
+            e_right= expr->binary.left;
+            e_left = expr->binary.right;
+          } else {
+            e_left = expr->binary.left;
+            e_right = expr->binary.right;
+          }
+          
+          left = tree_generate_value( e_left, scope );
+          right = tree_generate_value( e_right, scope );
+
+          node = ( node_t * ) calloc(1, sizeof(node_t));
+          switch ( expr->binary.op )
+          {
+            case AddopP:
+              node->type = NT_Add;
+            break;
+
+            case AddopM:
+              node->type = NT_Sub;
+            break;
+
+            case MuldivandopDiv:
+              node->type = NT_Div;
+            break;
+
+            case MuldivandopMod:
+              node->type = NT_Mod;
+            break;
+
+            case MuldivandopM:
+              node->type = NT_Mult;
+            break;
+          }
+          
+          node->bin.left = left;
+          node->bin.right = right;
+        } 
+        break;
+      }
+    }
+  }
+
   return NULL;
 }
 

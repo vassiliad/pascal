@@ -6,7 +6,6 @@
 
 typedef struct NODE_T node_t;
 typedef struct NODE_BIN_T node_bin_t;
-typedef struct NODE_BIN_CONST_T node_bin_const_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
 typedef struct NODE_LOAD_STORE_T node_store_t;
 
@@ -20,8 +19,9 @@ enum NodeType
   NT_Store,   // node_store_t ( store )
   NT_Add,     // node_bin_t ( bin )
   NT_Sub,     // node_bin_t ( bin )
-  NT_AddI,    // node_bin_const_t ( bin_const )
-  NT_SubI     // node_bin_const_t ( bin_const )
+  NT_Div,     // node_bin_t ( bin )
+  NT_Mod,     // node_bin_t ( bin )
+  NT_Mult     // node_bin_t ( bin )
 };
 
 struct NODE_LOAD_STORE_T
@@ -30,16 +30,8 @@ struct NODE_LOAD_STORE_T
   node_t *data;
 };
 
-struct NODE_BIN_CONST_T
-{
-  int type; // VT_Cconst, VT_Bconst, VT_Iconst, VT_Rconst
-  int op;
-  node_t* left; // assume constants will always reside in the right child
-};
-
 struct NODE_BIN_T
 {
-  int op;
   node_t *left, *right;
 };
 
