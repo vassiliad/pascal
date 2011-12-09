@@ -244,8 +244,7 @@ expression : expression RELOP expression
 }
 | ID LPAREN expressions RPAREN 
 {
-  printf("%d ", yylineno);
-  yyerror("Oxi id lparen expressions rparen\n");
+  $$ = expression_call($1, $3.exprs, $3.size, scope);
 }
 | LENGTH LPAREN expression RPAREN
 {
@@ -621,6 +620,9 @@ subprogram : sub_header  SEMI FORWARD
 {
   int i,j;
   var_t *var;
+  var_t *params=0;
+  int size = 0;
+  func_t *func;
   // first register the function ID as a local variable
   st_var_define($1.id, $1.type, scope);
 
@@ -628,13 +630,21 @@ subprogram : sub_header  SEMI FORWARD
   for ( i = 0; i < $1.size; i ++ ) {
     for ( j = 0; j < $1.params[i].ids.size; j++ ) {
       var = st_var_define($1.params[i].ids.ids[j], $1.params[i].type, scope);
-      if ( var )
+      if ( var ) {
         var->pass = $1.params[i].pass;
+        size++;
+
+        params = ( var_t * ) realloc(params, size * sizeof(var_t));
+        params[ size-1 ] = *var;
+      } else {
+        yyerror("Sapio function dhlwsh\n");
+      }
     }
   }
 
   // register the function to the global scope
-  st_func_define($1.id, $1.type, $1.params, $1.size, scope->parent);
+  func = st_func_define($1.id, $1.type, params, size, scope->parent);
+  func->isProcedure = $1.isProcedure;
 }
 subprograms comp_statement
 {
@@ -646,30 +656,31 @@ subprograms comp_statement
 sub_header : FUNCTION ID formal_parameters COLON standard_type 
 {
   $$.id = $2;
+  $$.isProcedure = 0;
   $$.type = $5;
   $$.params = $3.params;
   $$.size = $3.size;
 }
 | FUNCTION ID formal_parameters COLON LIST 
 {
-#warning unfinished
   $$.id = $2;
+  $$.isProcedure = 0;
   $$.type.dataType = 0;
   $$.params = $3.params;
   $$.size= $3.size;
 }
 | PROCEDURE ID formal_parameters 
 {
-#warning unfinished
   $$.id = $2;
+  $$.isProcedure = 1;
   $$.type.dataType = 0;
   $$.params = $3.params;
   $$.size= $3.size;
 }
 | FUNCTION ID  
 {
-#warning unfinished
   $$.id = $2;
+  $$.isProcedure = 0;
   $$.type.dataType = 0;
   $$.size= 0;
   $$.params = NULL;
@@ -882,14 +893,27 @@ iter_space : expression TO expression
 }
 ;
 
-with_statement : WITH variable DO statement {
-                   printf("%d) With is not currently implemented\n", yylineno);
-                   exit(0);
-                 }
+with_statement : WITH variable DO statement 
+{
+  printf("%d) With is not currently implemented\n", yylineno);
+  exit(0);
+}
 ;
 
-subprogram_call : ID 
+subprogram_call : ID
+{
+  scope_t *global;
+  for ( global = scope; global->parent; global = global->parent);
+
+  $$ = statement_call($1,NULL, 0, global);
+}
 | ID LPAREN expressions RPAREN 
+{
+  scope_t *global;
+  for ( global = scope; global->parent; global = global->parent);
+
+  $$ = statement_call($1, $3.exprs, $3.size, global);
+}
 ;
 
 io_statement : READ LPAREN read_list RPAREN 

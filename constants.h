@@ -7,7 +7,7 @@ enum AssignmentType { AT_Expression, AT_String };
 enum VariableType { VT_Integer, VT_Real, VT_Boolean, VT_Char, VT_User, 
       VT_Iconst, VT_Rconst, VT_Bconst , VT_Cconst};
 enum LimitType { LT_Iconst, LT_Bconst, LT_Id, LT_Cconst };
-enum EpressionType { ET_Binary, ET_Constant, ET_Not, ET_Variable, ET_Set };
+enum EpressionType { ET_Binary, ET_Constant, ET_Not, ET_Variable, ET_Set, ET_Call };
 enum TypedefType { TT_Array, TT_List, TT_Set, TT_Record, TT_Range };
 enum BConst { False, True };
 enum Operators

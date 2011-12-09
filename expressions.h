@@ -9,6 +9,7 @@ expression_t *expression_constant(int type, void *data);
 expression_t *expression_not(expression_t* notExpr);
 expression_t *expression_variable(variable_t *var, scope_t *scope);
 expression_t *expression_set(expressions_t *expr);
+expression_t *expression_call(char*id, expression_t *params, int size, scope_t *scope);
 
 int expression_evaluate(expression_t *expr, constant_t *result);
 int types_compatible(int type1, int type2);

@@ -31,8 +31,9 @@ typedefs_entry_t* st_typedef_find(char *name, scope_t *scope)
 	return NULL;
 }
 
-#warning prepei na elegxw gia ta arrays an uparxoun oi diastaseis tous kai gia ta records an exoun fields
-#warning pou einai array an uparxei to ka8e typedef gia to antistoixo field pou einai array ...
+#warning prepei na elegxw gia ta arrays an uparxoun oi diastaseis tous kai gia ta records an exoun fields\
+warning pou einai array an uparxei to ka8e typedef gia to antistoixo field pou einai array ...
+
 int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
 {
   typedefs_entry_t *found = st_typedef_find(entry->name, scope);
@@ -89,7 +90,22 @@ var_t* st_var_find(char *id, scope_t *scope)
   return NULL;
 }
 
-func_t *st_func_define(char *id, data_type_t type, parameters_t *params, int size, scope_t *scope)
+func_t *st_func_find(char *id, scope_t *global)
+{
+  int i = 0;
+  
+  if ( id == 0 )
+    return 0;
+
+  for ( i = 0 ; i < global->funcs_size; i ++ ) {
+    if ( strcasecmp(id, global->funcs[i].id) == 0 )
+      return global->funcs + i;
+  }
+  return NULL;
+}
+
+
+func_t *st_func_define(char *id, data_type_t type, var_t *params, int size, scope_t *scope)
 {
   int i;
   func_t *func = NULL;
@@ -100,12 +116,15 @@ func_t *st_func_define(char *id, data_type_t type, parameters_t *params, int siz
       return NULL;
     }
   }
+ 
+  scope->funcs = ( func_t* ) realloc( scope->funcs, (scope->funcs_size+1) * ( sizeof(func_t)));
+  func = scope->funcs + scope->funcs_size++;
 
-  func = ( func_t* ) calloc(1, sizeof(func_t));
   func->id = id;
   func->type = type;
   func->params = params;
   func->size = size;
+
 
   return func;
 }

@@ -25,4 +25,4 @@ lex.yy.o: lexer.l constants.h bison_union.h
 	gcc -c -Wall -ggdb lex.yy.c -o lex.yy.o
 
 clean:
-	rm -f *.o parser.h parser.tab.c lex.yy.c ce432
+	rm -f *.o parser.h parser.tab.c lex.yy.c parser.output ce432

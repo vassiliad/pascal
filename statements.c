@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "expressions.h"
 #include "statements.h"
 #include "constants.h"
@@ -148,3 +149,48 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
 
   return _for;
 }
+
+statement_t *statement_call(char*id, expression_t *params, int size, scope_t *scope)
+{
+  statement_t *call;
+  int i = 0;
+  func_t *func = st_func_find(id, scope);
+
+  if ( func == 0 ) {
+    printf("%d) statement_call: Function %s is not defined\n",yylineno, id);
+    return 0;
+  }
+#warning kati prepei na kanw me tis parametrous kai ta pass
+  
+  if ( func->size != size ) {
+    printf("%d) statement_call: Call arguments differ in number than the function definition for %s\n", yylineno, id);
+    return 0;
+  }
+
+  for ( i = 0; i < size; i++ ) {
+    if ( params[i].dataType != func->params[i].type.dataType ) {
+      printf("%d) statement_call: Call argument %d differs in type for function %s\n", yylineno, i, id);
+      return 0;
+    } else if ( params[i].dataType == VT_User ) {
+      if ( strcasecmp(params[i].variable->type.userType , func->params[i].type.userType) ) {
+        printf("%d) statement_call: Call argument %d differs in userType for function %s\n", yylineno, i, id);
+        return 0;
+      }
+    }
+
+    if ( func->params[i].pass && params[i].type !=ET_Variable ) {
+      printf("%d) statement_call: Call argument %d should be a variable for function %s, because"
+      "it acts as a reference\n", yylineno, i, id);
+      return 0;
+    }
+  }
+  
+  call = ( statement_t* ) calloc(1, sizeof(statement_t));
+  call->type = ST_Call;
+  call->call.type = func->type;
+  call->call.size = size;
+  call->call.params = params;
+
+  return call;
+}
+

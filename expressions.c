@@ -785,3 +785,50 @@ int expression_evaluate(expression_t *expr, constant_t *result)
   return Success;
 }
 
+expression_t *expression_call(char*id, expression_t *params, int size, scope_t *scope)
+{
+  expression_t *call;
+  int i = 0;
+  func_t *proc = st_func_find(id, scope);
+
+  if ( proc == 0 ) {
+    printf("%d) expression_call: procedure %s is not defined\n",yylineno, id);
+    return 0;
+  }
+#warning kati prepei na kanw me tis parametrous kai ta pass
+  
+  if ( proc->size != size ) {
+    printf("%d) expression_call: Call arguments differ in number than the procedure definition for %s (%d,%d)\n",
+            yylineno, id, proc->size, size);
+    return 0;
+  }
+
+  for ( i = 0; i < size; i++ ) {
+    if ( params[i].dataType != proc->params[i].type.dataType ) {
+      printf("%d) expression_call: Call argument %d differs in type for procedure %s\n", yylineno, i, id);
+      return 0;
+    } else if ( params[i].dataType == VT_User ) {
+      if ( strcasecmp(params[i].variable->type.userType , proc->params[i].type.userType) ) {
+        printf("%d) expression_call: Call argument %d differs in userType for procedure %s\n", yylineno, i, id);
+        return 0;
+      }
+    }
+
+    if ( proc->params[i].pass && params[i].type !=ET_Variable ) {
+      printf("%d) expression_call: Call argument %d should be a variable for procedure %s, because"
+      "it acts as a reference\n", yylineno, i, id);
+      return 0;
+    }
+  }
+  
+  call = ( expression_t* ) calloc(1, sizeof(expression_t));
+  call->call = ( expression_call_t* ) calloc(1, sizeof(expression_call_t));
+  call->type = ET_Call;
+  call->call->isProcedure=1;
+  call->call->type = proc->type;
+  call->call->size = size;
+  call->call->params = params;
+
+  return call;
+}
+

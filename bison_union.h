@@ -11,6 +11,8 @@ typedef struct STATEMENT_ASSIGNMENT_T statement_assignment_t;
 typedef struct STATEMENT_FOR_T statement_for_t;
 typedef struct STATEMENT_CASE_T statement_case_t;
 typedef struct STATEMENT_CALL_T statement_call_t;
+typedef struct SUB_HEADER_T sub_header_t;
+typedef struct SUB_HEADER_T expression_call_t;
 
 typedef struct
 {
@@ -158,6 +160,7 @@ struct EXPRESSION_T
 		expression_t *notExpr;
     expressions_t *exprs;
 		variable_t *variable;
+    expression_call_t *call;
   };
 
   //expression_t *next, *prev;
@@ -191,13 +194,15 @@ typedef struct
   int size;
 }parameter_list_t;
 
-typedef struct
+struct SUB_HEADER_T
 {
   char *id;
+  int isProcedure;
   data_type_t type;
   parameters_t *params;
   int size;
-} sub_header_t;
+  statement_t *body;
+};
 
 typedef struct
 {
@@ -252,6 +257,10 @@ struct STATEMENT_CASE_T
 
 struct STATEMENT_CALL_T
 {
+  char *id;
+  expression_t *params;
+  data_type_t type;
+  int size;
 };
 
 struct STATEMENT_T
