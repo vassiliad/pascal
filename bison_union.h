@@ -11,6 +11,7 @@ typedef struct STATEMENT_ASSIGNMENT_T statement_assignment_t;
 typedef struct STATEMENT_FOR_T statement_for_t;
 typedef struct STATEMENT_CASE_T statement_case_t;
 typedef struct STATEMENT_CALL_T statement_call_t;
+typedef struct STATEMENT_WITH_T statement_with_t;
 typedef struct SUB_HEADER_T sub_header_t;
 typedef struct SUB_HEADER_T expression_call_t;
 
@@ -263,6 +264,12 @@ struct STATEMENT_CALL_T
   int size;
 };
 
+struct STATEMENT_WITH_T
+{
+  statement_t *statement;
+  variable_t *var;
+};
+
 struct STATEMENT_T
 {
   int type;
@@ -273,6 +280,7 @@ struct STATEMENT_T
     statement_for_t _for;
     statement_case_t _case;
     statement_call_t call;
+    statement_with_t with;
   };
   statement_t *next, *prev, *join;
 };

@@ -893,10 +893,16 @@ iter_space : expression TO expression
 }
 ;
 
-with_statement : WITH variable DO statement 
+with_statement : WITH variable DO 
 {
-  printf("%d) With is not currently implemented\n", yylineno);
-  exit(0);
+  scope = st_init(scope);
+  $<statement>$ = statement_with($2, NULL, scope);
+}
+statement 
+{
+  $$ = $<statement>4;
+  scope = st_destroy(scope);
+  $$->with.statement = $5;
 }
 ;
 

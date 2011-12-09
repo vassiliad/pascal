@@ -194,3 +194,47 @@ statement_t *statement_call(char*id, expression_t *params, int size, scope_t *sc
   return call;
 }
 
+statement_t *statement_with(variable_t *var, statement_t *statement, scope_t *scope)
+{
+  statement_t *with;
+  expression_t *variable;
+  typedefs_entry_t *type;
+  int i = 0, j;
+
+  variable = expression_variable(var, scope);
+  
+  if ( variable == NULL ) {
+    printf("statement_with: With-variable is not defined\n");
+    return 0;
+  }
+  
+  if ( variable->variable->type.dataType != VT_User ) {
+    printf("statement_with: With-variable should be a record (%d)\n", variable->dataType);
+    return 0;
+  }
+
+  type = st_typedef_find( variable->variable->type.userType, scope);
+
+  if ( type == NULL ) {
+    printf("statement_with: With-variable's type ( %s ) is not defined\n",
+      variable->variable->type.userType);
+    return 0;
+  }
+
+  for ( i = 0 ; i < type->record.size; i ++ )
+    for ( j =0 ; j < type->record.ids[i].size; j ++ ) {
+
+      if ( st_var_define(type->record.ids[i].ids[j], type->record.types[i], scope) == 0 ) {
+        printf("statement_with: Could not register %s\n", type->record.ids[i].ids[j]);
+        return 0;
+      }
+    }
+
+  with = ( statement_t* ) calloc(1, sizeof(statement_t));
+  with->type = ST_With;
+  with->with.statement = statement;
+  with->with.var= var;
+
+  return with;
+}
+
