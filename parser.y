@@ -7,7 +7,6 @@
    [1] Constants are not defined atm, expressions should be built first.
    [2] With should shadow its parent definitions
    */
-#warning WITH is not currently implemented
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,6 +109,10 @@ scope_t *scope;
 program : header declarations subprograms comp_statement DOT 
 {
   node_t *main_tree = tree_generate_tree( $4, scope );
+
+  if ( main_tree == NULL )
+  {
+  }
 }
 ;
 
@@ -748,7 +751,6 @@ statements : statements SEMI statement
     if ( $3 )
       $3 -> prev = p;
 
-#warning edw na valw join gia ta statements
     switch ( p->type )
     {
       case ST_If:
@@ -761,7 +763,23 @@ statements : statements SEMI statement
 
         if ( t )
           t->join = $3;
-        break;
+      break;
+
+      case ST_While:
+        for ( t = p->_while.loop; t && t->next; t = t->next );
+        
+        if ( t )
+          t->join = $3;
+
+      break;
+
+      case ST_For:
+        for ( t = p->_for.loop; t && t->next; t = t->next );
+        
+        if ( t )
+          t->join = $3;
+
+      break;
     }
   }
 }

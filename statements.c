@@ -7,8 +7,6 @@
 
 extern int yylineno;
 
-#warning yylineno is not accurate
-
 statement_t *statement_if(expression_t *condition, statement_t *_true, statement_t *_false)
 {
   statement_t *_if;
@@ -22,8 +20,6 @@ statement_t *statement_if(expression_t *condition, statement_t *_true, statement
     printf("statement_if: condition should be either VT_Boolean or VT_Bconst not %d\n", condition->dataType);
     return 0;
   }
-#warning statement_if afhnw na exw null _true/_false, nomizw dn einai 8ema auto
-
 
   _if = ( statement_t * ) calloc(1,sizeof(statement_t));
   _if->type = ST_If;

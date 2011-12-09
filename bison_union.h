@@ -13,7 +13,8 @@ typedef struct STATEMENT_CASE_T statement_case_t;
 typedef struct STATEMENT_CALL_T statement_call_t;
 typedef struct STATEMENT_WITH_T statement_with_t;
 typedef struct SUB_HEADER_T sub_header_t;
-typedef struct SUB_HEADER_T expression_call_t;
+typedef struct EXPRESSION_CALL_T expression_call_t;
+
 
 typedef struct
 {
@@ -149,6 +150,15 @@ typedef struct
 	int op;
 } expression_binary_t;
 
+struct EXPRESSION_CALL_T
+{
+  char *id;
+  int isProcedure;
+  data_type_t type;
+  expression_t *params;
+  int size;
+  statement_t *body;
+};
 
 struct EXPRESSION_T
 {
