@@ -11,4 +11,6 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
 statement_t *statement_call(char*id, expression_t *params, int size, scope_t *scope);
 statement_t *statement_with(variable_t *var, statement_t *statement, scope_t *scope);
 
+const char* statement_type_to_string(statement_t *statement);
+
 #endif // __STATEMENTS_H

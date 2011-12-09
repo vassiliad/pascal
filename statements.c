@@ -238,3 +238,16 @@ statement_t *statement_with(variable_t *var, statement_t *statement, scope_t *sc
   return with;
 }
 
+const char* statement_type_to_string(statement_t *statement)
+{
+  static const char types[][15] = { "If", "While", "For", "Call", "Assignment", "Case", "With" };
+  
+  if ( statement == NULL )
+    return "null";
+
+  if ( ST_If > statement->type || statement->type > ST_With )
+    return "invalid statement type";
+
+  return types[ statement->type ];
+}
+

@@ -17,6 +17,7 @@
 #include "expressions.h"
 #include "symbol_table.h"
 #include "statements.h"
+#include "tree.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -107,6 +108,9 @@ scope_t *scope;
 %%
 
 program : header declarations subprograms comp_statement DOT 
+{
+  node_t *main_tree = tree_generate_tree( $4, scope );
+}
 ;
 
 header : PROGRAM ID SEMI
@@ -740,6 +744,10 @@ statements : statements SEMI statement
   if ( p ) {
     p->next = $3;
     p->join = $3;
+   
+    if ( $3 )
+      $3 -> prev = p;
+
 #warning edw na valw join gia ta statements
     switch ( p->type )
     {
