@@ -26,7 +26,6 @@ statement_t *statement_if(expression_t *condition, statement_t *_true, statement
   _if->_if._true = _true;
   _if->_if._false = _false;
   _if->_if.condition = condition;
-
   return _if;
 }
 
@@ -137,6 +136,7 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   }
   
   _for = ( statement_t * ) calloc(1, sizeof(statement_t));
+  _for->type = ST_For;
   _for->_for.var = var;
   _for->_for.loop = loop;
   _for->_for.from = iter_space->from;

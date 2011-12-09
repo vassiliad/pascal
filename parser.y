@@ -754,15 +754,15 @@ statements : statements SEMI statement
     switch ( p->type )
     {
       case ST_If:
-        for (t = p->_if._true; t && t->next; t = t->next );
-
-        if ( t )
+        if ( p->_if._true ) {
+          for (t = p->_if._true; t && t->next; t = t->next );
           t->join = $3;
-
-        for (t = p->_if._false; t && t->next; t = t->next );
-
-        if ( t )
+        }
+        
+        if ( p->_if._false ) {
+          for (t = p->_if._false; t && t->next; t = t->next );
           t->join = $3;
+        }
       break;
 
       case ST_While:
@@ -850,7 +850,6 @@ matched_if_statement: IF expression THEN matched ELSE matched
 
 unmatched: IF expression THEN statement
 { 
-  printf("cond: %p, _true; %p\n", $2, $4);
   $$ = statement_if($2, $4, NULL);
 }
 | IF expression THEN matched ELSE unmatched
