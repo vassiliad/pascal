@@ -2,7 +2,9 @@ program testing;
 const dim1 = 10;
       dim2 = 20;
 
-type record_1= record
+type
+  array1 = array[dim1] of integer;
+  record_1= record
     int1,int2:integer;
     char1,char2:char;
     arr: array1
@@ -12,7 +14,6 @@ type record_1= record
     _size : integer
   end;
   roto = array[dim1,dim2] of record_1;
-  array1 = array[dim1] of integer;
 var x: integer;
     y: char;
     test: record_2;

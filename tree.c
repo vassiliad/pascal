@@ -151,10 +151,10 @@ node_t *tree_generate_node(statement_t *node, scope_t *scope)
       node_t *var, *data;
 
       if ( node->assignment.type == AT_Expression ) {
-        var = tree_generate_store( node->assignment.var->variable, node->assignment.expr, scope);
+        var = tree_generate_store( node->assignment.var, node->assignment.expr, scope);
         data = tree_generate_value( node->assignment.expr, scope );
       } else {
-        var = tree_generate_store_str(node->assignment.var->variable, node->assignment.string, scope);
+        var = tree_generate_store_str(node->assignment.var, node->assignment.string, scope);
         data = tree_generate_sconst( node->assignment.string );
       }
 
