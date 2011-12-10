@@ -8,6 +8,7 @@ typedef struct NODE_T node_t;
 typedef struct NODE_BIN_T node_bin_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
 typedef struct NODE_LOAD_STORE_T node_store_t;
+typedef struct NODE_STRING_T node_string_t;
 
 enum NodeType
 {
@@ -21,7 +22,14 @@ enum NodeType
   NT_Sub,     // node_bin_t ( bin )
   NT_Div,     // node_bin_t ( bin )
   NT_Mod,     // node_bin_t ( bin )
-  NT_Mult     // node_bin_t ( bin )
+  NT_Mult,    // node_bin_t ( bin )
+  NT_String   // node_string_t ( string )
+};
+
+struct NODE_STRING_T
+{
+  char *mem;
+  int size;
 };
 
 struct NODE_LOAD_STORE_T
@@ -44,11 +52,14 @@ struct NODE_T
     node_bin_t bin;
     node_load_t load;
     node_store_t store;
+    node_string_t string;
     int iconst;
     char cconst;
     char bconst;
     float rconst;
   };
+
+  node_t *next, *prev;
 };
 
 

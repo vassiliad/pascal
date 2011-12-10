@@ -31,11 +31,9 @@ typedefs_entry_t* st_typedef_find(char *name, scope_t *scope)
 	return NULL;
 }
 
-#warning prepei na elegxw gia ta arrays an uparxoun oi diastaseis tous kai gia ta records an exoun fields\
-warning pou einai array an uparxei to ka8e typedef gia to antistoixo field pou einai array ...
-
 int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
 {
+  int i = 0;
   typedefs_entry_t *found = st_typedef_find(entry->name, scope);
 
 	if ( found ) {
@@ -43,6 +41,42 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
 		return Failure;
 	}
 	
+  switch ( entry->type )
+  {
+    case TT_Record:
+    {
+      for ( i = 0 ; i < entry->record.size; i ++ )
+      {
+        if ( entry->record.types[i].dataType == VT_User ) {
+          if ( st_typedef_find(entry->record.types[i].userType, scope ) == 0 )
+          {
+            printf("st_typedef_register: type %s of %s is not defined\n",
+              entry->record.types[i].userType, entry->name);
+          }
+        }
+      }
+    }
+    break;
+
+    case TT_Array:
+    break;
+
+    case TT_List:
+      printf("st_typedef_register: TT_List is not implemented\n");
+      return 0;
+    break;
+
+    case TT_Set:
+      printf("st_typedef_register: TT_Set is not implemented\n");
+      return 0;
+    break;
+
+    case TT_Range:
+      printf("st_typedef_register: TT_Range is not implemented\n");
+      return 0;
+    break;
+  }
+
 	scope->typedefs = ( typedefs_entry_t* ) realloc( scope->typedefs,
 									sizeof(typedefs_entry_t) * ( scope->typedefs_size +1 ));
 	scope->typedefs[ scope->typedefs_size ++ ] = *entry;

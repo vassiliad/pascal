@@ -237,7 +237,7 @@ struct STATEMENT_WHILE_T
 struct STATEMENT_ASSIGNMENT_T
 { 
   int type;
-  expression_t *var;
+  variable_t *var;
   union
   {
     expression_t *expr;

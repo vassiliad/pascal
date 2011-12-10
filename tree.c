@@ -5,7 +5,7 @@
 
 node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 { 
-  node_t *node, *t;
+  node_t *node, *cur;
   statement_t *p;
 
   if ( root == NULL )
@@ -17,29 +17,51 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
     return NULL;
 
   for ( p = root->next; p ; p = p->next ) {
-    t = tree_generate_node( p, scope );
+    cur = tree_generate_node( p, scope );
 
-    if ( t == NULL )
+    if ( cur == NULL )
       return NULL;
+    node->next = cur;
+    cur->prev  = node;
+    node = cur;
   }
   
   return node;
 }
 
-node_t *tree_generate_store_str(expression_t *var, char *string, scope_t *scope)
+node_t *tree_generate_address(variable_t *var)
 {
   return NULL;
 }
 
-node_t *tree_generate_store(expression_t *var, expression_t *expr, scope_t *scope)
+node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 {
+  node_t *address = tree_generate_address(var);
+  node_t *ret = calloc(1, sizeof(node_t));
+
+  ret->type = NT_Store;
+  ret->store.address = address;
+  return ret;
+}
+
+node_t *tree_generate_store(variable_t *var, expression_t *expr, scope_t *scope)
+{
+  node_t *address = tree_generate_address(var);
+  node_t *ret = calloc(1, sizeof(node_t));
+
+  ret->type = NT_Store;
+  ret->store.address = address;
+  return ret;
+}
+
+node_t *tree_generate_load(variable_t *var, scope_t *scope)
+{
+  node_t *address = tree_generate_address(var);
+  node_t *ret = calloc(1, sizeof(node_t));
   
-  return NULL;
-}
-
-node_t *tree_generate_load(expression_t *var, scope_t *scope)
-{
-  return NULL;
+  ret->type = NT_Load;
+  ret->load.address = address;
+  return ret;
 }
 
 node_t *tree_generate_sconst(char *string)
@@ -129,10 +151,10 @@ node_t *tree_generate_node(statement_t *node, scope_t *scope)
       node_t *var, *data;
 
       if ( node->assignment.type == AT_Expression ) {
-        var = tree_generate_store( node->assignment.var, node->assignment.expr, scope);
+        var = tree_generate_store( node->assignment.var->variable, node->assignment.expr, scope);
         data = tree_generate_value( node->assignment.expr, scope );
       } else {
-        var = tree_generate_store_str(node->assignment.var, node->assignment.string, scope);
+        var = tree_generate_store_str(node->assignment.var->variable, node->assignment.string, scope);
         data = tree_generate_sconst( node->assignment.string );
       }
 

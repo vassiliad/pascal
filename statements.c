@@ -64,6 +64,7 @@ statement_t *statement_assignment(variable_t *var, expression_t *expr, scope_t *
   
   assignment = ( statement_t *) calloc(1, sizeof(statement_t));
   assignment->type = ST_Assignment;
+  assignment->assignment.var = var;
   assignment->assignment.type = AT_Expression;
   assignment->assignment.expr = expr;
 
