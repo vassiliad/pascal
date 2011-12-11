@@ -64,34 +64,35 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
         const_t *constant;
         for ( i = 0; i < entry->array.dims.size; i ++ )
         {
-
           if ( entry->array.dims.limits[i].isRange )
           {
+            if ( entry->array.dims.limits[i].range.from.type == LT_Id )
+            {
+              var = st_var_find( entry->array.dims.limits[i].range.from.id.id, scope );
 
-            var = st_var_find( entry->array.dims.limits[i].range.from.id.id, scope );
+              if ( var ) {
+                if ( var->type.dataType != VT_Integer && var->type.dataType != VT_Char ) {
+                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
+                      entry->name, entry->array.dims.limits[i].range.from.id.id );
+                  return 0;
+                }
+                continue;
+              }
 
-            if ( var ) {
-              if ( var->type.dataType != VT_Integer && var->type.dataType != VT_Char ) {
-                printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                    entry->name, entry->array.dims.limits[i].range.from.id.id );
+              constant = st_const_find(entry->array.dims.limits[i].range.from.id.id, scope);
+
+              if ( constant ) {
+                if ( constant->constant.type != VT_Cconst 
+                    && constant->constant.type != VT_Iconst ) {
+                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
+                      entry->name, entry->array.dims.limits[i].range.from.id.id );
+                  return 0;
+                }
+              } else {
+                printf("st_typedef_find: array's %s limit %s is not defined\n",
+                    entry->name, entry->array.dims.limits[i].range.from.id.id);
                 return 0;
               }
-              continue;
-            }
-
-            constant = st_const_find(entry->array.dims.limits[i].range.from.id.id, scope);
-
-            if ( constant ) {
-              if ( constant->constant.type != VT_Cconst 
-                  && constant->constant.type != VT_Iconst ) {
-                printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                    entry->name, entry->array.dims.limits[i].range.from.id.id );
-                return 0;
-              }
-            } else {
-              printf("st_typedef_find: array's %s limit %s is not defined\n",
-                  entry->name, entry->array.dims.limits[i].range.from.id.id);
-              return 0;
             }
 
             if ( entry->array.dims.limits[i].range.to.type == LT_Id )
