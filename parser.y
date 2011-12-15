@@ -465,14 +465,15 @@ limits : limit DOTDOT limit
 }
 ;
 
-limit : sign ICONST {
-          $$.type =LT_Iconst;
+limit : sign ICONST 
+{
+  $$.type =LT_Iconst;
 
-          if ( $1 == Negative )
-            $$.iconst = - $2;
-          else
-            $$.iconst = $2;
-        }
+  if ( $1 == Negative )
+    $$.iconst = - $2;
+  else
+    $$.iconst = $2;
+}
 | CCONST 
 {
   $$.type = LT_Cconst;
@@ -754,31 +755,39 @@ statements : statements SEMI statement
     switch ( p->type )
     {
       case ST_If:
-        if ( p->_if._true ) {
-          for (t = p->_if._true; t && t->next; t = t->next );
+        if ( ( t = p->_if._true ) != NULL ) {
+          for ( ;  t->next; t = t->next );
           t->join = $3;
         }
         
-        if ( p->_if._false ) {
-          for (t = p->_if._false; t && t->next; t = t->next );
+        if ( ( t = p->_if._false ) != NULL ) {
+          for ( ; t->next; t = t->next );
           t->join = $3;
         }
       break;
 
       case ST_While:
-        for ( t = p->_while.loop; t && t->next; t = t->next );
-        
-        if ( t )
+        if ( ( t = p->_while.loop ) != NULL ) {
+          for ( ; t && t->next; t = t->next );
+          
           t->join = $3;
+        }
 
       break;
 
       case ST_For:
-        for ( t = p->_for.loop; t && t->next; t = t->next );
-        
-        if ( t )
+        if ( ( t = p->_for.loop ) != NULL ) {
+          for ( ; t && t->next; t = t->next );
+          
           t->join = $3;
+        }
+      break;
 
+      case ST_With:
+        if ( ( t = p->with.statement ) != NULL ) {
+          for ( ; t && t->next; t = t->next );
+          t->join = $3;
+        }
       break;
     }
   }

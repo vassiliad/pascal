@@ -3,6 +3,17 @@
 #include "tree.h"
 #include "expressions.h"
 
+
+node_t *tree_generate_node(statement_t *node, scope_t *scope);
+node_t *tree_generate_address(variable_t *var);
+node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
+node_t *tree_generate_store(variable_t *var, expression_t *expr, scope_t *scope);
+node_t *tree_generate_load(variable_t *var, scope_t *scope);
+node_t *tree_generate_sconst(char *string);
+node_t *tree_generate_value( expression_t *expr, scope_t *scope);
+
+
+
 node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 { 
   node_t *node, *cur;
@@ -21,6 +32,7 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 
     if ( cur == NULL )
       return NULL;
+    
     node->next = cur;
     cur->prev  = node;
     node = cur;
@@ -75,6 +87,50 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
   switch ( expr->type )
   {
+    case ET_Constant:
+      node = ( node_t* ) calloc(1, sizeof(node_t));
+      
+      switch ( expr->constant.type )
+      {
+        case VT_Bconst:
+          node->type = NT_Bconst;
+          node->bconst = expr->constant.bconst;
+        break;
+
+        case VT_Iconst:
+          node->type = NT_Iconst;
+          node->iconst = expr->constant.iconst;
+        break;
+
+        case VT_Rconst:
+          node->type = NT_Rconst;
+          node->rconst = expr->constant.rconst;
+        break;
+
+        case VT_Cconst:
+          node->type = NT_Cconst;
+          node->cconst = expr->constant.cconst;
+        break;
+      }
+    break;
+
+    case ET_Set:
+    break;
+
+    case ET_Not:
+      node = ( node_t* ) calloc(1, sizeof(node_t));
+      node->type = NT_Not;
+      node->not = tree_generate_value( expr->notExpr, scope );
+    break;
+
+    case ET_Variable:
+      node = tree_generate_load( expr->variable, scope);
+    break;
+
+    case ET_Call:
+
+    break;
+
     case ET_Binary:
     {
       switch ( expr->binary.op )
@@ -131,7 +187,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
     }
   }
 
-  return NULL;
+  return node;
 }
 
 node_t *tree_generate_node(statement_t *node, scope_t *scope)

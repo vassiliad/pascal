@@ -23,7 +23,8 @@ enum NodeType
   NT_Div,     // node_bin_t ( bin )
   NT_Mod,     // node_bin_t ( bin )
   NT_Mult,    // node_bin_t ( bin )
-  NT_String   // node_string_t ( string )
+  NT_String,  // node_string_t ( string )
+  NT_Not      // node_t ( not )
 };
 
 struct NODE_STRING_T
@@ -53,6 +54,7 @@ struct NODE_T
     node_load_t load;
     node_store_t store;
     node_string_t string;
+    node_t *not;
     int iconst;
     char cconst;
     char bconst;
@@ -64,5 +66,4 @@ struct NODE_T
 
 
 node_t *tree_generate_tree(statement_t *root, scope_t *scope);
-node_t *tree_generate_node(statement_t *node, scope_t *scope);
 #endif

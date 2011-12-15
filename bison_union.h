@@ -173,8 +173,6 @@ struct EXPRESSION_T
 		variable_t *variable;
     expression_call_t *call;
   };
-
-  //expression_t *next, *prev;
 };
 
 
@@ -251,6 +249,8 @@ struct VAR_T
 	char *id;
   int pass;
   struct VAR_T* reference; // used only when pass == 1
+
+  char *base_address;      // to generate addresses for variables
 };
 
 struct STATEMENT_FOR_T
