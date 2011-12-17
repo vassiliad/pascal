@@ -196,7 +196,7 @@ statement_t *statement_with(variable_t *var, statement_t *statement, scope_t *sc
   statement_t *with;
   expression_t *variable;
   typedefs_entry_t *type;
-  int i = 0, j;
+  int i = 0;
 
   variable = expression_variable(var, scope);
   
@@ -219,13 +219,11 @@ statement_t *statement_with(variable_t *var, statement_t *statement, scope_t *sc
   }
 
   for ( i = 0 ; i < type->record.size; i ++ )
-    for ( j =0 ; j < type->record.ids[i].size; j ++ ) {
 
-      if ( st_var_define(type->record.ids[i].ids[j], type->record.types[i], scope) == 0 ) {
-        printf("statement_with: Could not register %s\n", type->record.ids[i].ids[j]);
+      if ( st_var_define(type->record.ids[i], type->record.types[i], scope) == 0 ) {
+        printf("statement_with: Could not register %s\n", type->record.ids[i]);
         return 0;
       }
-    }
 
   with = ( statement_t* ) calloc(1, sizeof(statement_t));
   with->type = ST_With;

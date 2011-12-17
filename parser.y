@@ -139,6 +139,13 @@ declarations : constdefs typedefs vardefs
     printf("constant: %s (%d)\n", $1.ids[i], $1.constants[i].type);
   }
 
+  printf("Declarations::typedefs %d\n", $2.size);
+
+  for (i=0; i<$2.size; i++ ) {
+    printf("%s -> %s\n", $2.typedefs[i].name, typedef_types[$2.typedefs[i].type]);
+    st_typedef_register($2.typedefs+i, scope);
+  }
+
   printf("Declarations::vardefs %d\n", $3.size);
   for ( i=0; i<$3.size; i++ ) {
     printf("type: %d %s\n", $3.types[i].dataType, ($3.types[i].dataType==VT_User ? $3.types[i].userType : "standard_type" ));
@@ -149,12 +156,6 @@ declarations : constdefs typedefs vardefs
   }
 
 
-  printf("Declarations::typedefs %d\n", $2.size);
-
-  for (i=0; i<$2.size; i++ ) {
-    printf("%s -> %s\n", $2.typedefs[i].name, typedef_types[$2.typedefs[i].type]);
-    st_typedef_register($2.typedefs+i, scope);
-  }
 }
 ;
 
@@ -542,16 +543,14 @@ standard_type : INTEGER
 
 fields : fields SEMI field 
 {
-  $1.size ++;
-  $1.ids = (identifiers_t*) realloc( $1.ids, $1.size * sizeof(identifiers_t));
-  $1.types = (data_type_t*) realloc( $1.types, $1.size * sizeof(data_type_t));
-  $1.ids[ $1.size - 1 ] = $3.ids[0];
-  $1.types[ $1.size - 1 ] = $3.types[0];
-
-  if ($1.types[ $1.size-1 ].dataType== VT_User )
-    printf("new field: %s\n", $1.types [$1.size-1].userType);
-
-
+	int i,j ;
+  $1.ids = (char**) realloc( $1.ids, ($1.size+$3.size) * sizeof(char*));
+  $1.types = (data_type_t*) realloc( $1.types, ($1.size+$3.size) * sizeof(data_type_t));
+	for ( j=0, i=$1.size; i < $1.size + $3.size; i++, j++ ) {
+	  $1.ids[ i ] = $3.ids[j];
+  	$1.types[ i ] = $3.types[j];
+	}
+	$1.size += $3.size;
   $$ = $1;
 }
 | field 
@@ -562,13 +561,16 @@ fields : fields SEMI field
 
 field : identifiers COLON typename 
 {
-  $$.size = 1;
-  $$.ids = (identifiers_t*) calloc(1, sizeof(identifiers_t));
-  $$.types = (data_type_t*) calloc(1, sizeof(data_type_t));
-  $$.ids[0] = $1;
-  $$.types[0] = $3;
-  if ($3.dataType == VT_User )
-    printf("new field: %s\n", $3.userType);
+	int i;
+
+  $$.size = $1.size;
+  $$.ids = (char **) calloc(1, $1.size * sizeof(char*));
+  $$.types = (data_type_t*) calloc(1, $1.size * sizeof(data_type_t));
+	
+	for ( i = 0; i < $1.size; i ++ ) {
+		$$.ids[ i ] = $1.ids[i];
+		$$.types[ i ] = $3;
+	}
 }
 ;
 
