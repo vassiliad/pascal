@@ -37,6 +37,7 @@ struct NODE_LOAD_STORE_T
 {
   node_t *address;
   node_t *data;
+  unsigned int size;
 };
 
 struct NODE_BIN_T

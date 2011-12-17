@@ -250,13 +250,12 @@ expression_t *expression_variable(variable_t *var, scope_t *scope)
 
       found = 0;
       for ( i = 0; i < type->record.size && !found; i ++ )
-        for ( j=0; j < type->record.ids[i].size && !found; j ++ ) 
-          if ( !strcasecmp(type->record.ids[i].ids[j], p->id) ) {
-            found = 1;
-            p->type.dataType = type->record.types[i].dataType;
-            p->type.userType = type->record.types[i].userType;
-            variableType = type->record.types[i].dataType;
-          }
+        if ( !strcasecmp(type->record.ids[i], p->id) ) {
+          found = 1;
+          p->type.dataType = type->record.types[i].dataType;
+          p->type.userType = type->record.types[i].userType;
+          variableType = type->record.types[i].dataType;
+        }
 
       if ( found == 0 ) {
         printf("%d: Field %s is not part of type %s\n", yylineno, p->id, type->name);

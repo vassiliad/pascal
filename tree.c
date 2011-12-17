@@ -43,6 +43,11 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 
 node_t *tree_generate_address(variable_t *var)
 {
+  /*
+    Traverse var, and accumulate offsets based on the types of each
+    @child in var ( see variable_t in bison_union.h ) then add the base
+    address and return it as a icosnt type node_t.
+  */
   return NULL;
 }
 

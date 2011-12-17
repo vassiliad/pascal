@@ -1,5 +1,14 @@
 #ifndef __CONSTANTS_H
 #define __CONSTANTS_H
+
+enum PrimitiveSizes
+{
+  INTEGER_SIZE = 4,
+  CHAR_SIZE    = 1,
+  REAL_SIZE    = 4,
+  BOOLEAN_SIZE = 1
+};
+
 enum 
 {
   Success, 

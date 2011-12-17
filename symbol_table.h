@@ -52,4 +52,5 @@ func_t *st_func_find(char *id, scope_t *global);
 const_t* st_const_define(char *id, constant_t *constant, scope_t *scope);
 const_t* st_const_find(char *id, scope_t *scope);
 
+int st_get_type_size(int type, char* userType, scope_t *scope);
 #endif // __SYMBOL_TABLE_H

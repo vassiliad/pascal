@@ -296,3 +296,50 @@ const_t* st_const_find(char *id, scope_t *scope)
 }
 
 
+int st_get_type_size(int type, char* userType, scope_t *scope)
+{
+  typedefs_entry_t *p;
+  switch (type) 
+  {
+    case VT_Integer: case VT_Iconst:
+      return INTEGER_SIZE;
+    case VT_Char:    case VT_Cconst:
+      return CHAR_SIZE;
+    case VT_Real:    case VT_Rconst:
+      return REAL_SIZE;
+    case VT_Boolean: case VT_Bconst:
+      return BOOLEAN_SIZE;
+    case VT_User:
+      break;
+    default:
+      return 0;
+  }
+
+  // if we've made it this far we need to return the size for a 
+  // user defined type.
+
+  p = st_typedef_find(userType, scope);
+
+  if ( p == NULL )
+    return 0;
+  
+  switch ( p->type )
+  {
+    case TT_Record:
+      
+    break;
+
+    case TT_Array:
+    break;
+
+    case TT_List:
+    break;
+
+    case TT_Set:
+    break;
+
+    case TT_Range:
+    break;
+  }
+}
+

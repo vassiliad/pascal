@@ -67,9 +67,15 @@ typedef struct
 	int size;
 } variabledefs_t;
 
+typedef struct
+{
+  char **ids;
+  data_type_t *types;
+  int size;
+} fields_t;
 
-typedef variabledefs_t fields_t; 	// it's basically the same information
-typedef fields_t record_t; 				// >>
+typedef fields_t record_t;
+
 //=====================================================//
 typedef struct 
 {
