@@ -197,17 +197,18 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
       break;
   }
 	
+
+  scope->typedefs = ( typedefs_entry_t* ) realloc( scope->typedefs,
+      sizeof(typedefs_entry_t) * ( scope->typedefs_size +1 ));
+  scope->typedefs[ scope->typedefs_size ++ ] = *entry;
+	
 	int size = st_get_type_size(VT_User, entry->name, scope);
 	
 	if ( size == 0 ) {
 		printf("Type %s is incomplete\n", entry->name);
 		return Failure;
 	}
-
-  scope->typedefs = ( typedefs_entry_t* ) realloc( scope->typedefs,
-      sizeof(typedefs_entry_t) * ( scope->typedefs_size +1 ));
-  scope->typedefs[ scope->typedefs_size ++ ] = *entry;
-		
+	
   printf("registered type %s size %d\n", entry->name, size);
 
 	return Success;
@@ -348,17 +349,118 @@ int st_get_type_size(int type, char* userType, scope_t *scope)
   // user defined type.
 
   p = st_typedef_find(userType, scope);
-
-  if ( p == NULL )
+  
+	if ( p == NULL )
     return 0;
   
   switch ( p->type )
   {
     case TT_Record:
-      
+		{
+			int i;
+			int ret;
+			int size = 0;
+			data_type_t *t;
+			
+			// accumulate all members' size
+
+			for ( i=0, t = p->record.types ; i< p->record.size; i++, t++ ) {
+				ret = st_get_type_size(t->dataType, t->userType, scope);
+				if ( ret == 0 )
+					return 0;
+				size += ret;
+			}
+			return ret;
+		}
     break;
 
     case TT_Array:
+		{
+			int i;
+			int size;
+			int ret;
+
+			limits_entry_t *l;
+
+			// first get the base type
+			size = st_get_type_size(p->array.typename.dataType
+							, p->array.typename.userType, scope );
+
+			if ( size == 0 )
+				return 0;
+
+#warning only allow integers in the definition??
+
+			// then multiply it with every dimension
+			for ( i = 0, l = p->array.dims.limits;
+					i < p->array.dims.size; i++, l++) {
+				if ( l->isRange ) {
+					if ( l->range.from.type != l->range.to.type ) {
+						printf("range's %d types do not match\n", i);
+						return 0;
+					}
+				
+					switch ( l->range.from.type )
+					{
+						case LT_Iconst:
+							ret = l->range.to.iconst - l->range.from.iconst;
+						break;
+
+						case LT_Cconst:
+							ret = l->range.to.cconst - l->range.from.cconst;
+						break;
+
+						default:
+							printf("range %d is invalid type\n",i);
+							return 0;
+					}
+
+					if ( ret < 1 ) {
+						printf("range %d less than 1\n", i);
+						return 0;
+					}
+					
+					size *= ret;
+				} else {
+					switch ( l->limit.type )
+					{
+						case LT_Id:
+						{
+							const_t *c;
+							c = st_const_find(l->limit.id.id, scope );
+							
+							if ( c == NULL ) {
+								printf("Const %s is not defined\n", l->limit.id.id);
+								return 0;
+							}
+							
+							if ( c->constant.type != VT_Iconst ) {
+								printf("Const %s is not iconst\n", l->limit.id.id);
+								return 0;
+							}
+							
+							ret  = c->constant.iconst;
+							
+							if ( l->limit.id.sign == Negative )
+								ret = -ret;
+							
+							if ( ret < 1 ) {
+								printf("%d is less than 1\n", i);
+								return 0;
+							}
+							size *= ret;
+						}
+						break;
+
+						default:
+							printf("Invalid type %d for %d dim\n",
+									l->limit.type, i);
+							return 0;
+					}
+				}
+			}
+			return size;
+		}
     break;
 
     case TT_List:
