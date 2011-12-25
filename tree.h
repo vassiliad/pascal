@@ -9,6 +9,8 @@ typedef struct NODE_BIN_T node_bin_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
 typedef struct NODE_LOAD_STORE_T node_store_t;
 typedef struct NODE_STRING_T node_string_t;
+typedef struct NODE_IF_T node_if_t;
+typedef struct NODE_BRANCHZ_T node_branchz_t;
 
 enum NodeType
 {
@@ -24,7 +26,23 @@ enum NodeType
   NT_Mod,     // node_bin_t ( bin )
   NT_Mult,    // node_bin_t ( bin )
   NT_String,  // node_string_t ( string )
-  NT_Not      // node_t ( not )
+  NT_Not,     // node_t ( not )
+	NT_If,			// node_if_t ( _if )
+	NT_Branch,	// node_t ( branch )
+	NT_BranchZ, // node_branchz_t ( branchZ )
+};
+
+struct NODE_BRANCHZ_T // branch on zero
+{
+	node_t *condition;
+	node_t *destination;
+};
+
+struct NODE_IF_T
+{
+	node_t *_true;
+	node_t *_false;
+	node_t *condition;
 };
 
 struct NODE_STRING_T
@@ -60,6 +78,8 @@ struct NODE_T
     char cconst;
     char bconst;
     float rconst;
+		node_t *branch;
+		node_branchz_t *branchz;
   };
 
   node_t *next, *prev;
