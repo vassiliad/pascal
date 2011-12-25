@@ -196,7 +196,7 @@ expression_t *expression_variable(variable_t *var, scope_t *scope)
   var_t *st_var, temp;
   typedefs_entry_t *type;
   int variableType = var->type.dataType;
-  int i, j, found;
+  int i, found;
 
 
   if ( var == NULL ) {

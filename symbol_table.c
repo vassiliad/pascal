@@ -48,9 +48,11 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
         for ( i = 0 ; i < entry->record.size; i ++ )
         {
           if ( entry->record.types[i].dataType == VT_User ) {
-            if ( st_typedef_find(entry->record.types[i].userType, scope ) == 0 )
+            if ( st_typedef_find(entry->record.types[i].userType
+											, scope ) == 0 )
             {
-              printf("st_typedef_register: field type %s of record %s is not defined\n",
+              printf("st_typedef_register: field type %s of record "
+									"%s is not defined\n",
                   entry->record.types[i].userType, entry->name);
             }
           }
@@ -62,65 +64,75 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
       {
         var_t *var;
         const_t *constant;
-        for ( i = 0; i < entry->array.dims.size; i ++ )
+				limits_entry_t *l;
+        for ( i = 0, l=entry->array.dims.limits
+						; i < entry->array.dims.size; i ++, l++ )
         {
-          if ( entry->array.dims.limits[i].isRange )
+          if ( l->isRange )
           {
-            if ( entry->array.dims.limits[i].range.from.type == LT_Id )
+            if ( l->range.from.type == LT_Id )
             {
-              var = st_var_find( entry->array.dims.limits[i].range.from.id.id, scope );
+              var = st_var_find( l->range.from.id.id, scope );
 
               if ( var ) {
-                if ( var->type.dataType != VT_Integer && var->type.dataType != VT_Char ) {
-                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                      entry->name, entry->array.dims.limits[i].range.from.id.id );
-                  return 0;
+                if ( var->type.dataType != VT_Integer 
+											&& var->type.dataType != VT_Char ) {
+                  printf("st_typedef_find: array's %s limit %s is not "
+											"integer/char\n",
+                      entry->name, l->range.from.id.id );
+                  return Failure;
                 }
                 continue;
               }
 
-              constant = st_const_find(entry->array.dims.limits[i].range.from.id.id, scope);
+              constant = st_const_find(l->range.from.id.id, scope);
 
               if ( constant ) {
                 if ( constant->constant.type != VT_Cconst 
                     && constant->constant.type != VT_Iconst ) {
-                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                      entry->name, entry->array.dims.limits[i].range.from.id.id );
-                  return 0;
+                  printf("st_typedef_find: array's %s limit %s is not "
+											"integer/char\n",
+                      entry->name, l->range.from.id.id );
+                  return Failure;
                 }
               } else {
-                printf("st_typedef_find: array's %s limit %s is not defined\n",
-                    entry->name, entry->array.dims.limits[i].range.from.id.id);
-                return 0;
+                printf("st_typedef_find: array's %s limit %s is not "
+										"defined\n",
+                    entry->name, l->range.from.id.id);
+                return Failure;
               }
             }
 
-            if ( entry->array.dims.limits[i].range.to.type == LT_Id )
+            if ( l->range.to.type == LT_Id )
             {
-              var = st_var_find( entry->array.dims.limits[i].range.to.id.id, scope );
+              var = st_var_find( l->range.to.id.id, scope );
 
               if ( var ) {
-                if ( var->type.dataType != VT_Integer && var->type.dataType != VT_Char ) {
-                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                      entry->name, entry->array.dims.limits[i].range.to.id.id );
-                  return 0;
+                if ( var->type.dataType != VT_Integer 
+										&& var->type.dataType != VT_Char ) {
+                  printf("st_typedef_find: array's %s limit %s is not "
+											"integer/char\n",
+                      entry->name, l->range.to.id.id );
+                  return Failure;
                 }
                 continue;
               }
 
-              constant = st_const_find(entry->array.dims.limits[i].range.to.id.id, scope);
+              constant = st_const_find( l->range.to.id.id, scope );
 
               if ( constant ) {
                 if ( constant->constant.type != VT_Cconst 
                     && constant->constant.type != VT_Iconst ) {
-                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                      entry->name, entry->array.dims.limits[i].range.to.id.id );
-                  return 0;
+                  printf("st_typedef_find: array's %s limit %s is not "
+											"integer/char\n",
+                      entry->name, l->range.to.id.id );
+                  return Failure;
                 }
               } else {
-                printf("st_typedef_find: array's %s limit %s is not defined\n",
-                    entry->name, entry->array.dims.limits[i].range.to.id.id);
-                return 0;
+                printf("st_typedef_find: array's %s limit %s is not "
+										"defined\n",
+                    entry->name, l->range.to.id.id);
+                return Failure;
               }
 
 
@@ -129,33 +141,37 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
           }
           else
           {
-            if ( entry->array.dims.limits[i].limit.type == LT_Id )
+            if ( l->limit.type == LT_Id )
             {
 
-              var = st_var_find( entry->array.dims.limits[i].limit.id.id, scope );
+              var = st_var_find( l->limit.id.id, scope );
 
               if ( var ) {
-                if ( var->type.dataType != VT_Integer && var->type.dataType != VT_Char ) {
-                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                      entry->name, entry->array.dims.limits[i].limit.id.id );
-                  return 0;
+                if ( var->type.dataType != VT_Integer 
+										&& var->type.dataType != VT_Char ) {
+                  printf("st_typedef_find: array's %s limit %s is not "
+											"integer/char\n",
+                      entry->name, l->limit.id.id );
+                  return Failure;
                 }
                 continue;
               }
 
-              constant = st_const_find(entry->array.dims.limits[i].limit.id.id, scope);
+              constant = st_const_find(l->limit.id.id, scope);
 
               if ( constant ) {
                 if ( constant->constant.type != VT_Cconst 
                     && constant->constant.type != VT_Iconst ) {
-                  printf("st_typedef_find: array's %s limit %s is not integer/char\n",
-                      entry->name, entry->array.dims.limits[i].limit.id.id );
-                  return 0;
+                  printf("st_typedef_find: array's %s limit %s is not "
+											"integer/char\n",
+                      entry->name, l->limit.id.id );
+                  return Failure;
                 }
               } else {
-                printf("st_typedef_find: array's %s limit %s is not defined\n",
-                    entry->name, entry->array.dims.limits[i].limit.id.id);
-                return 0;
+                printf("st_typedef_find: array's %s limit %s is not "
+										"defined\n",
+                    entry->name, l->limit.id.id);
+                return Failure;
               }
 
 
@@ -167,25 +183,34 @@ int st_typedef_register(typedefs_entry_t *entry, scope_t *scope)
 
     case TT_List:
       printf("st_typedef_register: TT_List is not implemented\n");
-      return 0;
+      return Failure;
       break;
 
     case TT_Set:
       printf("st_typedef_register: TT_Set is not implemented\n");
-      return 0;
+      return Failure;
       break;
 
     case TT_Range:
       printf("st_typedef_register: TT_Range is not implemented\n");
-      return 0;
+      return Failure;
       break;
   }
+	
+	int size = st_get_type_size(VT_User, entry->name, scope);
+	
+	if ( size == 0 ) {
+		printf("Type %s is incomplete\n", entry->name);
+		return Failure;
+	}
 
   scope->typedefs = ( typedefs_entry_t* ) realloc( scope->typedefs,
       sizeof(typedefs_entry_t) * ( scope->typedefs_size +1 ));
   scope->typedefs[ scope->typedefs_size ++ ] = *entry;
-  printf("registered type %s\n", entry->name);
-  return Success;
+		
+  printf("registered type %s size %d\n", entry->name, size);
+
+	return Success;
 }
 
 var_t *st_var_define(char* id, data_type_t type, scope_t *scope)
@@ -203,7 +228,8 @@ var_t *st_var_define(char* id, data_type_t type, scope_t *scope)
     return 0;
   }
 
-  scope->vars = ( var_t * ) realloc(scope->vars, sizeof(var_t) * (scope->vars_size+1) );
+  scope->vars = ( var_t * ) realloc(scope->vars
+					, sizeof(var_t) * (scope->vars_size+1) );
   scope->vars[ scope->vars_size ].id = id;
   scope->vars[ scope->vars_size ].pass = 0;
   scope->vars[ scope->vars_size ].reference = NULL;
@@ -243,7 +269,8 @@ func_t *st_func_find(char *id, scope_t *global)
 }
 
 
-func_t *st_func_define(char *id, data_type_t type, var_t *params, int size, scope_t *scope)
+func_t *st_func_define(char *id, data_type_t type, var_t *params,
+		int size, scope_t *scope)
 {
   int i;
   func_t *func = NULL;
@@ -255,7 +282,8 @@ func_t *st_func_define(char *id, data_type_t type, var_t *params, int size, scop
     }
   }
 
-  scope->funcs = ( func_t* ) realloc( scope->funcs, (scope->funcs_size+1) * ( sizeof(func_t)));
+  scope->funcs = ( func_t* ) realloc( scope->funcs
+			, (scope->funcs_size+1) * ( sizeof(func_t)));
   func = scope->funcs + scope->funcs_size++;
 
   func->id = id;
@@ -274,7 +302,8 @@ const_t* st_const_define(char *id, constant_t *constant, scope_t *scope)
     return NULL;
   }
 
-  scope->consts = ( const_t* ) realloc( scope->consts, (scope->consts_size+1) * sizeof(const_t));
+  scope->consts = ( const_t* ) realloc( scope->consts, 
+					(scope->consts_size+1) * sizeof(const_t));
   scope->consts[ scope->consts_size ].id = id;
   scope->consts[ scope->consts_size ].constant = *constant;
 
@@ -341,5 +370,7 @@ int st_get_type_size(int type, char* userType, scope_t *scope)
     case TT_Range:
     break;
   }
+
+	return 0;
 }
 

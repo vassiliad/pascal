@@ -135,15 +135,20 @@ declarations : constdefs typedefs vardefs
 
   printf("Declarations::constdefs %d\n", $1.size);
   for ( i = 0 ; i < $1.size; i ++ ) {
-    st_const_define($1.ids[i], $1.constants+i, scope);
-    printf("constant: %s (%d)\n", $1.ids[i], $1.constants[i].type);
+    if ( st_const_define($1.ids[i], $1.constants+i, scope) == NULL ) {
+			yyerror("Could not define Constant");
+			return 1;
+		}
   }
 
   printf("Declarations::typedefs %d\n", $2.size);
 
   for (i=0; i<$2.size; i++ ) {
     printf("%s -> %s\n", $2.typedefs[i].name, typedef_types[$2.typedefs[i].type]);
-    st_typedef_register($2.typedefs+i, scope);
+    if ( st_typedef_register($2.typedefs+i, scope) != Success ) {
+			yyerror("Could not define typedef");
+			return 1;
+		}
   }
 
   printf("Declarations::vardefs %d\n", $3.size);
@@ -151,7 +156,10 @@ declarations : constdefs typedefs vardefs
     printf("type: %d %s\n", $3.types[i].dataType, ($3.types[i].dataType==VT_User ? $3.types[i].userType : "standard_type" ));
     for (j=0; j<$3.ids[i].size; j++) {
       printf("\t%s\n", $3.ids[i].ids[j]);
-      st_var_define($3.ids[i].ids[j], $3.types[i], scope);
+      if ( st_var_define($3.ids[i].ids[j], $3.types[i], scope) == NULL ) {
+				printf("Could not define var");
+				return 1;
+			}
     }
   }
 
