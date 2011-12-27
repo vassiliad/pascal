@@ -79,7 +79,7 @@ struct NODE_T
     char bconst;
     float rconst;
 		node_t *jump;
-		node_branchz_t *branchz;
+		node_branchz_t branchz;
   };
 
   node_t *next, *prev;

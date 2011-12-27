@@ -5,13 +5,13 @@ void print_instruction_tree(node_t *node, FILE* output)
 		return;
 	
 	if ( node->label )
-		fprintf("%s : ", node->label );
+		fprintf(output, "%s : ", node->label );
 	
 	switch ( node->type ) {
 		case NT_Add:
-			if ( node->left->type == NT_Iconst ) {
+			if ( node->bin.left->type == NT_Iconst ) {
 
-				if ( node->right->type == NT_Iconst ) {
+				if ( node->bin.right->type == NT_Iconst ) {
 					
 				} else {
 					// right is supposed to reside in a register

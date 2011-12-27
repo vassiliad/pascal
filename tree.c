@@ -43,11 +43,10 @@ node_t *tree_generate_branchz(node_t *condition, node_t *destination)
 	node_t *ret;
 
 	ret = ( node_t * ) calloc(1, sizeof(node_t));
-	ret->branchz = ( node_branchz_t * ) calloc(1, sizeof(node_branchz_t));
 
 	ret->type = NT_BranchZ;
-	ret->branchz->destination = destination;
-	ret->branchz->condition = condition;
+	ret->branchz.destination = destination;
+	ret->branchz.condition = condition;
 
 	return ret;
 }
