@@ -28,7 +28,7 @@ enum NodeType
   NT_String,  // node_string_t ( string )
   NT_Not,     // node_t ( not )
 	NT_If,			// node_if_t ( _if )
-	NT_Branch,	// node_t ( branch )
+	NT_Jump,		// node_t ( jump )
 	NT_BranchZ, // node_branchz_t ( branchZ )
 };
 
@@ -78,7 +78,7 @@ struct NODE_T
     char cconst;
     char bconst;
     float rconst;
-		node_t *branch;
+		node_t *jump;
 		node_branchz_t *branchz;
   };
 

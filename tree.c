@@ -1,17 +1,67 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tree.h"
 #include "expressions.h"
 
 
-node_t *tree_generate_node(statement_t *node, scope_t *scope);
+node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope);
 node_t *tree_generate_address(variable_t *var);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
 node_t *tree_generate_store(variable_t *var, expression_t *expr, scope_t *scope);
 node_t *tree_generate_load(variable_t *var, scope_t *scope);
 node_t *tree_generate_sconst(char *string);
 node_t *tree_generate_value( expression_t *expr, scope_t *scope);
+node_t *tree_generate_branchz( node_t *condition, node_t *destination);
+node_t *tree_generate_jump(node_t* destination);
 
+char *instr_label_unique(int type);
+
+enum LabelTypes
+{
+	Label_Else,
+	Label_Join,
+	Label_Enter,
+	Label_Exit,
+	/*  Add more as needed then update instr_label_unique::counter */
+};
+
+node_t *tree_generate_jump(node_t* destination)
+{
+	node_t *ret;
+
+	ret = ( node_t* ) calloc(1, sizeof(node_t));
+	
+	ret->type = NT_Jump;
+	ret->jump = destination;
+
+	return ret;
+}
+
+node_t *tree_generate_branchz(node_t *condition, node_t *destination)
+{
+	node_t *ret;
+	
+	ret = ( node_t * ) calloc(1, sizeof(node_t));
+	ret->branchz = ( node_branchz_t * ) calloc(1, sizeof(node_branchz_t));
+	
+	ret->type = NT_BranchZ;
+	ret->branchz->destination = destination;
+	ret->branchz->condition = condition;
+
+	return ret;
+}
+
+char *instr_label_unique(int type)
+{
+	static unsigned int counter[] = { 0, 0, 0, 0 };
+	static char lookup[4][10] = { "Else", "Join", "Enter", "Exit" };
+
+	char temp[100];
+
+	sprintf(temp, "%s_%d", lookup[type], ++counter[type]);
+	return strdup(temp);
+}
 
 
 node_t *tree_generate_tree(statement_t *root, scope_t *scope)
@@ -22,20 +72,16 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	if ( root == NULL )
 		return NULL;
 
-	node = tree_generate_node( root, scope );
+	node = tree_generate_node( NULL, root, scope );
 
 	if ( node == NULL )
 		return NULL;
 
 	for ( p = root->next; p ; p = p->next ) {
-		cur = tree_generate_node( p, scope );
+		cur = tree_generate_node(cur, p, scope );
 
 		if ( cur == NULL )
 			return NULL;
-
-		node->next = cur;
-		cur->prev  = node;
-		node = cur;
 	}
 
 	return node;
@@ -144,50 +190,53 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 					case MuldivandopDiv:
 					case MuldivandopM:
 					case MuldivandopMod:
-					case AddopP: {
-												 expression_t *e_left, *e_right;
-												 node_t *left, *right;
+					case AddopP:
+						{
+							expression_t *e_left, *e_right;
+							node_t *left, *right;
 
-												 // have constants always on the right site ( might prove usefull )
-												 if ( expr->binary.left->type == ET_Constant ) {
-													 e_right= expr->binary.left;
-													 e_left = expr->binary.right;
-												 } else {
-													 e_left = expr->binary.left;
-													 e_right = expr->binary.right;
-												 }
+							// have constants always on the right operand
+							// ( might prove usefull )
 
-												 left = tree_generate_value( e_left, scope );
-												 right = tree_generate_value( e_right, scope );
+							if ( expr->binary.left->type == ET_Constant ) {
+								e_right= expr->binary.left;
+								e_left = expr->binary.right;
+							} else {
+								e_left = expr->binary.left;
+								e_right = expr->binary.right;
+							}
 
-												 node = ( node_t * ) calloc(1, sizeof(node_t));
-												 switch ( expr->binary.op )
-												 {
-													 case AddopP:
-														 node->type = NT_Add;
-														 break;
+							left = tree_generate_value( e_left, scope );
+							right = tree_generate_value( e_right, scope );
 
-													 case AddopM:
-														 node->type = NT_Sub;
-														 break;
+							node = ( node_t * ) calloc(1, sizeof(node_t));
+							switch ( expr->binary.op )
+							{
+								case AddopP:
+									node->type = NT_Add;
+									break;
 
-													 case MuldivandopDiv:
-														 node->type = NT_Div;
-														 break;
+								case AddopM:
+									node->type = NT_Sub;
+									break;
 
-													 case MuldivandopMod:
-														 node->type = NT_Mod;
-														 break;
+								case MuldivandopDiv:
+									node->type = NT_Div;
+									break;
 
-													 case MuldivandopM:
-														 node->type = NT_Mult;
-														 break;
-												 }
+								case MuldivandopMod:
+									node->type = NT_Mod;
+									break;
 
-												 node->bin.left = left;
-												 node->bin.right = right;
-											 } 
-											 break;
+								case MuldivandopM:
+									node->type = NT_Mult;
+									break;
+							}
+
+							node->bin.left = left;
+							node->bin.right = right;
+						} 
+						break;
 				}
 			}
 	}
@@ -195,7 +244,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	return node;
 }
 
-node_t *tree_generate_node(statement_t *node, scope_t *scope)
+node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 {  
 	node_t *_node = NULL;
 
@@ -212,8 +261,8 @@ node_t *tree_generate_node(statement_t *node, scope_t *scope)
 				node_t *var, *data;
 
 				if ( node->assignment.type == AT_Expression ) {
-					var = tree_generate_store( node->assignment.var, node->assignment.expr
-							, scope);
+					var = tree_generate_store( node->assignment.var
+							, node->assignment.expr, scope);
 					data = tree_generate_value( node->assignment.expr, scope );
 				} else {
 					var = tree_generate_store_str(node->assignment.var
@@ -225,22 +274,100 @@ node_t *tree_generate_node(statement_t *node, scope_t *scope)
 				_node->type = NT_Store;
 				_node->load.address = var;
 				_node->load.data = data;
+				
+				_node->prev = prev;
+				if ( prev )
+					prev->next = _node;
+
 				break;
 			}
 
 		case ST_If:
-		{
-			node_t *_true, *_false, *condition, *join;
+			{
+				node_t *_true, *_false, *condition, *join;
+				
+				if ( node->join ) {
+					join = tree_generate_node(NULL,node->join, scope);
+					join->label = instr_label_unique(Label_Join);
+				} else
+					join = NULL;
 
-			if ( node->join )
-				join = tree_generate_node(node->join, scope);
+				condition = tree_generate_value(node->_if.condition, scope);
 
-			condition = tree_generate_value(node->_if.condition, scope);
-			//TODO: jump based on the condition value
+				if ( node->_if._true )
+					_true = tree_generate_node(prev, node->_if._true, scope);
 
-			if ( node->_if._true )
-				_true = tree_generate_value(node->_if.condition, scope);
-		}
+				if ( node->_if._false ) {
+					// when else exists make a jump to the beginning of
+					// that branch, then just continue to the join node
+					node_t *temp = _true;
+
+					_false = tree_generate_node(NULL, node->_if._false, scope);
+					_false->label = instr_label_unique(Label_Else);
+					
+					_true = tree_generate_branchz(condition, _false);
+					
+					_true->next = temp;
+					temp->prev = _true;
+
+					_true = temp;
+					
+					// Place a jump as the last instruction of _true
+					// towards join
+
+					temp = _true;
+					
+					while ( temp->next )
+						temp = temp->next;
+					
+					temp->next = tree_generate_jump(join);
+
+					// Then connect the last node of _false to join
+					temp = _false;
+
+					while ( temp->next )
+						temp = temp->next;
+					
+					// join->prev will always point to _true
+					temp->next = join;
+					if ( join )
+						join->prev = _true;
+					
+				} else {
+					// otherwise make a jump at the join node
+					// inject the branch before the actuall _true instructions
+
+					node_t *temp = _true;
+					
+					_true = tree_generate_branchz(condition, join);
+					
+					_true->next = temp;
+					temp->prev = _true;
+					
+					_true = temp;
+
+					// Then connect the last node of _true to join
+					temp = _true;
+
+					while ( temp->next )
+						temp = temp->next;
+					
+					// join->prev will always point to _true
+					temp->next = join;
+					if ( join )
+						join->prev = _true;
+
+				}
+
+				_true->prev = prev;
+				if ( prev )
+					prev->next = _true;
+				
+				if ( join == NULL )
+					return _true;
+#warning above line is a hack
+				return join;
+			}
 			break;
 
 		case ST_While:
