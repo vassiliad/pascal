@@ -215,6 +215,8 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 							if ( left->type == right->type )
 							{
+								node = ( node_t* ) calloc(1, sizeof(node_t));
+
 								switch ( left->type )
 								{
 									case NT_Iconst:
@@ -222,46 +224,68 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 											switch ( expr->binary.op) 
 											{
 												case AddopP:
-													break;
+													node->type = NT_Iconst;
+													node->iconst = left->iconst + right->iconst;
+												break;
 
 												case AddopM:
-													break;
+													node->type = NT_Iconst;
+													node->iconst = left->iconst - right->iconst;
+												break;
 
 												case RelopG:
-													break;
+													node->type = NT_Bconst;
+													node->bconst = left->iconst > right->iconst;
+												break;
 
 												case RelopGE:
-													break;
+													node->type = NT_Bconst;
+													node->bconst = left->iconst >= right->iconst;
+												break;
 
 												case RelopL:
-													break;
+													node->type = NT_Bconst;
+													node->bconst = left->iconst < right->iconst;
+												break;
 
 												case RelopLE:
-													break;
+													node->type = NT_Bconst;
+													node->bconst = left->iconst <= right->iconst;
+												break;
 
 												case RelopD:
-													break;
+													node->type = NT_Bconst;
+													node->bconst = ( left->iconst != right->iconst );
+												break;
 
 												case Orop:
-													break;
-
-												case MuldivandopDiv:
-													break;
+													node->type = NT_Iconst;
+													node->iconst = ( left->iconst | right->iconst );
+												break;
 
 												case MuldivandopD:
-													break;
+												case MuldivandopDiv:
+													node->type = NT_Iconst;
+													node->iconst = ( left->iconst / right->iconst );
+												break;
+
 
 												case MuldivandopAnd:
-													break;
+													node->type = NT_Iconst;
+													node->iconst = ( left->iconst & right->iconst );
+												break;
 
 												case MuldivandopMod:
-													break;
+													node->type = NT_Iconst;
+													node->iconst = left->iconst % right->iconst;
+												break;
 
-												case Inop:
-													break;
 
 												case  Equop:
-													break;
+#warning maybe this should not be done?	
+													node->type = NT_Bconst;
+													node->bconst = (left->iconst == right->iconst);
+												break;
 
 											}
 										}
@@ -272,46 +296,69 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 										switch ( expr->binary.op) 
 										{
 											case AddopP:
+													node->type = NT_Cconst;
+													node->cconst = left->cconst + right->cconst;
 												break;
 
-											case AddopM:
+												case AddopM:
+													node->type = NT_Cconst;
+													node->cconst = left->cconst - right->cconst;
 												break;
 
-											case RelopG:
+												case RelopG:
+													node->type = NT_Bconst;
+													node->bconst = left->cconst > right->cconst;
 												break;
 
-											case RelopGE:
+												case RelopGE:
+													node->type = NT_Bconst;
+													node->bconst = left->cconst >= right->cconst;
 												break;
 
-											case RelopL:
+												case RelopL:
+													node->type = NT_Bconst;
+													node->bconst = left->cconst < right->cconst;
 												break;
 
-											case RelopLE:
+												case RelopLE:
+													node->type = NT_Bconst;
+													node->bconst = left->cconst <= right->cconst;
 												break;
 
-											case RelopD:
+												case RelopD:
+													node->type = NT_Bconst;
+													node->bconst = ( left->cconst != right->cconst );
 												break;
 
-											case Orop:
+												case Orop:
+													node->type = NT_Cconst;
+													node->cconst = ( left->cconst | right->cconst );
 												break;
 
-											case MuldivandopDiv:
+												case MuldivandopD:
+												case MuldivandopDiv:
+													node->type = NT_Cconst;
+													node->cconst = ( left->cconst / right->cconst );
 												break;
 
-											case MuldivandopD:
+
+												case MuldivandopAnd:
+													node->type = NT_Cconst;
+													node->cconst = ( left->cconst & right->cconst );
 												break;
 
-											case MuldivandopAnd:
+												case MuldivandopMod:
+													node->type = NT_Cconst;
+													node->cconst = left->cconst % right->cconst;
 												break;
 
-											case MuldivandopMod:
+
+												case  Equop:
+#warning maybe this should not be done?	
+													node->type = NT_Bconst;
+													node->bconst = (left->cconst == right->cconst);
 												break;
 
-											case Inop:
-												break;
-
-											case  Equop:
-												break;
 										}
 										break;
 
@@ -319,45 +366,69 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 										switch ( expr->binary.op) 
 										{
 											case AddopP:
+													node->type = NT_Rconst;
+													node->rconst = left->rconst + right->rconst;
 												break;
 
-											case AddopM:
+												case AddopM:
+													node->type = NT_Rconst;
+													node->rconst = left->rconst - right->rconst;
 												break;
 
-											case RelopG:
+												case RelopG:
+													node->type = NT_Bconst;
+													node->bconst = left->rconst > right->rconst;
 												break;
 
-											case RelopGE:
+												case RelopGE:
+													node->type = NT_Bconst;
+													node->bconst = left->rconst >= right->rconst;
 												break;
 
-											case RelopL:
+												case RelopL:
+													node->type = NT_Bconst;
+													node->bconst = left->rconst < right->rconst;
 												break;
 
-											case RelopLE:
+												case RelopLE:
+													node->type = NT_Bconst;
+													node->bconst = left->rconst <= right->rconst;
 												break;
 
-											case RelopD:
+												case RelopD:
+#warning do a fabs<epsilon here ?
+													node->type = NT_Bconst;
+													node->bconst = ( left->rconst != right->rconst );
 												break;
 
-											case Orop:
+												case Orop:
+#warning is orop supported???
 												break;
 
-											case MuldivandopDiv:
+												case MuldivandopDiv:
+													node->type = NT_Rconst;
+													node->rconst = ( left->cconst / right->cconst );
 												break;
 
-											case MuldivandopD:
+
+												case MuldivandopD:
+													node->type = NT_Rconst;
+													node->rconst = floor( left->rconst / right->rconst );
 												break;
 
-											case MuldivandopAnd:
+												case MuldivandopAnd:
+#warning is and supported?
 												break;
 
-											case MuldivandopMod:
+												case MuldivandopMod:
+#warning is Mod supported??
 												break;
 
-											case Inop:
-												break;
 
-											case  Equop:
+												case  Equop:
+#warning maybe this should not be done?	
+													node->type = NT_Bconst;
+													node->bconst = (left->rconst == right->rconst);
 												break;
 										}
 										break;
