@@ -77,6 +77,8 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	if ( node == NULL )
 		return NULL;
 
+	cur = node;
+	
 	for ( p = root->next; p ; p = p->next ) {
 		cur = tree_generate_node(cur, p, scope );
 
@@ -276,6 +278,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 				_node->load.data = data;
 				
 				_node->prev = prev;
+
 				if ( prev )
 					prev->next = _node;
 

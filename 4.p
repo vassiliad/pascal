@@ -23,9 +23,7 @@ begin
   x:= papa[0,'a'].arr[0];
 
 	if ( 1 <  3 ) then 
-		begin
-			x:= 5;
-		end
+		x:= 5 ;
 	else
 		x:= 10;
 	
