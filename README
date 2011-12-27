@@ -1,1 +1,8 @@
-long live the ladybug race!
+Pascal Compiler written in C using Flex/Bison for the needs of http://inf-server.inf.uth.gr/courses/CE432 course
+
+TODO:
+	[High   Priority] Fix If/Else
+	[High   Priority] Finish the tree generation ( tree.c/h )
+	[Medium Priority] Complete symbol_table.c/h
+	[Low    Priority] Implement all pascal features
+
