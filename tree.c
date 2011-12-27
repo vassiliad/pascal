@@ -31,7 +31,7 @@ node_t *tree_generate_jump(node_t* destination)
 	node_t *ret;
 
 	ret = ( node_t* ) calloc(1, sizeof(node_t));
-	
+
 	ret->type = NT_Jump;
 	ret->jump = destination;
 
@@ -41,10 +41,10 @@ node_t *tree_generate_jump(node_t* destination)
 node_t *tree_generate_branchz(node_t *condition, node_t *destination)
 {
 	node_t *ret;
-	
+
 	ret = ( node_t * ) calloc(1, sizeof(node_t));
 	ret->branchz = ( node_branchz_t * ) calloc(1, sizeof(node_branchz_t));
-	
+
 	ret->type = NT_BranchZ;
 	ret->branchz->destination = destination;
 	ret->branchz->condition = condition;
@@ -78,7 +78,7 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 		return NULL;
 
 	cur = node;
-	
+
 	for ( p = root->next; p ; p = p->next ) {
 		cur = tree_generate_node(cur, p, scope );
 
@@ -208,8 +208,162 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 								e_right = expr->binary.right;
 							}
 
+							// slight optimization when both operands are constants
+							// compute the value in compile time
+
 							left = tree_generate_value( e_left, scope );
 							right = tree_generate_value( e_right, scope );
+
+							if ( left->type == right->type )
+							{
+								switch ( left->type )
+								{
+									case NT_Iconst:
+										{
+											switch ( expr->binary.op) 
+											{
+												case AddopP:
+													break;
+
+												case AddopM:
+													break;
+
+												case RelopG:
+													break;
+
+												case RelopGE:
+													break;
+
+												case RelopL:
+													break;
+
+												case RelopLE:
+													break;
+
+												case RelopD:
+													break;
+
+												case Orop:
+													break;
+
+												case MuldivandopDiv:
+													break;
+
+												case MuldivandopD:
+													break;
+
+												case MuldivandopAnd:
+													break;
+
+												case MuldivandopMod:
+													break;
+
+												case Inop:
+													break;
+
+												case  Equop:
+													break;
+
+											}
+										}
+										break;
+
+
+									case NT_Cconst:
+										switch ( expr->binary.op) 
+										{
+											case AddopP:
+												break;
+
+											case AddopM:
+												break;
+
+											case RelopG:
+												break;
+
+											case RelopGE:
+												break;
+
+											case RelopL:
+												break;
+
+											case RelopLE:
+												break;
+
+											case RelopD:
+												break;
+
+											case Orop:
+												break;
+
+											case MuldivandopDiv:
+												break;
+
+											case MuldivandopD:
+												break;
+
+											case MuldivandopAnd:
+												break;
+
+											case MuldivandopMod:
+												break;
+
+											case Inop:
+												break;
+
+											case  Equop:
+												break;
+										}
+										break;
+
+									case NT_Rconst:
+										switch ( expr->binary.op) 
+										{
+											case AddopP:
+												break;
+
+											case AddopM:
+												break;
+
+											case RelopG:
+												break;
+
+											case RelopGE:
+												break;
+
+											case RelopL:
+												break;
+
+											case RelopLE:
+												break;
+
+											case RelopD:
+												break;
+
+											case Orop:
+												break;
+
+											case MuldivandopDiv:
+												break;
+
+											case MuldivandopD:
+												break;
+
+											case MuldivandopAnd:
+												break;
+
+											case MuldivandopMod:
+												break;
+
+											case Inop:
+												break;
+
+											case  Equop:
+												break;
+										}
+										break;
+								}
+							}
 
 							node = ( node_t * ) calloc(1, sizeof(node_t));
 							switch ( expr->binary.op )
@@ -276,7 +430,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 				_node->type = NT_Store;
 				_node->load.address = var;
 				_node->load.data = data;
-				
+
 				_node->prev = prev;
 
 				if ( prev )
@@ -288,7 +442,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 		case ST_If:
 			{
 				node_t *_true, *_false, *condition, *join;
-				
+
 				if ( node->join ) {
 					join = tree_generate_node(NULL,node->join, scope);
 					join->label = instr_label_unique(Label_Join);
@@ -307,22 +461,22 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 
 					_false = tree_generate_node(NULL, node->_if._false, scope);
 					_false->label = instr_label_unique(Label_Else);
-					
+
 					_true = tree_generate_branchz(condition, _false);
-					
+
 					_true->next = temp;
 					temp->prev = _true;
 
 					_true = temp;
-					
+
 					// Place a jump as the last instruction of _true
 					// towards join
 
 					temp = _true;
-					
+
 					while ( temp->next )
 						temp = temp->next;
-					
+
 					temp->next = tree_generate_jump(join);
 
 					// Then connect the last node of _false to join
@@ -330,23 +484,23 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 
 					while ( temp->next )
 						temp = temp->next;
-					
+
 					// join->prev will always point to _true
 					temp->next = join;
 					if ( join )
 						join->prev = _true;
-					
+
 				} else {
 					// otherwise make a jump at the join node
 					// inject the branch before the actuall _true instructions
 
 					node_t *temp = _true;
-					
+
 					_true = tree_generate_branchz(condition, join);
-					
+
 					_true->next = temp;
 					temp->prev = _true;
-					
+
 					_true = temp;
 
 					// Then connect the last node of _true to join
@@ -354,7 +508,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 
 					while ( temp->next )
 						temp = temp->next;
-					
+
 					// join->prev will always point to _true
 					temp->next = join;
 					if ( join )
@@ -365,7 +519,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 				_true->prev = prev;
 				if ( prev )
 					prev->next = _true;
-				
+
 				if ( join == NULL )
 					return _true;
 #warning above line is a hack
