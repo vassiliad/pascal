@@ -100,7 +100,8 @@ scope_t *scope;
 %type <params> parameter_list formal_parameters
 %type <constdefs> constdefs constant_defs
 %type <statement> statement matched unmatched matched_if_statement case_statement while_statement
-%type <statement> for_statement with_statement subprogram_call io_statement comp_statement 
+%type <statement> unmatched_for_statement unmatched_with_statement subprogram_call io_statement comp_statement 
+%type <statement> matched_for_statement matched_with_statement io_statement
 %type <statement> assignment statements
 %type <iter_space> iter_space
 %error-verbose
@@ -830,15 +831,15 @@ matched: assignment
 {
   $$ = $1;
 }
-| while_statement 
+| matched_while_statement 
 {
   $$ = $1;
 }
-| for_statement 
+| matched_for_statement 
 {
   $$ = $1;
 }
-| with_statement 
+| matched_with_statement 
 {
   $$ = $1;
 }
@@ -846,7 +847,7 @@ matched: assignment
 {
   $$ = $1;
 }
-| io_statement 
+| matched_io_statement 
 {
   $$ = $1;
 }
@@ -875,6 +876,9 @@ unmatched: IF expression THEN statement
 {
   $$ = statement_if($2, $4, $6);
 }
+| unmatched_while_statement
+| unmatched_for_statement
+| unmatched_with_statement
 ;
 
 assignment : variable ASSIGN expression 
@@ -911,13 +915,25 @@ case_tail : SEMI OTHERWISE COLON statement
 | 
 ;
 
-while_statement : WHILE expression DO statement 
+unmatched_while_statement : WHILE expression DO unmatched
 {
   $$ = statement_while($2, $4);
 }
 ;
 
-for_statement : FOR ID ASSIGN iter_space DO statement 
+matched_while_statement : WHILE expression DO matched
+{
+  $$ = statement_while($2, $4);
+}
+;
+
+unmatched_for_statement : FOR ID ASSIGN iter_space DO unmatched 
+{
+  $$ = statement_for($2, &$4, $6, scope);
+}
+;
+
+matched_for_statement : FOR ID ASSIGN iter_space DO matched 
 {
   $$ = statement_for($2, &$4, $6, scope);
 }
@@ -937,12 +953,25 @@ iter_space : expression TO expression
 }
 ;
 
-with_statement : WITH variable DO 
+unmatched_with_statement : WITH variable DO 
 {
   scope = st_init(scope);
   $<statement>$ = statement_with($2, NULL, scope);
 }
-statement 
+unmatched
+{
+  $$ = $<statement>4;
+  scope = st_destroy(scope);
+  $$->with.statement = $5;
+}
+;
+
+matched_with_statement : WITH variable DO 
+{
+  scope = st_init(scope);
+  $<statement>$ = statement_with($2, NULL, scope);
+}
+matched
 {
   $$ = $<statement>4;
   scope = st_destroy(scope);
