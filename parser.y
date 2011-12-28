@@ -1,11 +1,6 @@
 %{
   /*
      TODO
-     [0] Fix dangling else
-   *should have been taken care of with the addition of the
-   matched/unmatched rules.
-   [1] Constants are not defined atm, expressions should be built first.
-   [2] With should shadow its parent definitions
    */
 
 #include <stdio.h>
@@ -99,9 +94,9 @@ scope_t *scope;
 %type <pass> pass
 %type <params> parameter_list formal_parameters
 %type <constdefs> constdefs constant_defs
-%type <statement> statement matched unmatched matched_if_statement case_statement while_statement
-%type <statement> unmatched_for_statement unmatched_with_statement subprogram_call io_statement comp_statement 
-%type <statement> matched_for_statement matched_with_statement io_statement
+%type <statement> statement matched matched_if_statement case_statement while_statement
+%type <statement> subprogram_call io_statement comp_statement unmatched
+%type <statement> for_statement with_statement  
 %type <statement> assignment statements
 %type <iter_space> iter_space
 %error-verbose
@@ -810,51 +805,19 @@ statements : statements SEMI statement
 ;
 
 statement : matched
-{
-  $$ = $1;
-}
 | unmatched
-{
-  $$ = $1;
-}
+
 ;
 
 matched: assignment 
-{
-  $$ = $1;
-}
 | matched_if_statement
-{
-  $$ = $1;
-}
 | case_statement 
-{
-  $$ = $1;
-}
-| matched_while_statement 
-{
-  $$ = $1;
-}
-| matched_for_statement 
-{
-  $$ = $1;
-}
-| matched_with_statement 
-{
-  $$ = $1;
-}
+| while_statement 
+| for_statement 
+| with_statement 
 | subprogram_call 
-{
-  $$ = $1;
-}
-| matched_io_statement 
-{
-  $$ = $1;
-}
+| io_statement 
 | comp_statement
-{
-  $$ = $1;
-}
 |
 {
   $$ = NULL;
@@ -876,9 +839,6 @@ unmatched: IF expression THEN statement
 {
   $$ = statement_if($2, $4, $6);
 }
-| unmatched_while_statement
-| unmatched_for_statement
-| unmatched_with_statement
 ;
 
 assignment : variable ASSIGN expression 
@@ -892,6 +852,9 @@ assignment : variable ASSIGN expression
 ;
 
 case_statement : CASE expression OF cases case_tail END 
+{
+	$$ = NULL;
+}
 ;
 
 cases : cases SEMI single_case 
@@ -915,25 +878,14 @@ case_tail : SEMI OTHERWISE COLON statement
 | 
 ;
 
-unmatched_while_statement : WHILE expression DO unmatched
+while_statement : WHILE expression DO matched
 {
   $$ = statement_while($2, $4);
 }
 ;
 
-matched_while_statement : WHILE expression DO matched
-{
-  $$ = statement_while($2, $4);
-}
-;
 
-unmatched_for_statement : FOR ID ASSIGN iter_space DO unmatched 
-{
-  $$ = statement_for($2, &$4, $6, scope);
-}
-;
-
-matched_for_statement : FOR ID ASSIGN iter_space DO matched 
+for_statement : FOR ID ASSIGN iter_space DO statement
 {
   $$ = statement_for($2, &$4, $6, scope);
 }
@@ -953,25 +905,13 @@ iter_space : expression TO expression
 }
 ;
 
-unmatched_with_statement : WITH variable DO 
-{
-  scope = st_init(scope);
-  $<statement>$ = statement_with($2, NULL, scope);
-}
-unmatched
-{
-  $$ = $<statement>4;
-  scope = st_destroy(scope);
-  $$->with.statement = $5;
-}
-;
 
-matched_with_statement : WITH variable DO 
+with_statement : WITH variable DO 
 {
   scope = st_init(scope);
   $<statement>$ = statement_with($2, NULL, scope);
 }
-matched
+statement
 {
   $$ = $<statement>4;
   scope = st_destroy(scope);
@@ -996,7 +936,13 @@ subprogram_call : ID
 ;
 
 io_statement : READ LPAREN read_list RPAREN 
+{
+	$$ = NULL; 
+}
 | WRITE LPAREN write_list RPAREN
+{
+	$$ = NULL;
+}
 ;
 
 read_list : read_list COMMA read_item 

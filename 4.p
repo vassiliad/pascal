@@ -20,11 +20,11 @@ var x: integer;
     papa: roto;
 
 begin
-  x:= papa[0,'a'].arr[0];
+	x:= papa[0,'a'].arr[0];
 
 	if  1 <  3  then 
-		x:= 5;
+		x:= 5
 	else
-		x:= 10;
+		x:= 10
 	
 end.

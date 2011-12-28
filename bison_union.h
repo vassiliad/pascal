@@ -261,10 +261,8 @@ struct VAR_T
 
 struct STATEMENT_FOR_T
 {
-  int type;
   expression_t *from, *to;
   struct VAR_T *var;
-  int forType;
   statement_t *loop;
 };
 

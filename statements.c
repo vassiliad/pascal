@@ -142,7 +142,6 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   _for->_for.loop = loop;
   _for->_for.from = iter_space->from;
   _for->_for.to = iter_space->to;
-  _for->_for.forType = iter_space->type;
 
   return _for;
 }
