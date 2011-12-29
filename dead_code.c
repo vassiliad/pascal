@@ -4,9 +4,7 @@
 statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 {
 	statement_t *p;
-	printf("ROOT: %p\n", root);
 	for( p = root; p; p=p->next ) {
-		printf("%d\n", p->type);
 		switch ( p->type ) {
 			case ST_If:
 			{
@@ -14,9 +12,21 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 
 				// Attempt to evaluate the condition at compile time
 				if ( n.condition->type == ET_Constant ) {
-					printf("Nai re manga!\n");
+					constant_t constant = n.condition->constant;
+					if ( constant.bconst == True ) {
+						if ( p->prev )
+							p->prev->next = n._true;
+						n._true->prev = p->prev;
+						p=n._true;
+					}	else {
+						if ( p->prev )
+							p->prev->next = n._false;
+						n._false->prev = p->prev;
+						p = n._false;
+					}	
 				} else {
-					printf("SKATA! (%d)\n", n.condition->type);
+					dead_code_elimination(n._true, scope);
+					dead_code_elimination(n._false, scope);
 				}
 			}
 			break;
