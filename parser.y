@@ -2,7 +2,7 @@
   /*
      TODO
    */
-
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +14,17 @@
 #include "tree.h"
 
 #define YYERROR_VERBOSE 1
+
+extern FILE* yyin;
+int enable_constant_propagation = 0;
+
+static const struct option l_opts[] = {
+  	{	"help",		no_argument,		NULL,	'h' },
+		{ "constant_propagation", no_argument, NULL , 'c' }
+	};
+
+static const char s_opts[] = "hc";
+
 
 int yylex(void);
 void yyerror(const char *err);
@@ -847,7 +858,7 @@ assignment : variable ASSIGN expression
 {
 	constant_t temp;
 	// Attempt to evaluate expression in compile time
-	if ( expression_evaluate($3, &temp, scope) == Success ) {
+	if ( enable_constant_propagation && expression_evaluate($3, &temp, scope) == Success ) {
 		/*switch ( temp.type ) {
 			case VT_Cconst:
 				printf("Optimized: %c\n", temp.cconst);
@@ -997,9 +1008,56 @@ void yyerror(const char *err)
   printf("Error[%d]: %s\n", yylineno, err);
 }
 
+void print_help(char *path)
+{
+	char *file;
+	file = strrchr(path, '/');
+	
+	if ( file == NULL )
+		file = path;
+	else
+		file ++;
+	
+	printf("Usage: %s -c SOURCE_FILE\n"
+				 "\n"
+				 "-c --constant_propagation Enable constant propagation\n", file);
+}
+
+
 int main(int argc, char* argv[])
 {
   int ret;
+	
+	if ( argc == 1 ) 
+	{
+		print_help(argv[0]);
+		return 0;		
+	}
+
+	while ( ( ret = getopt_long(argc, argv, s_opts, l_opts, NULL) ) != -1 ) {
+		switch ( ret ) {
+			case 'h':
+				print_help(argv[0]);
+				return 0;
+			break;
+
+			case 'c':
+				enable_constant_propagation = 1;
+			break;
+		}
+	}
+	
+	if ( optind >= argc ) {
+		printf("[-] Missing File argument.\n");
+		return 1;
+	}
+
+	yyin = fopen(argv[optind], "r");
+
+	if ( yyin == NULL ) {
+		printf("[-] Could not open \"%s\".\n", argv[optind]);
+		return 1;
+	}
 
   ret = yyparse();
 
