@@ -13,12 +13,15 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 				// Attempt to evaluate the condition at compile time
 				if ( n.condition->type == ET_Constant ) {
 					constant_t constant = n.condition->constant;
+
+					// if the condition is always true replace IF with TRUE block
 					if ( constant.bconst == True ) {
 						if ( p->prev )
 							p->prev->next = n._true;
 						n._true->prev = p->prev;
 						p=n._true;
 					}	else {
+					// if the condition is always false replace IF with FALSE block
 						if ( p->prev )
 							p->prev->next = n._false;
 						n._false->prev = p->prev;
@@ -32,6 +35,26 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 			break;
 
 			case ST_While:
+			{
+				statement_while_t n = p->_while;
+
+				if ( n.condition->type == ET_Constant ) {
+					constant_t constant = n.condition->constant;
+					
+					// this while's loop will never be executed, remove it
+					if ( constant.bconst == False ) {
+						if ( p->prev )
+							p->prev->next = p->next;
+						if ( p->next )
+							p->next->prev = p->prev;
+					} else {
+					// this while will always execute
+					// TODO this will be done later
+					}
+				} else {
+					dead_code_elimination(n.loop, scope);
+				}
+			}
 			break;
 
 			case ST_For:
