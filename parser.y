@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "dead_code.h"
 #include "constants.h"
 #include "bison_union.h"
 #include "expressions.h"
@@ -25,7 +26,7 @@ static const struct option l_opts[] = {
 		{ "dead_code_elimination", no_argument, NULL , 'd' }
 	};
 
-static const char s_opts[] = "hc";
+static const char s_opts[] = "hcd";
 
 
 int yylex(void);
@@ -117,11 +118,19 @@ scope_t *scope;
 
 program : header declarations subprograms comp_statement DOT 
 {
-  node_t *main_tree = tree_generate_tree( $4, scope );
+  node_t *main_tree;
+	statement_t *body = $4;
+	
+	if ( enable_dead_code_elimination ) {
+		body = dead_code_elimination(body, scope);
+	}
+	
+	main_tree = tree_generate_tree( body, scope );
 
   if ( main_tree == NULL )
   {
-  }
+  } else {
+	}
 }
 ;
 
@@ -215,7 +224,7 @@ constant_defs : constant_defs SEMI ID EQU expression
 
 expression : expression RELOP expression 
 {
-	constant_t temp1, temp2;
+	constant_t temp1, temp2, temp;
 	expression_t *l, *r;
 
 	// Attempt to evaluate expression in compile time
@@ -232,12 +241,17 @@ expression : expression RELOP expression
 		l = $1;
 		r = $3;
 	}
-
+	
   $$ = expression_binary(l, r, $2);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 | expression EQU expression  
 {
-	constant_t temp1, temp2;
+	constant_t temp1, temp2, temp;
 	expression_t *l, *r;
 
 	// Attempt to evaluate expression in compile time
@@ -256,11 +270,16 @@ expression : expression RELOP expression
 	}
 
   $$ = expression_binary(l, r, $2);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 
 | expression INOP expression  
 {
-	constant_t temp1, temp2;
+	constant_t temp1, temp2, temp;
 	expression_t *l, *r;
 
 	// Attempt to evaluate expression in compile time
@@ -279,11 +298,16 @@ expression : expression RELOP expression
 	}
 
   $$ = expression_binary(l, r, $2);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 
 | expression OROP expression  
 {
-	constant_t temp1, temp2;
+	constant_t temp1, temp2, temp;
 	expression_t *l, *r;
 
 	// Attempt to evaluate expression in compile time
@@ -302,11 +326,16 @@ expression : expression RELOP expression
 	}
 
   $$ = expression_binary(l, r, $2);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 
 | expression ADDOP expression  
 {
- 	constant_t temp1, temp2;
+ 	constant_t temp1, temp2, temp;
 	expression_t *l, *r;
 
 	// Attempt to evaluate expression in compile time
@@ -325,11 +354,16 @@ expression : expression RELOP expression
 	}
 
   $$ = expression_binary(l, r, $2);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 
 | expression MULDIVANDOP expression  
 {
- 	constant_t temp1, temp2;
+ 	constant_t temp1, temp2, temp;
 	expression_t *l, *r;
 
 	// Attempt to evaluate expression in compile time
@@ -348,6 +382,11 @@ expression : expression RELOP expression
 	}
 
   $$ = expression_binary(l, r, $2);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 
 | ADDOP expression 
@@ -390,6 +429,11 @@ expression : expression RELOP expression
 	}
 
 	$$=  expression_not(e);
+
+	if ( enable_constant_propagation )
+		if ( expression_evaluate($$, &temp, scope) == Success ) {
+			$$ = expression_constant(temp.type, &(temp.bconst));
+		}
 }
 | variable 
 {
