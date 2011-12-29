@@ -58,9 +58,16 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 			break;
 
 			case ST_For:
+			{
+				statement_for_t n = p->_for;
+				dead_code_elimination(n.loop, scope);
+			}
 			break;
 
 			case ST_With:
+			{
+				dead_code_elimination(p->with.statement ,scope);
+			}
 			break;
 
 			case ST_Assignment:
