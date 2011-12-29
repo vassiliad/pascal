@@ -175,7 +175,7 @@ constdefs : CONST constant_defs SEMI
 constant_defs : constant_defs SEMI ID EQU expression 
 {
   constant_t temp;
-  if ( expression_evaluate($5, &temp) == Failure ) {
+  if ( expression_evaluate($5, &temp, scope) == Failure ) {
     yyerror("constant_defs invalid expression\n");
   } else {
     $$ = $1;
@@ -188,7 +188,7 @@ constant_defs : constant_defs SEMI ID EQU expression
 | ID EQU expression 
 {
   constant_t temp;
-  if ( expression_evaluate($3, &temp) == Failure ) {
+  if ( expression_evaluate($3, &temp, scope) == Failure ) {
     yyerror("constant_defs invalid expression\n");
   } else {
     $$.size = 1;
@@ -845,7 +845,34 @@ unmatched: IF expression THEN statement
 
 assignment : variable ASSIGN expression 
 {
-  $$ = statement_assignment($1, $3, scope);
+	constant_t temp;
+	// Attempt to evaluate expression in compile time
+	if ( expression_evaluate($3, &temp, scope) == Success ) {
+		/*switch ( temp.type ) {
+			case VT_Cconst:
+				printf("Optimized: %c\n", temp.cconst);
+			break;
+			
+			case VT_Iconst:
+				printf("Optimized: %d\n", temp.iconst);
+			break;
+
+			case VT_Bconst:
+				printf("Optimized: %d (bool)\n", temp.bconst);
+			break;
+			
+			case VT_Rconst:
+				printf("Optimized: %g (rconst)\n", temp.rconst);
+			break;
+
+			default:
+				printf("Sapio evaluate expression!\n");
+			break;
+		}*/
+		$$ = statement_assignment($1, expression_constant(temp.type, &(temp.bconst)), scope);
+	} else {
+		$$ = statement_assignment($1, $3, scope);
+	}
 }
 | variable ASSIGN STRING 
 {

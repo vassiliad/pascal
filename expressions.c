@@ -329,7 +329,7 @@ expression_t *expression_variable(variable_t *var, scope_t *scope)
   return ret;
 }
 
-int expression_evaluate(expression_t *expr, constant_t *result)
+int expression_evaluate(expression_t *expr, constant_t *result, scope_t *scope)
 {
   constant_t ret, temp1, temp2;
 
@@ -344,32 +344,37 @@ int expression_evaluate(expression_t *expr, constant_t *result)
       break;
 
     case ET_Not:
-      if ( expression_evaluate(expr->notExpr, &temp1) == Success ) {
+      if ( expression_evaluate(expr->notExpr, &temp1, scope) == Success ) {
         ret = temp1;
         if ( ret.type != VT_Bconst ) {
-          printf("expression_evaluate: NOT operator is only applied to BCONST\n");
-          return 0;
+          return Failure; 
         }
         ret.bconst = !temp1.bconst;
       } else {
-        printf("expression_evaluate: Invalid notExpr\n");
-        return 0;
+        return Failure;
       }
       break;
 
     case ET_Variable:
-      printf("Constant expressions cannot use non-constant variables\n");
-      return 0;
-      break;
+		{
+			const_t *constant;
+
+			constant = st_const_find(expr->variable->id, scope);
+
+			if ( constant == NULL )
+				return Failure;
+			
+			*result = constant->constant;
+			return Success;
+		}
+		break;
 
     case ET_Binary:
-      if ( expression_evaluate(expr->binary.left, &temp1) != Success ) {
-        printf("expression_evaluate: Binary expression has invalid left operand\n");
-        return 0;
+      if ( expression_evaluate(expr->binary.left, &temp1, scope) != Success ) {
+        return Failure;
       }
-      if ( expression_evaluate(expr->binary.right, &temp2) != Success ) {
-        printf("expression_evaluate: Binary expression has invalid right operand\n");
-        return 0;
+      if ( expression_evaluate(expr->binary.right, &temp2, scope) != Success ) {
+        return Failure;
       }
 
       ret = temp1;
@@ -377,8 +382,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
       switch ( expr->binary.op ) {
         case AddopP:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           } 
 
           switch( ret.type ) {
@@ -387,8 +391,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 
             case VT_Bconst:
-              printf("expression_evaluate: BCONST + BCONST is invalid\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -400,15 +403,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
  						
 						default:
-							return 0;
+							return Failure;
 						break;
          }
           break;
 
         case AddopM:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           switch( ret.type ) {
@@ -417,8 +419,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 
             case VT_Bconst:
-              printf("expression_evaluate: BCONST - BCONST is invalid\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -430,15 +431,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
  						
 						default:
-							return 0;
+							return Failure;
 						break;
          }
           break;
 
         case RelopG:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -446,8 +446,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-              printf("expression_evaluate: Cannot compare booleans for RelopG\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -463,7 +462,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 						
 						default:
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -471,8 +470,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
         case RelopGE:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -480,8 +478,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-              printf("expression_evaluate: Cannot compare booleans for RelopGE\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -497,15 +494,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 						
 						default:
-							return 0;
+							return Failure;
 						break;
           }
           break;
 
         case RelopL:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -513,8 +509,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-              printf("expression_evaluate: Cannot compare booleans for RelopL\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -530,7 +525,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
           						
 						default:
-							return 0;
+							return Failure;
 						break;
 					}
 
@@ -538,8 +533,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
         case RelopLE:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -547,8 +541,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               // ret.bconst = temp1.bconst > temp2.bconst;
-              printf("expression_evaluate: Cannot compare booleans for RelopLE\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -564,7 +557,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 
           	default:
-							return 0;
+							return Failure;
 						break;
 					}
 
@@ -572,8 +565,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
         case RelopD:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -581,7 +573,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               ret.bconst = temp1.bconst != temp2.bconst;
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -597,7 +589,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 						
 						default:
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -605,13 +597,11 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
         case Orop:
           if ( temp1.type != VT_Bconst ) {
-            printf("expression_evaluate: OROP's left operand must be VT_Bconst\n");
-            return 0;
+            return Failure;
           }
 
           if ( temp2.type != VT_Bconst ) {
-            printf("expression_evaluate: OROP's right operand must be VT_Bconst\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -622,16 +612,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
           //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret = temp1;
 
           switch ( temp1.type ) {
             case VT_Bconst:
-              printf("expression_evaluate: MuldivandopM cannot have BCONST as operands\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -646,7 +634,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               ret.rconst *= temp2.rconst;
               break;
 						default:
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -656,16 +644,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
         case MuldivandopDiv:
           //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret = temp1;
 
           switch ( temp1.type ) {
             case VT_Bconst:
-              printf("expression_evaluate: MuldivandopDiv cannot have BCONST as operands\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -680,7 +666,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               ret.rconst /= temp2.rconst;
               break;
 						default:
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -690,16 +676,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
         case MuldivandopD:
           //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret = temp1;
 
           switch ( temp1.type ) {
             case VT_Bconst:
-              printf("expression_evaluate: MuldivandopDiv cannot have BCONST as operands\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -715,7 +699,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
               break;
 						default: 
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -723,13 +707,11 @@ int expression_evaluate(expression_t *expr, constant_t *result)
 
         case MuldivandopAnd:
           if ( temp1.type != VT_Bconst ) {
-            printf("expression_evaluate: MuldivandopAnd's left operand must be VT_Bconst\n");
-            return 0;
+            return Failure;
           }
 
           if ( temp2.type != VT_Bconst ) {
-            printf("expression_evaluate: MuldivandopAnd's right operand must be VT_Bconst\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -740,16 +722,14 @@ int expression_evaluate(expression_t *expr, constant_t *result)
         case MuldivandopMod:
           //#warning edw mhpws na kanw cast sto megalutero type? ( cconst->iconst->rconst ? )
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret = temp1;
 
           switch ( temp1.type ) {
             case VT_Bconst:
-              printf("expression_evaluate: MuldivandopMod cannot have BCONST as operands\n");
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -761,11 +741,10 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               break;
 
             case VT_Rconst:
-              printf("expression_evaluate: MuldivandopMod cannot have either operands as RCONST\n");
-              return 0;
+              return Failure;
               break;
 						default:
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -773,14 +752,12 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           break;
         case Inop:
           //#warning NOT IMPLEMENTED
-          printf("expression_evaluate: Inop is not implemented yet\n");
-          return 0;
+          return Failure;
           break;
 
         case  Equop:
           if ( temp1.type != temp2.type ) {
-            printf("expression_evaluate: Missmatching left/right operand types\n");
-            return 0;
+            return Failure;
           }
 
           ret.type = VT_Bconst;
@@ -788,7 +765,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           switch ( temp1.type ) {
             case VT_Bconst:
               ret.bconst = temp1.bconst == temp2.bconst;
-              return 0;
+              return Failure;
               break;
 
             case VT_Cconst:
@@ -803,7 +780,7 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               ret.bconst = temp1.rconst == temp2.rconst;
               break;
 						default:
-							return 0;
+							return Failure;
 						break;
           }
 
@@ -811,15 +788,13 @@ int expression_evaluate(expression_t *expr, constant_t *result)
           break;
 
         default:
-          printf("expression_evaluate: unknown binary operator\n");
-          return 0;
+          return Failure;
           break;
       }
       break;
 
     default:
-      printf("Unknown expression time in expression_evaluate\n");
-      return 0;
+      return Failure;
       break;
   }
 
