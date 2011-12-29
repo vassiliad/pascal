@@ -4,7 +4,7 @@ var a,b,c,d,e,x,y: integer;
 function try_me(i,j:integer): integer;
 begin
   i := i+j;
-  try_me := i;
+  try_me := i
 end;
 begin
   a := 5;
@@ -13,10 +13,10 @@ begin
   a :=  try_me(x,b); 
   c := a*x;
   
-  for y:=0 to 15 do
+	for y:=0 to 15 do
   begin
     if ( x > a ) then
-      x := a + 10;
+      x := a + 10
   end;
 
     if ( x > a ) then
@@ -25,7 +25,7 @@ begin
           begin
            d := x + 5 ;
            e := 6;
-           a := 9;
+           a := 9
           end
       end
     else
@@ -35,10 +35,10 @@ begin
     begin
      d := x + 5 ;
      e := 6;
-     a := 9;
+     a := 9
     end
   else
     begin
-      x := a*3;
-  end
+      x := a*3
+		end
 end.

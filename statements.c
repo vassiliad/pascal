@@ -59,7 +59,7 @@ statement_t *statement_assignment(variable_t *var, expression_t *expr, scope_t *
 
   if ( _var == NULL )  {
     printf("statement_assignment: sapio var\n");
-    return 0;
+    return NULL;
   }
   
   assignment = ( statement_t *) calloc(1, sizeof(statement_t));
@@ -78,7 +78,7 @@ statement_t *statement_assignment_str(variable_t *var, char *string, scope_t *sc
 
   if ( _var == NULL )  {
     printf("statement_assignment: sapio var\n");
-    return 0;
+    return NULL;
   }
   
   assignment = ( statement_t *) calloc(1, sizeof(statement_t));
@@ -94,46 +94,46 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   statement_t *_for;
   var_t *var;
 
-  if ( iter_space == 0 ) {
+  if ( iter_space == NULL) {
     printf("%d) statement_for: iter_space was not provided\n", yylineno);
-    return 0;
+    return NULL;
   }
 
-  if ( iter_space->from == 0 ) {
+  if ( iter_space->from == NULL ) {
     printf("%d) statement_for: invalid iter_space.from\n", yylineno);
-    return 0;
+    return NULL;
   }
  
-  if ( iter_space->to == 0 ) {
+  if ( iter_space->to == NULL) {
     printf("%d) statement_for: invalid iter_space.to\n", yylineno);
-    return 0;
+    return NULL;
   }
 
-  if ( types_compatible(iter_space->from->dataType, VT_Integer ) == 0 ) {
+  if ( types_compatible(iter_space->from->dataType, VT_Integer ) == 0) {
     printf("%d) statement_for: iter_space.from must be integer/iconst\n", yylineno);
-    return 0;
+    return NULL;
   }
 
   if ( types_compatible(iter_space->to->dataType, VT_Integer ) == 0 ) {
     printf("%d) statement_for: iter_space.to must be integer/iconst\n", yylineno);
-    return 0;
+    return NULL;
   }
   
   var = st_var_find(id, scope);
 
-  if ( var == 0 ) {
+  if ( var == NULL ) {
     printf("%d) statement_for: loop-var is not defined\n", yylineno);
-    return 0;
+    return NULL;
   }
 
   if ( var->type.dataType != VT_Integer ) {
     printf("%d) statement_for: loop-var is not an integer\n", yylineno);
-    return 0;
+    return NULL;
   }
   
   if ( iter_space->type != FT_To && iter_space->type != FT_DownTo ) {
     printf("%d) statement_for: kati paei poly strava , to iter_space->type einai sapio\n", yylineno);
-    return 0;
+    return NULL;
   }
   
   _for = ( statement_t * ) calloc(1, sizeof(statement_t));
@@ -142,7 +142,7 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   _for->_for.loop = loop;
   _for->_for.from = iter_space->from;
   _for->_for.to = iter_space->to;
-	_for->type = iter_space->type;
+	_for->_for.type = iter_space->type;
 
   return _for;
 }
@@ -153,7 +153,7 @@ statement_t *statement_call(char*id, expression_t *params, int size, scope_t *sc
   int i = 0;
   func_t *func = st_func_find(id, scope);
 
-  if ( func == 0 ) {
+  if ( func == NULL ) {
     printf("%d) statement_call: Function %s is not defined\n",yylineno, id);
     return 0;
   }

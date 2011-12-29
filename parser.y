@@ -17,10 +17,12 @@
 
 extern FILE* yyin;
 int enable_constant_propagation = 0;
+int enable_dead_code_elimination = 0;
 
 static const struct option l_opts[] = {
   	{	"help",		no_argument,		NULL,	'h' },
-		{ "constant_propagation", no_argument, NULL , 'c' }
+		{ "constant_propagation", no_argument, NULL , 'c' },
+		{ "dead_code_elimination", no_argument, NULL , 'd' }
 	};
 
 static const char s_opts[] = "hc";
@@ -213,39 +215,157 @@ constant_defs : constant_defs SEMI ID EQU expression
 
 expression : expression RELOP expression 
 {
-  $$ = expression_binary($1, $3, $2);
+	constant_t temp1, temp2;
+	expression_t *l, *r;
+
+	// Attempt to evaluate expression in compile time
+	if ( enable_constant_propagation) {
+	  if ( expression_evaluate($1, &temp1, scope) == Success )
+			l = expression_constant(temp1.type , &(temp1.bconst));
+		else 
+			l = $1;
+		if ( expression_evaluate($3, &temp2, scope) == Success )
+			r = expression_constant(temp2.type, &(temp2.bconst));
+		else
+			r = $3;
+	} else {
+		l = $1;
+		r = $3;
+	}
+
+  $$ = expression_binary(l, r, $2);
 }
 | expression EQU expression  
 {
-  $$ = expression_binary($1, $3, $2);
+	constant_t temp1, temp2;
+	expression_t *l, *r;
+
+	// Attempt to evaluate expression in compile time
+	if ( enable_constant_propagation) {
+	  if ( expression_evaluate($1, &temp1, scope) == Success )
+			l = expression_constant(temp1.type , &(temp1.bconst));
+		else 
+			l = $1;
+		if ( expression_evaluate($3, &temp2, scope) == Success )
+			r = expression_constant(temp2.type, &(temp2.bconst));
+		else
+			r = $3;
+	} else {
+		l = $1;
+		r = $3;
+	}
+
+  $$ = expression_binary(l, r, $2);
 }
 
 | expression INOP expression  
 {
-  $$ = expression_binary($1, $3, $2);
+	constant_t temp1, temp2;
+	expression_t *l, *r;
+
+	// Attempt to evaluate expression in compile time
+	if ( enable_constant_propagation) {
+	  if ( expression_evaluate($1, &temp1, scope) == Success )
+			l = expression_constant(temp1.type , &(temp1.bconst));
+		else 
+			l = $1;
+		if ( expression_evaluate($3, &temp2, scope) == Success )
+			r = expression_constant(temp2.type, &(temp2.bconst));
+		else
+			r = $3;
+	} else {
+		l = $1;
+		r = $3;
+	}
+
+  $$ = expression_binary(l, r, $2);
 }
 
 | expression OROP expression  
 {
-  $$ = expression_binary($1, $3, $2);
+	constant_t temp1, temp2;
+	expression_t *l, *r;
+
+	// Attempt to evaluate expression in compile time
+	if ( enable_constant_propagation) {
+	  if ( expression_evaluate($1, &temp1, scope) == Success )
+			l = expression_constant(temp1.type , &(temp1.bconst));
+		else 
+			l = $1;
+		if ( expression_evaluate($3, &temp2, scope) == Success )
+			r = expression_constant(temp2.type, &(temp2.bconst));
+		else
+			r = $3;
+	} else {
+		l = $1;
+		r = $3;
+	}
+
+  $$ = expression_binary(l, r, $2);
 }
 
 | expression ADDOP expression  
 {
-  $$ = expression_binary($1, $3, $2);
+ 	constant_t temp1, temp2;
+	expression_t *l, *r;
+
+	// Attempt to evaluate expression in compile time
+	if ( enable_constant_propagation) {
+	  if ( expression_evaluate($1, &temp1, scope) == Success )
+			l = expression_constant(temp1.type , &(temp1.bconst));
+		else 
+			l = $1;
+		if ( expression_evaluate($3, &temp2, scope) == Success )
+			r = expression_constant(temp2.type, &(temp2.bconst));
+		else
+			r = $3;
+	} else {
+		l = $1;
+		r = $3;
+	}
+
+  $$ = expression_binary(l, r, $2);
 }
 
 | expression MULDIVANDOP expression  
 {
-  $$ = expression_binary($1, $3, $2);
+ 	constant_t temp1, temp2;
+	expression_t *l, *r;
+
+	// Attempt to evaluate expression in compile time
+	if ( enable_constant_propagation) {
+	  if ( expression_evaluate($1, &temp1, scope) == Success )
+			l = expression_constant(temp1.type , &(temp1.bconst));
+		else 
+			l = $1;
+		if ( expression_evaluate($3, &temp2, scope) == Success )
+			r = expression_constant(temp2.type, &(temp2.bconst));
+		else
+			r = $3;
+	} else {
+		l = $1;
+		r = $3;
+	}
+
+  $$ = expression_binary(l, r, $2);
 }
 
 | ADDOP expression 
 {
+	constant_t temp;
+	expression_t *e;
+	
+	e = $2;
+
+	if ( enable_constant_propagation ) {
+		if ( expression_evaluate($2, &temp, scope) == Success ) 
+			e = expression_constant(temp.type, &(temp.bconst));
+	}
+
   if ( $1 == AddopP ) 
-    $$ = $2;
+    $$ = e;
   else {
-    //TODO negative $2 ( quick hack )
+    //TODO negative e ( quick hack )
     expression_t *neg = calloc(1, sizeof(expression_t));
     neg->type = ET_Constant;
     neg->constant.type = VT_Iconst;
@@ -253,13 +373,23 @@ expression : expression RELOP expression
     neg->dataType = VT_Integer;
     //neg->next = NULL;
 
-    $$ = expression_binary(neg, $2, MuldivandopM); 
+    $$ = expression_binary(neg, e, MuldivandopM); 
     //$$ = NULL;
   }
 }
 | NOTOP expression
 {
-  $$=  expression_not($2);
+	constant_t temp;
+	expression_t *e;
+	
+	e = $2;
+
+	if ( enable_constant_propagation ) {
+		if ( expression_evaluate($2, &temp, scope) == Success ) 
+			e = expression_constant(temp.type, &(temp.bconst));
+	}
+
+	$$=  expression_not(e);
 }
 | variable 
 {
@@ -761,12 +891,12 @@ statements : statements SEMI statement
   $$ = $1;
 
   for ( p = $$; p && p->next; p = p->next );
-
   if ( p ) {
     p->next = $3;
    
-    if ( $3 )
+    if ( $3 ) {
       $3 -> prev = p;
+		}
 
     switch ( p->type )
     {
@@ -856,34 +986,7 @@ unmatched: IF expression THEN statement
 
 assignment : variable ASSIGN expression 
 {
-	constant_t temp;
-	// Attempt to evaluate expression in compile time
-	if ( enable_constant_propagation && expression_evaluate($3, &temp, scope) == Success ) {
-		/*switch ( temp.type ) {
-			case VT_Cconst:
-				printf("Optimized: %c\n", temp.cconst);
-			break;
-			
-			case VT_Iconst:
-				printf("Optimized: %d\n", temp.iconst);
-			break;
-
-			case VT_Bconst:
-				printf("Optimized: %d (bool)\n", temp.bconst);
-			break;
-			
-			case VT_Rconst:
-				printf("Optimized: %g (rconst)\n", temp.rconst);
-			break;
-
-			default:
-				printf("Sapio evaluate expression!\n");
-			break;
-		}*/
-		$$ = statement_assignment($1, expression_constant(temp.type, &(temp.bconst)), scope);
-	} else {
 		$$ = statement_assignment($1, $3, scope);
-	}
 }
 | variable ASSIGN STRING 
 {
@@ -1020,7 +1123,11 @@ void print_help(char *path)
 	
 	printf("Usage: %s -c SOURCE_FILE\n"
 				 "\n"
-				 "-c --constant_propagation Enable constant propagation\n", file);
+				 "-c --constant_propagation  Enable constant propagation\n"
+				 "-d --dead_code_elimination Enable dead code elimination\n"
+				 "\n"
+				 
+				 , file);
 }
 
 
@@ -1043,6 +1150,10 @@ int main(int argc, char* argv[])
 
 			case 'c':
 				enable_constant_propagation = 1;
+			break;
+
+			case 'd':
+				enable_dead_code_elimination = 1;
 			break;
 		}
 	}
