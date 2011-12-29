@@ -753,7 +753,6 @@ statements : statements SEMI statement
 
   if ( p ) {
     p->next = $3;
-    p->join = $3;
    
     if ( $3 )
       $3 -> prev = p;
@@ -795,6 +794,9 @@ statements : statements SEMI statement
           t->join = $3;
         }
       break;
+
+			default:
+				p->join = $3;
     }
   }
 }

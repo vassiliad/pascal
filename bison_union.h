@@ -1,5 +1,7 @@
 #ifndef __BISON_UNION
 #define __BISON_UNION
+#include "constants.h"
+
 typedef struct CONSTANT_T constant_t;
 typedef struct VARIABLE_T variable_t;
 typedef struct PARAMETERS_T parameters_t;
@@ -101,7 +103,7 @@ typedef struct
 
 typedef struct
 {
-	int type;
+	enum TypedefType type;
 	char *name;
 	union {
 		array_t array;
@@ -137,7 +139,7 @@ typedef struct
 
 struct CONSTANT_T
 {
-	int type;
+	enum VariableType type;
 	union {
 		char cconst;
 		int iconst;
@@ -168,7 +170,7 @@ struct EXPRESSION_CALL_T
 
 struct EXPRESSION_T
 {
-	int type;
+	enum ExpressionType type;
 	int dataType;
 	
 	union {
@@ -222,7 +224,7 @@ struct SUB_HEADER_T
 typedef struct
 {
   expression_t *from, *to;
-  int type;
+  enum IterSpaceType type;
 } iter_space_t;
 
 struct STATEMENT_IF_T
@@ -240,7 +242,7 @@ struct STATEMENT_WHILE_T
 
 struct STATEMENT_ASSIGNMENT_T
 { 
-  int type;
+  enum AssignmentType type;
   variable_t *var;
   union
   {
@@ -264,6 +266,7 @@ struct STATEMENT_FOR_T
   expression_t *from, *to;
   struct VAR_T *var;
   statement_t *loop;
+	enum IterSpaceType type;
 };
 
 struct STATEMENT_CASE_T
@@ -286,7 +289,7 @@ struct STATEMENT_WITH_T
 
 struct STATEMENT_T
 {
-  int type;
+  enum StatementType type;
   union {
     statement_if_t _if;
     statement_while_t _while;

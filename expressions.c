@@ -398,7 +398,11 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.rconst += temp2.rconst;
               break;
-          }
+ 						
+						default:
+							return 0;
+						break;
+         }
           break;
 
         case AddopM:
@@ -424,7 +428,11 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.rconst -= temp2.rconst;
               break;
-          }
+ 						
+						default:
+							return 0;
+						break;
+         }
           break;
 
         case RelopG:
@@ -453,6 +461,10 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.bconst = temp1.rconst > temp2.rconst;
               break;
+						
+						default:
+							return 0;
+						break;
           }
 
           break;
@@ -483,6 +495,10 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.bconst = temp1.rconst >= temp2.rconst;
               break;
+						
+						default:
+							return 0;
+						break;
           }
           break;
 
@@ -512,7 +528,11 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.bconst = temp1.rconst < temp2.rconst;
               break;
-          }
+          						
+						default:
+							return 0;
+						break;
+					}
 
           break;
 
@@ -542,7 +562,11 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.bconst = temp1.rconst <= temp2.rconst;
               break;
-          }
+
+          	default:
+							return 0;
+						break;
+					}
 
           break;
 
@@ -571,6 +595,10 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.bconst = temp1.rconst != temp2.rconst;
               break;
+						
+						default:
+							return 0;
+						break;
           }
 
           break;
@@ -617,6 +645,9 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.rconst *= temp2.rconst;
               break;
+						default:
+							return 0;
+						break;
           }
 
 
@@ -648,6 +679,9 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.rconst /= temp2.rconst;
               break;
+						default:
+							return 0;
+						break;
           }
 
 
@@ -680,6 +714,9 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               ret.rconst = floor(ret.rconst/temp2.rconst);
 
               break;
+						default: 
+							return 0;
+						break;
           }
 
           break;
@@ -727,6 +764,9 @@ int expression_evaluate(expression_t *expr, constant_t *result)
               printf("expression_evaluate: MuldivandopMod cannot have either operands as RCONST\n");
               return 0;
               break;
+						default:
+							return 0;
+						break;
           }
 
 
@@ -762,6 +802,9 @@ int expression_evaluate(expression_t *expr, constant_t *result)
             case VT_Rconst:
               ret.bconst = temp1.rconst == temp2.rconst;
               break;
+						default:
+							return 0;
+						break;
           }
 
 

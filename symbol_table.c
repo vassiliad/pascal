@@ -13,7 +13,20 @@ scope_t *st_init(scope_t *scope)
 
 scope_t *st_destroy(scope_t *scope)
 {
-  //TODO free the contents of the scope
+  //TODO Do a proper cleanup
+
+	if ( scope->typedefs )
+		free( scope->typedefs );
+
+	if ( scope->consts )
+		free( scope->consts  );
+	
+	if ( scope->vars )
+		free( scope->vars );
+
+	if ( scope->funcs )
+		free( scope->funcs );
+
   return scope->parent;
 }
 

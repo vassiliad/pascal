@@ -15,7 +15,7 @@ enum
   Failure
 };
 
-enum ForStepType 
+enum IterSpaceType
 { 
   FT_DownTo,
   FT_To
@@ -58,7 +58,7 @@ enum LimitType
   LT_Cconst
 };
 
-enum EpressionType 
+enum ExpressionType 
 {
   ET_Binary,
   ET_Constant, 

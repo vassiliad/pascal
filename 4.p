@@ -23,7 +23,7 @@ begin
 	x:= papa[0,'a'].arr[0];
 
 	if  1 <  3  then 
-		x:= 5
+		x:= 20 + 1 + 10 + 10 + 10
 	else
 		x:= 10
 	

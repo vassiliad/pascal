@@ -164,6 +164,9 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 					node->type = NT_Cconst;
 					node->cconst = expr->constant.cconst;
 					break;
+				default:
+					return 0;
+				break;
 			}
 			break;
 
@@ -197,22 +200,16 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							expression_t *e_left, *e_right;
 							node_t *left, *right;
 
-							// have constants always on the right operand
-							// ( might prove usefull )
-
-							if ( expr->binary.left->type == ET_Constant ) {
-								e_right= expr->binary.left;
-								e_left = expr->binary.right;
-							} else {
-								e_left = expr->binary.left;
-								e_right = expr->binary.right;
-							}
+							e_left = expr->binary.left;
+							e_right = expr->binary.right;
 
 							// slight optimization when both operands are constants
 							// compute the value in compile time
-
+							
 							left = tree_generate_value( e_left, scope );
 							right = tree_generate_value( e_right, scope );
+
+							printf("left: %d -- right: %d\n", left->type, right->type);
 
 							if ( left->type == right->type )
 							{
@@ -221,7 +218,8 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 								switch ( left->type )
 								{
 									case NT_Iconst:
-										{
+										{	
+											node->iconst = 0 ;
 											switch ( expr->binary.op) 
 											{
 												case AddopP:
@@ -287,8 +285,9 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 													node->type = NT_Bconst;
 													node->bconst = (left->iconst == right->iconst);
 												break;
-
+												
 											}
+											printf("optimized iconst binary: %d\n", node->iconst);
 										}
 										break;
 
