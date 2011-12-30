@@ -1165,10 +1165,10 @@ void print_help(char *path)
 	else
 		file ++;
 	
-	printf("Usage: %s -c SOURCE_FILE\n"
-				 "\n"
-				 "-c --constant_propagation  Enable constant propagation\n"
-				 "-d --dead_code_elimination Enable dead code elimination\n"
+	printf("Usage: %s [OPTIONS] SOURCE_FILE\n"
+				 "Options\n"
+				 "\t-c --constant_propagation  Enable constant propagation\n"
+				 "\t-d --dead_code_elimination Enable dead code elimination\n"
 				 "\n"
 				 
 				 , file);
