@@ -937,7 +937,8 @@ statements : statements SEMI statement
   for ( p = $$; p && p->next; p = p->next );
   if ( p ) {
     p->next = $3;
-   
+		p->join = $3;
+ 
     if ( $3 ) {
       $3 -> prev = p;
 		}
@@ -954,6 +955,7 @@ statements : statements SEMI statement
           for ( ; t->next; t = t->next );
           t->join = $3;
         }
+			p->join = $3;
       break;
 
       case ST_While:
@@ -962,7 +964,6 @@ statements : statements SEMI statement
           
           t->join = $3;
         }
-
       break;
 
       case ST_For:
@@ -971,7 +972,7 @@ statements : statements SEMI statement
           
           t->join = $3;
         }
-      break;
+			break;
 
       case ST_With:
         if ( ( t = p->with.statement ) != NULL ) {
@@ -981,9 +982,9 @@ statements : statements SEMI statement
       break;
 
 			default:
-				p->join = $3;
+			break;
     }
-  }
+	}
 }
 | statement 
 {
