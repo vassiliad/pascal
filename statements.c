@@ -160,6 +160,17 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   return _for;
 }
 
+/*	
+ *  TODO: This will probably have to the code that is responsible for the
+ *	translation of statement_t nodes to instructions ...
+ *
+ *	The Return value will be saved in the stack so that's where statement_calls
+ *	will be evaluated.
+ *
+ *	Variables passed as a reference will actually have their memory address stored
+ *	in the stack, any change will result to a write to the specified variable
+ *	that may prove to be slow but for now it's good enough.
+ */
 statement_t *statement_call(char*id, expression_t *params, int size, scope_t *scope)
 {
   statement_t *call;
@@ -171,7 +182,6 @@ statement_t *statement_call(char*id, expression_t *params, int size, scope_t *sc
     printf("%d) statement_call: Function %s is not defined\n",yylineno, id);
     return 0;
   }
-#warning kati prepei na kanw me tis parametrous kai ta pass
   
   if ( func->size != size ) {
     printf("%d) statement_call: Call arguments differ in number than the function definition for %s\n", yylineno, id);
