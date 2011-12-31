@@ -1009,7 +1009,7 @@ statements : statements SEMI statement
   $$ = $1;
 
   for ( p = $$; p && p->next; p = p->next );
-  if ( p ) {
+  if ( p  && $3 ) {
     p->next = $3;
 		p->join = $3;
  
@@ -1090,32 +1090,61 @@ matched: assignment
 matched_if_statement: IF expression THEN matched ELSE matched
 {
   $$ = statement_if($2, $4, $6);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate IF statement.");
+		return 1;
+	}
 }
 ;
 
 unmatched: IF expression THEN statement
 { 
   $$ = statement_if($2, $4, NULL);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate IF statement.");
+		return 1;
+	}
 }
 | IF expression THEN matched ELSE unmatched
 {
   $$ = statement_if($2, $4, $6);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate IF statement.");
+		return 1;
+	}
 }
 ;
 
 assignment : variable ASSIGN expression 
 {
-		$$ = statement_assignment($1, $3, scope);
+	$$ = statement_assignment($1, $3, scope);
+	
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate ASSIGNMENT statement.");
+		return 1;
+	}
 }
 | variable ASSIGN STRING 
 {
   $$ = statement_assignment_str($1, $3, scope);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate ASSIGNMENT_STR statement");
+		return 1;
+	}
 }
 ;
 
 case_statement : CASE expression OF cases case_tail END 
 {
 	$$ = NULL;
+
+	printf("[-] CASE statement is not supported at the moment.");
+
+	return 0;
 }
 ;
 
@@ -1143,6 +1172,13 @@ case_tail : SEMI OTHERWISE COLON statement
 while_statement : WHILE expression DO matched
 {
   $$ = statement_while($2, $4);
+
+	
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate WHILE statement.");
+		return 1;
+	}
+
 }
 ;
 
@@ -1150,6 +1186,11 @@ while_statement : WHILE expression DO matched
 for_statement : FOR ID ASSIGN iter_space DO statement
 {
   $$ = statement_for($2, &$4, $6, scope);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate FOR statement.");
+		return 1;
+	}
 }
 ;
 
@@ -1187,6 +1228,11 @@ subprogram_call : ID
   for ( global = scope; global->parent; global = global->parent);
 
   $$ = statement_call($1,NULL, 0, global);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate CALL statement.");
+		return 1;
+	}
 }
 | ID LPAREN expressions RPAREN 
 {
@@ -1194,16 +1240,26 @@ subprogram_call : ID
   for ( global = scope; global->parent; global = global->parent);
 
   $$ = statement_call($1, $3.exprs, $3.size, global);
+
+	if ( $$ == NULL ) {
+		yyerror("[-] Failed to generate CALL statement.");
+		return 1;
+	}
 }
 ;
 
 io_statement : READ LPAREN read_list RPAREN 
 {
 	$$ = NULL; 
+
+	yyerror("[-] io_statement(READ) is not supported at the moment\n");
+	return 1;
 }
 | WRITE LPAREN write_list RPAREN
 {
 	$$ = NULL;
+	
+	yyerror("[-] io_statement(WRITE) is not supported at the moment\n");
 }
 ;
 
