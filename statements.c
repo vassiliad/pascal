@@ -165,6 +165,7 @@ statement_t *statement_call(char*id, expression_t *params, int size, scope_t *sc
   statement_t *call;
   int i = 0;
   func_t *func = st_func_find(id, scope);
+	var_t *var;
 
   if ( func == NULL ) {
     printf("%d) statement_call: Function %s is not defined\n",yylineno, id);
@@ -188,12 +189,22 @@ statement_t *statement_call(char*id, expression_t *params, int size, scope_t *sc
       }
     }
 
-    if ( func->params[i].pass && params[i].type !=ET_Variable ) {
+
+		if ( func->params[i].pass ) {
+			if ( params[i].type !=ET_Variable ) {
       printf("%d) statement_call: Call argument %d should be a variable for function %s, because"
       "it acts as a reference\n", yylineno, i, id);
       return 0;
-    }
-  }
+			}
+
+			var = st_var_find(params[i].variable->id, scope );
+			if ( var && var->readOnly ) {
+				printf("%s cannot be passed as a reference to function %s because it is read-only.\n",
+						var->id, id);
+				return NULL;
+			}
+		}
+	}
   
   call = ( statement_t* ) calloc(1, sizeof(statement_t));
   call->type = ST_Call;
