@@ -14,6 +14,7 @@ struct SUB_FUNC_T
   var_t *params;
   int size;
   statement_t *body;
+	scope_t *scope; // used in forward declarated functions
 };
 
 

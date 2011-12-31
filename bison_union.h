@@ -214,6 +214,7 @@ typedef struct
 struct SUB_HEADER_T
 {
   char *id;
+	int isForward;
   int isProcedure;
   data_type_t type;
   parameters_t *params;
@@ -257,7 +258,7 @@ struct VAR_T
 	char *id;
   int pass;
   struct VAR_T* reference; // used only when pass == 1
-
+	int readOnly;
   char *base_address;      // to generate addresses for variables
 };
 

@@ -3,6 +3,7 @@
      TODO
    */
 #include <getopt.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@ static const char s_opts[] = "hcd";
 
 
 int yylex(void);
-void yyerror(const char *err);
+void yyerror(const char *fmt, ...);
 
 extern int yylineno;
 scope_t *scope;
@@ -815,45 +816,115 @@ subprograms : subprograms subprogram SEMI
 ;
 
 subprogram : sub_header  SEMI FORWARD
-| sub_header SEMI  { scope = st_init(scope); } declarations
+{
+	int i,j;
+  var_t *var;
+  var_t *params=0;
+  int size = 0;
+  func_t *func;
+	
+
+
+	if ( $1.isForward == 0 ) {
+		scope = st_init(scope);
+		// This function is declared and specified here
+
+		// first register the function ID as a local variable
+		st_var_define($1.id, $1.type, scope);
+
+		// then register all parameters as local variables so that they are visible
+		for ( i = 0; i < $1.size; i ++ ) {
+			for ( j = 0; j < $1.params[i].ids.size; j++ ) {
+				var = st_var_define($1.params[i].ids.ids[j], $1.params[i].type, scope);
+				if ( var ) {
+					var->pass = $1.params[i].pass;
+					size++;
+
+					params = ( var_t * ) realloc(params, size * sizeof(var_t));
+					params[ size-1 ] = *var;
+				} else {
+					
+				}
+			}
+		}
+
+		// register the function to the global scope
+		func = st_func_define($1.id, $1.type, params, size, scope->parent);
+		func->isProcedure = $1.isProcedure;
+		func->scope = scope; // store the scope
+		scope = scope->parent;
+	}
+	
+}
+| sub_header SEMI  
+{
+	if ( $1.isForward ) {
+		func_t *func = st_func_find($1.id, scope);
+		if ( func == NULL ) {
+			yyerror("[-] Function %s is not forward-declared.", $1.id);
+			return 1;
+		}
+		scope = func->scope;
+	} else
+		scope = st_init(scope);
+} declarations
 {
   int i,j;
   var_t *var;
   var_t *params=0;
   int size = 0;
   func_t *func;
-  // first register the function ID as a local variable
-  st_var_define($1.id, $1.type, scope);
 
-  // then register all parameters as local variables so that they are visible
-  for ( i = 0; i < $1.size; i ++ ) {
-    for ( j = 0; j < $1.params[i].ids.size; j++ ) {
-      var = st_var_define($1.params[i].ids.ids[j], $1.params[i].type, scope);
-      if ( var ) {
-        var->pass = $1.params[i].pass;
-        size++;
+	if ( $1.isForward == 0 ) {
+		// This function is declared and specified here
 
-        params = ( var_t * ) realloc(params, size * sizeof(var_t));
-        params[ size-1 ] = *var;
-      } else {
-        yyerror("Sapio function dhlwsh\n");
-      }
-    }
-  }
+		// first register the function ID as a local variable
+		st_var_define($1.id, $1.type, scope);
 
-  // register the function to the global scope
-  func = st_func_define($1.id, $1.type, params, size, scope->parent);
-  func->isProcedure = $1.isProcedure;
+		// then register all parameters as local variables so that they are visible
+		for ( i = 0; i < $1.size; i ++ ) {
+			for ( j = 0; j < $1.params[i].ids.size; j++ ) {
+				var = st_var_define($1.params[i].ids.ids[j], $1.params[i].type, scope);
+				if ( var ) {
+					var->pass = $1.params[i].pass;
+					size++;
+
+					params = ( var_t * ) realloc(params, size * sizeof(var_t));
+					params[ size-1 ] = *var;
+				} else {
+					yyerror("[-] Param %s is already defined.", $1.params[i].ids.ids[j]);
+					return 1;
+				}
+			}
+		}
+
+		// register the function to the global scope
+		func = st_func_define($1.id, $1.type, params, size, scope->parent);
+		func->isProcedure = $1.isProcedure;
+	} else {
+		// This function is already forward-declared
+		func = st_func_find($1.id, scope->parent);
+		if ( func == NULL ) {
+			yyerror("[-] Function %s is not forward-declared.");
+			return 1;
+		} else if ( func->body ) {
+			yyerror("[-] Function %s already has a body.");
+			return 1;
+		}
+	}
 }
 subprograms comp_statement
 {
-  scope = st_destroy( scope );
+	func_t *func = st_func_find($1.id, scope->parent);
+	func->body = $7;
+  scope = scope->parent; // TODO should the scope be destroyed here? I think not
 }
 
 ;
 
 sub_header : FUNCTION ID formal_parameters COLON standard_type 
 {
+	$$.isForward = 0;
   $$.id = $2;
   $$.isProcedure = 0;
   $$.type = $5;
@@ -862,6 +933,7 @@ sub_header : FUNCTION ID formal_parameters COLON standard_type
 }
 | FUNCTION ID formal_parameters COLON LIST 
 {
+	$$.isForward = 0;
   $$.id = $2;
   $$.isProcedure = 0;
   $$.type.dataType = 0;
@@ -870,6 +942,7 @@ sub_header : FUNCTION ID formal_parameters COLON standard_type
 }
 | PROCEDURE ID formal_parameters 
 {
+	$$.isForward = 0;
   $$.id = $2;
   $$.isProcedure = 1;
   $$.type.dataType = 0;
@@ -878,6 +951,7 @@ sub_header : FUNCTION ID formal_parameters COLON standard_type
 }
 | FUNCTION ID  
 {
+	$$.isForward = 1;
   $$.id = $2;
   $$.isProcedure = 0;
   $$.type.dataType = 0;
@@ -1151,9 +1225,54 @@ write_item : expression
 %%
 
 
-void yyerror(const char *err)
+void yyerror(const char *fmt, ...)
 {
-  printf("Error[%d]: %s\n", yylineno, err);
+	const char *p;
+	va_list argp;
+	int i;
+	char *s;
+
+  printf("Error[%d]: ", yylineno);
+	va_start(argp, fmt);
+
+	for(p = fmt; *p != '\0'; p++)
+		{
+		if(*p != '%')
+			{
+			putchar(*p);
+			continue;
+			}
+
+		switch(*++p)
+			{
+			case 'c':
+				i = va_arg(argp, int);
+				putchar(i);
+				break;
+
+			case 'd':
+				i = va_arg(argp, int);
+				printf("%d", i);
+				break;
+
+			case 's':
+				s = va_arg(argp, char *);
+				fputs(s, stdout);
+				break;
+
+			case 'x':
+				i = va_arg(argp, int);
+				printf("%x", i);
+				break;
+
+			case '%':
+				putchar('%');
+				break;
+			}
+	}
+
+	va_end(argp);
+	printf("\n");
 }
 
 void print_help(char *path)

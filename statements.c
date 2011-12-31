@@ -56,11 +56,21 @@ statement_t *statement_assignment(variable_t *var, expression_t *expr, scope_t *
 {
   statement_t *assignment = NULL;
   expression_t *_var = expression_variable(var,scope);
+	var_t *st_var;
 
   if ( _var == NULL )  {
     printf("statement_assignment: sapio var\n");
     return NULL;
   }
+	
+	// If this is a read only variable it will be inserted in the symbol table
+
+	st_var = st_var_find(var->id, scope);
+
+	if ( st_var && st_var->readOnly ) {
+		printf("[-] Cannot assign value to %s because it is read-only in this scope\n", var->id);
+		return NULL;
+	}
   
   assignment = ( statement_t *) calloc(1, sizeof(statement_t));
   assignment->type = ST_Assignment;
@@ -143,6 +153,9 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   _for->_for.from = iter_space->from;
   _for->_for.to = iter_space->to;
 	_for->_for.type = iter_space->type;
+
+	printf("Setting readOnly for %s\n", var->id);
+	var->readOnly = 1;
 
   return _for;
 }

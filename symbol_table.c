@@ -244,6 +244,9 @@ var_t *st_var_define(char* id, data_type_t type, scope_t *scope)
 
   scope->vars = ( var_t * ) realloc(scope->vars
 					, sizeof(var_t) * (scope->vars_size+1) );
+
+	memset(scope->vars + scope->vars_size, 0, sizeof(var_t));
+
   scope->vars[ scope->vars_size ].id = id;
   scope->vars[ scope->vars_size ].pass = 0;
   scope->vars[ scope->vars_size ].reference = NULL;
@@ -268,16 +271,18 @@ var_t* st_var_find(char *id, scope_t *scope)
   return NULL;
 }
 
-func_t *st_func_find(char *id, scope_t *global)
+func_t *st_func_find(char *id, scope_t *scope)
 {
   int i = 0;
+	scope_t *p;
 
   if ( id == 0 )
     return 0;
-
-  for ( i = 0 ; i < global->funcs_size; i ++ ) {
-    if ( strcasecmp(id, global->funcs[i].id) == 0 )
-      return global->funcs + i;
+	
+	for ( p = scope; p; p =p->parent )
+		for ( i = 0 ; i < p->funcs_size; i ++ ) {
+			if ( strcasecmp(id, p->funcs[i].id) == 0 )
+				return p->funcs + i;
   }
   return NULL;
 }
@@ -299,6 +304,8 @@ func_t *st_func_define(char *id, data_type_t type, var_t *params,
   scope->funcs = ( func_t* ) realloc( scope->funcs
 			, (scope->funcs_size+1) * ( sizeof(func_t)));
   func = scope->funcs + scope->funcs_size++;
+	
+	memset(func, 0, sizeof(func_t));
 
   func->id = id;
   func->type = type;
@@ -318,6 +325,9 @@ const_t* st_const_define(char *id, constant_t *constant, scope_t *scope)
 
   scope->consts = ( const_t* ) realloc( scope->consts, 
 					(scope->consts_size+1) * sizeof(const_t));
+
+	memset(scope->consts + scope->consts_size, 0, sizeof(const_t));
+
   scope->consts[ scope->consts_size ].id = id;
   scope->consts[ scope->consts_size ].constant = *constant;
 
