@@ -83,7 +83,7 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 		cur = tree_generate_node(cur, p, scope );
 
 		if ( cur == NULL )
-			return NULL;
+			return node;
 	}
 
 	return node;
@@ -288,6 +288,16 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 
 		case ST_If:
 			{
+				/* If statements are inherently a bit complex, because they do not
+				 * specify a deterministic path...
+				 * 
+				 * That been said, prev->next will point to the condition
+				 * condition->next will either point to _false ( if it's present )
+				 * or join.
+				 * 
+				 * Join will not have prev because we cannot make an option that is
+				 * guaranteed to be correct.
+				 */
 				node_t *_true, *_false, *condition, *join;
 
 				if ( node->join ) {
@@ -297,6 +307,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 					join = NULL;
 
 				condition = tree_generate_value(node->_if.condition, scope);
+				condition->next = join;
 
 				if ( node->_if._true )
 					_true = tree_generate_node(prev, node->_if._true, scope);
@@ -334,9 +345,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 
 					// join->prev will always point to _true
 					temp->next = join;
-					if ( join )
-						join->prev = _true;
-
+					condition->next = _false;
 				} else {
 					// otherwise make a jump at the join node
 					// inject the branch before the actuall _true instructions
@@ -356,20 +365,9 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 					while ( temp->next )
 						temp = temp->next;
 
-					// join->prev will always point to _true
 					temp->next = join;
-					if ( join )
-						join->prev = _true;
-
 				}
-
-				_true->prev = prev;
-				if ( prev )
-					prev->next = _true;
-
-				if ( join == NULL )
-					return _true;
-#warning above line is a hack
+				
 				return join;
 			}
 			break;
