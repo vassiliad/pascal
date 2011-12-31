@@ -310,7 +310,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 				condition->next = join;
 
 				if ( node->_if._true )
-					_true = tree_generate_node(prev, node->_if._true, scope);
+					_true = tree_generate_node(condition, node->_if._true, scope);
 
 				if ( node->_if._false ) {
 					// when else exists make a jump to the beginning of
@@ -373,7 +373,41 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 			break;
 
 		case ST_While:
-			break;
+		{
+			node_t *join;
+			node_t *loop;
+			node_t *condition;
+			node_t *temp;
+			node_t *jump;
+			
+			if ( node->join ) {
+					join = tree_generate_node(NULL,node->join, scope);
+					join->label = instr_label_unique(Label_Join);
+				} else
+					join = NULL;
+
+			condition = tree_generate_value(node->_while.condition, scope);
+			condition->prev = prev;
+			if ( prev )
+				prev->next = condition;
+
+			loop = tree_generate_node(condition, node->_while.loop, scope);
+			loop->prev = condition;
+
+			temp = loop;
+
+			while ( temp->next )
+				temp = temp->next;
+			
+			jump = tree_generate_jump(condition);
+			jump->next = join;
+
+			if ( join )
+				join->prev = jump;
+			
+			return join;
+		}
+		break;
 
 		case ST_For:
 			break;
