@@ -812,7 +812,6 @@ expression_t *expression_call(char*id, expression_t *params, int size, scope_t *
     printf("%d) expression_call: procedure %s is not defined\n",yylineno, id);
     return 0;
   }
-#warning kati prepei na kanw me tis parametrous kai ta pass
   
   if ( proc->size != size ) {
     printf("%d) expression_call: Call arguments differ in number than the procedure definition for %s (%d,%d)\n",

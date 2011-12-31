@@ -1016,7 +1016,7 @@ statements : statements SEMI statement
     if ( $3 ) {
       $3 -> prev = p;
 		}
-
+	
     switch ( p->type )
     {
       case ST_If:
@@ -1169,7 +1169,7 @@ case_tail : SEMI OTHERWISE COLON statement
 | 
 ;
 
-while_statement : WHILE expression DO matched
+while_statement : WHILE expression DO statement 
 {
   $$ = statement_while($2, $4);
 

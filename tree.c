@@ -6,15 +6,15 @@
 #include "expressions.h"
 
 
-node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope);
+node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope, char *label);
 node_t *tree_generate_address(variable_t *var);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
 node_t *tree_generate_store(variable_t *var, expression_t *expr, scope_t *scope);
 node_t *tree_generate_load(variable_t *var, scope_t *scope);
 node_t *tree_generate_sconst(char *string);
 node_t *tree_generate_value( expression_t *expr, scope_t *scope);
-node_t *tree_generate_branchz( node_t *condition, node_t *destination);
-node_t *tree_generate_jump(node_t* destination);
+node_t *tree_generate_branchz( node_t *condition, char *label);
+node_t *tree_generate_jump(char* label);
 
 char *instr_label_unique(int type);
 
@@ -27,26 +27,26 @@ enum LabelTypes
 	/*  Add more as needed then update instr_label_unique::counter */
 };
 
-node_t *tree_generate_jump(node_t* destination)
+node_t *tree_generate_jump(char *label)
 {
 	node_t *ret;
 
 	ret = ( node_t* ) calloc(1, sizeof(node_t));
 
 	ret->type = NT_Jump;
-	ret->jump = destination;
+	ret->jump_label = label;
 
 	return ret;
 }
 
-node_t *tree_generate_branchz(node_t *condition, node_t *destination)
+node_t *tree_generate_branchz(node_t *condition, char *label)
 {
 	node_t *ret;
 
 	ret = ( node_t * ) calloc(1, sizeof(node_t));
 
 	ret->type = NT_BranchZ;
-	ret->branchz.destination = destination;
+	ret->branchz.label = label;
 	ret->branchz.condition = condition;
 
 	return ret;
@@ -72,7 +72,7 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	if ( root == NULL )
 		return NULL;
 
-	node = tree_generate_node( NULL, root, scope );
+	node = tree_generate_node( NULL, root, scope, NULL );
 
 	if ( node == NULL )
 		return NULL;
@@ -80,7 +80,7 @@ node_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	cur = node;
 
 	for ( p = root->next; p ; p = p->next ) {
-		cur = tree_generate_node(cur, p, scope );
+		cur = tree_generate_node(cur, p, scope, NULL );
 
 		if ( cur == NULL )
 			return node;
@@ -247,7 +247,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	return node;
 }
 
-node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
+node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope, char* label)
 {  
 	node_t *_node = NULL;
 
@@ -298,29 +298,45 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 				 * Join will not have prev because we cannot make an option that is
 				 * guaranteed to be correct.
 				 */
-				node_t *_true, *_false, *condition, *join;
+				node_t *_true=NULL, 
+							 *_false=NULL, 
+							 *condition=NULL, 
+							 *join=NULL,
+							 *t=NULL;
+				statement_t *p = NULL;
+
+				char *false_label=NULL,
+						 *join_label=NULL;
 
 				if ( node->join ) {
-					join = tree_generate_node(NULL,node->join, scope);
-					join->label = instr_label_unique(Label_Join);
+					join_label = instr_label_unique(Label_Join);
+					printf("IF join\n");
+					join = tree_generate_node(NULL,node->join, scope, join_label);
+					t = join;
+
+					for ( p = node->join->next; p && t; p = p->next )
+						t = tree_generate_node(t, p, scope, NULL);
 				} else
 					join = NULL;
 
 				condition = tree_generate_value(node->_if.condition, scope);
-				condition->next = join;
+	
+				if ( condition ) { //TODO remove
+					condition->next = join;
+					condition->label = label;
+				}
 
-				if ( node->_if._true )
-					_true = tree_generate_node(condition, node->_if._true, scope);
+				_true = tree_generate_node(condition, node->_if._true, scope, NULL);
 
 				if ( node->_if._false ) {
 					// when else exists make a jump to the beginning of
 					// that branch, then just continue to the join node
 					node_t *temp = _true;
+					
+					false_label = instr_label_unique(Label_Else);
+					_false = tree_generate_node(NULL, node->_if._false, scope, false_label);
 
-					_false = tree_generate_node(NULL, node->_if._false, scope);
-					_false->label = instr_label_unique(Label_Else);
-
-					_true = tree_generate_branchz(condition, _false);
+					_true = tree_generate_branchz(condition, false_label);
 
 					_true->next = temp;
 					temp->prev = _true;
@@ -335,7 +351,8 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 					while ( temp->next )
 						temp = temp->next;
 
-					temp->next = tree_generate_jump(join);
+					temp->next = tree_generate_jump(join_label);
+					temp->next->prev = temp;
 
 					// Then connect the last node of _false to join
 					temp = _false;
@@ -345,14 +362,16 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 
 					// join->prev will always point to _true
 					temp->next = join;
-					condition->next = _false;
-				} else {
+
+					if ( condition ) //TODO remove
+						condition->next = _false;
+				} else if ( _true ) {
 					// otherwise make a jump at the join node
 					// inject the branch before the actuall _true instructions
 
 					node_t *temp = _true;
-
-					_true = tree_generate_branchz(condition, join);
+					
+					_true = tree_generate_branchz(condition, join_label);
 
 					_true->next = temp;
 					temp->prev = _true;
@@ -368,30 +387,42 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 					temp->next = join;
 				}
 				
-				return join;
+				return NULL; // because of join, we have already generated everything that follows IF
 			}
 			break;
 
 		case ST_While:
 		{
-			node_t *join;
-			node_t *loop;
-			node_t *condition;
-			node_t *temp;
-			node_t *jump;
-			
+			node_t *join = NULL;
+			node_t *loop = NULL;
+			node_t *condition = NULL;
+			node_t *temp = NULL;
+			node_t *jump = NULL;
+			node_t *t = NULL;
+			statement_t *p = NULL;
+
+			char *join_label = instr_label_unique(Label_Join);
+
 			if ( node->join ) {
-					join = tree_generate_node(NULL,node->join, scope);
-					join->label = instr_label_unique(Label_Join);
-				} else
-					join = NULL;
+				join = tree_generate_node(NULL,node->join, scope, join_label );
+				t = join;
+
+				for ( p = node->join->next; p && t; p = p->next )
+					t = tree_generate_node(t, p, scope, NULL);
+			} else
+				join = NULL;
 
 			condition = tree_generate_value(node->_while.condition, scope);
-			condition->prev = prev;
+			
+			if ( condition) {
+				condition->prev = prev;
+				condition->label = label;
+			}
+
 			if ( prev )
 				prev->next = condition;
 
-			loop = tree_generate_node(condition, node->_while.loop, scope);
+			loop = tree_generate_node(condition, node->_while.loop, scope, NULL);
 			loop->prev = condition;
 
 			temp = loop;
@@ -399,7 +430,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope)
 			while ( temp->next )
 				temp = temp->next;
 			
-			jump = tree_generate_jump(condition);
+			jump = tree_generate_jump(join_label);
 			jump->next = join;
 
 			if ( join )

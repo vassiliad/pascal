@@ -35,7 +35,7 @@ enum NodeType
 struct NODE_BRANCHZ_T // branch on zero
 {
 	node_t *condition;
-	node_t *destination;
+	char *label;
 };
 
 struct NODE_IF_T
@@ -78,7 +78,7 @@ struct NODE_T
     char cconst;
     char bconst;
     float rconst;
-		node_t *jump;
+		char *jump_label;
 		node_branchz_t branchz;
   };
 
