@@ -1,9 +1,9 @@
 Pascal Compiler written in C using Flex/Bison for the needs of http://inf-server.inf.uth.gr/courses/CE432 course
 
 TODO:
-	[High   Priority] Finish the tree generation ( tree.c/h )									[  30% ]
-	[Medium Priority] Complete symbol_table.c/h																[  80% ]
-	[Medium Priority] Compute constant expressions in compile time 						[  60% ]
-	[Low    Priority] Implement all pascal features														[  50% ]
- 	[Low    Priority] Fix If/Else																							[	 25% ]
+	[High   Priority] Finish the tree generation ( tree.c/h )                 [  30% ]
+	[Medium Priority] Complete symbol_table.c/h                               [  80% ]
+	[Medium Priority] Compute constant expressions in compile time            [  60% ]
+	[Low    Priority] Implement all pascal features                           [  50% ]
+ 	[Low    Priority] Fix If/Else                                             [  25% ]
 
