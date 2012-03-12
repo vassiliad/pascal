@@ -10,7 +10,7 @@ begin
   a := 5;
   b := 10;
   
-  a :=  try_me(x,b); 
+  a :=  try_me(x,10*b); 
   c := a*x;
   
 	for y:=0 to 15 do
