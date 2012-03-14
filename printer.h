@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "tree.h"
 
-void print_instruction_tree(node_t *node, FILE* output);
+void print_instruction_tree(node_list_t *node, FILE* output);
 
 
 #endif // __PRINTER_H

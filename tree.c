@@ -28,6 +28,22 @@ node_t *tree_generate_sconst(char *string);
 node_t *tree_generate_value( expression_t *expr, scope_t *scope);
 node_t *tree_generate_branchz( node_t *condition, char *label);
 node_t *tree_generate_jump(char* label);
+node_t *tree_generate_nop(char *label);
+
+node_t *tree_generate_nop(char *label)
+{
+	node_t *node;
+	node = (node_t*) calloc(1, sizeof(node_t));
+	node->type = NT_Add;
+	node->bin.left = calloc(1, sizeof(node_t));
+	node->bin.right = calloc(1, sizeof(node_t));
+	node->bin.left->type = NT_Iconst;
+	node->bin.right->type = NT_Iconst;
+	node->bin.left->iconst = 0;
+	node->bin.right->iconst = 0;
+
+	return node;
+}
 
 char *instr_label_unique(enum LabelType type);
 
@@ -69,26 +85,32 @@ char *instr_label_unique(enum LabelType type)
 }
 
 
-node_t *tree_generate_tree(statement_t *root, scope_t *scope)
+node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 { 
-	node_t *node, *cur;
+	node_list_t *tree, *cur;
 	statement_t *p;
 
 	if ( root == NULL )
 		return NULL;
 
-	node = NULL;
-	p = tree_generate_node( &node, NULL, root, scope, NULL );
+	tree = (node_list_t*) calloc(1, sizeof(node_list_t));
+	p = tree_generate_node( &tree->node, NULL, root, scope, NULL );
 
-	if ( node == NULL )
+	if ( tree->node == NULL ) {
+		free(tree);
 		return NULL;
+	}
 
-	cur = node;
+	cur = tree;
 
-	while ( p ) 
-		p = tree_generate_node(&cur, cur, p, scope, NULL );
+	while ( p ) {
+		cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+		cur->next->prev = cur;
+		p = tree_generate_node(&cur->next->node, cur->node, p, scope, NULL );
+		cur = cur->next;
+	}
 
-	return node;
+	return tree;
 }
 
 node_t *tree_generate_address(variable_t *var)
@@ -167,6 +189,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 					node->cconst = expr->constant.cconst;
 					break;
 				default:
+					assert(0 && "Unknown constant type");
 					return 0;
 				break;
 			}
@@ -242,7 +265,10 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							node->bin.right = right;
 						} 
 						break;
+					default:
+						assert(0 && "Unhandled binary expression");
 				}
+					
 			}
 	}
 
@@ -283,19 +309,23 @@ statement_t *tree_generate_if(node_t **result, node_t *prev,
 	// blocks: btrue, bfalse, bjoin
 	// condition check: ccond
 	statement_t *next = NULL;
-	node_t *btrue = NULL,
-			 *bfalse= NULL,
-			 *ccon  = NULL,
-			 *bjoin = NULL,
-			 *jbranch=NULL;
+	node_list_t *btrue = NULL,
+			 *bfalse= NULL;
+
+	node_t *jbranch=NULL,
+			  *ccon  = NULL,
+				*njoin = NULL,
+				*node = NULL;
 
 	char *label_false = NULL,
 			 *label_join  = NULL;
 	
+	label_join = instr_label_unique(Label_Join);
 	if ( join )
-		label_join = instr_label_unique(Label_Join);
-	else
-		assert( 0 && "No join for if statement, place a nop maybe?");
+		next = tree_generate_node(&njoin, NULL, join, scope, label_join);
+  else
+		njoin = tree_generate_nop(label_join);
+	
 	
 	if ( _if->_false )
 		label_false = instr_label_unique(Label_Else);
@@ -304,8 +334,23 @@ statement_t *tree_generate_if(node_t **result, node_t *prev,
 
 	ccon   = tree_generate_value(_if->condition, scope);
 	jbranch = tree_generate_branchz(ccon, label_false);
+	btrue  = tree_generate_tree(_if->_true, scope);
+	bfalse = tree_generate_tree(_if->_false, scope);
+	ccon->next = jbranch;
+
+	if ( btrue == NULL ) {
+		assert( 0 && "If statements must have statements in their true block");
+	}
 	
+	node = (node_t*) calloc(1, sizeof(node_t));
+	node->type  = NT_If;
+	node->_if._true = btrue;
+	node->_if._false = bfalse;
+	node->_if.condition = ccon;
+
+	*result = node;
 	
+	return next;
 }
 
 statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *stmt, scope_t *scope, char* label)

@@ -14,6 +14,7 @@
 #include "symbol_table.h"
 #include "statements.h"
 #include "tree.h"
+#include "printer.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -119,7 +120,7 @@ scope_t *scope;
 
 program : header declarations subprograms comp_statement DOT 
 {
-  node_t *main_tree;
+  node_list_t *main_tree;
 	statement_t *body = $4;
 	
 	if ( enable_dead_code_elimination ) {
@@ -130,7 +131,10 @@ program : header declarations subprograms comp_statement DOT
 
   if ( main_tree == NULL )
   {
+		printf("[-] Failed to generate instruction tree\n");
   } else {
+		printf("[+] Printing instruction tree\n");
+		print_instruction_tree(main_tree, stdout);
 	}
 }
 ;
