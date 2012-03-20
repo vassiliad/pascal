@@ -21,17 +21,18 @@ enum NodeType
   NT_Rconst,  // float ( rconst )
   NT_Cconst,  // char ( cconst )
   NT_Load,    // node_load_t ( load )
-  NT_Store,   // node_store_t ( store )
+  NT_Store=5,   // node_store_t ( store )
   NT_Add,     // node_bin_t ( bin )
   NT_Sub,     // node_bin_t ( bin )
   NT_Div,     // node_bin_t ( bin )
   NT_Mod,     // node_bin_t ( bin )
-  NT_Mult,    // node_bin_t ( bin )
+  NT_Mult=10,    // node_bin_t ( bin )
   NT_String,  // node_string_t ( string )
   NT_Not,     // node_t ( not )
 	NT_If,			// node_if_t ( _if )
 	NT_Jump,		// node_t ( jump )
-	NT_BranchZ, // node_branchz_t ( branchZ )
+	NT_BranchZ=15, // node_branchz_t ( branchZ )
+  NT_LessThan,// node_bin_t ( bin )
 };
 
 
@@ -60,9 +61,9 @@ struct NODE_STRING_T
 
 struct NODE_LOAD_STORE_T
 {
-  node_t *address;
+  reg_t reg;
+  int offset;
   node_t *data;
-  unsigned int size;
 };
 
 struct NODE_BIN_T

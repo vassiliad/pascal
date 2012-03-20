@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "register.h"
 
 reg_file_t rf_saved, rf_temp,
@@ -10,6 +11,28 @@ void rg_add(reg_file_t* rf, reg_t *reg)
 	rf->regs = ( reg_t* ) realloc(rf->regs
 				, ( rf->size+1 ) * sizeof(reg_t) );
 	rf->regs[ rf->size++ ] = *reg;
+}
+
+reg_t rg_get_zero()
+{
+  reg_t ret;
+  ret.name = "$0";
+  ret.id = 0;
+  ret.in_use = 0;
+
+  return ret;
+}
+
+reg_t rg_allocate()
+{
+  reg_t ret;
+  static int unique = 1;
+  ret.id = unique;
+  ret.name = (char*)malloc(sizeof(char)*30);
+  sprintf(ret.name, "$%d", ret.id);
+
+  unique++;
+  return ret;
 }
 
 void rg_init()

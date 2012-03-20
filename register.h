@@ -18,6 +18,8 @@ struct REG_FILE_T
 };
 
 void rg_init();
+reg_t rg_get_zero();
+reg_t rg_allocate();
 
 
 #endif //__REGISTER_H

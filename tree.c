@@ -22,7 +22,7 @@ enum LabelType
 statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *node, scope_t *scope, char *label);
 node_t *tree_generate_address(variable_t *var);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
-node_t *tree_generate_store(variable_t *var, expression_t *expr, scope_t *scope);
+node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope);
 node_t *tree_generate_load(variable_t *var, scope_t *scope);
 node_t *tree_generate_sconst(char *string);
 node_t *tree_generate_value( expression_t *expr, scope_t *scope);
@@ -129,17 +129,18 @@ node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Store;
-	ret->store.address = address;
 	return ret;
 }
 
-node_t *tree_generate_store(variable_t *var, expression_t *expr, scope_t *scope)
+node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 {
 	node_t *address = tree_generate_address(var);
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Store;
-	ret->store.address = address;
+	ret->store.reg = rg_get_zero();
+  ret->store.offset = 0;
+  ret->store.data = data;
 	return ret;
 }
 
@@ -149,7 +150,8 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Load;
-	ret->load.address = address;
+
+  ret->reg = rg_allocate();
 	return ret;
 }
 
@@ -166,6 +168,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	{
 		case ET_Constant:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
+      node->reg = rg_allocate();
 
 			switch ( expr->constant.type )
 			{
@@ -234,8 +237,6 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							left = tree_generate_value( e_left, scope );
 							right = tree_generate_value( e_right, scope );
 
-							printf("left: %d -- right: %d\n", left->type, right->type);
-
 							node = ( node_t * ) calloc(1, sizeof(node_t));
 
 							switch ( expr->binary.op )
@@ -263,9 +264,24 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 							node->bin.left = left;
 							node->bin.right = right;
+              node->reg = rg_allocate();
 						} 
-						break;
+          break;
+          case RelopL:
+          {
+            node_t *left, *right;
+            left = tree_generate_value(expr->binary.left, scope);
+            right = tree_generate_value(expr->binary.right, scope);
+            node = (node_t*) calloc(1, sizeof(node_t));
+            
+            node->type = NT_LessThan;
+            node->bin.left = left;
+            node->bin.right = right;
+            node->reg = rg_allocate();
+            break;
+          }
 					default:
+            printf("%d\n",expr->binary.op);
 						assert(0 && "Unhandled binary expression");
 				}
 					
@@ -278,29 +294,17 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 void tree_generate_assignment(node_t **result, node_t *prev,
 		statement_assignment_t *assign, scope_t *scope, char *label)
 {
-	node_t *var, *data, *ret;
-
-	*result = NULL;
-	
 	if ( assign->type == AT_Expression ) {
-		var  = tree_generate_store(assign->var, assign->expr, scope);
-		data = tree_generate_value(assign->expr, scope);
+		*result = tree_generate_store(assign->var, tree_generate_value(assign->expr, scope), scope);
 	} else if ( assign->type == AT_String ) {
 		assert( 0 && "Unimplemented string assignment");
 	} else
 		return;	
 	
-	ret = (node_t*) calloc(1, sizeof(node_t));
-	ret->type = NT_Store;
-	ret->load.address = var;
-	ret->load.data = data;
-	ret->prev = prev;
-	ret->label = label;
-
 	if ( prev )
-		prev->next = ret;
+		prev->next = *result;
 
-	*result = ret;
+  (*result)->prev = prev;
 }
 
 statement_t *tree_generate_if(node_t **result, node_t *prev, 
