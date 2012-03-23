@@ -29,5 +29,6 @@ begin
 		end
 	else
 		x:= 10
-	
+  ;
+ 
 end.

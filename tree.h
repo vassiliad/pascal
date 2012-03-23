@@ -30,9 +30,10 @@ enum NodeType
   NT_String,  // node_string_t ( string )
   NT_Not,     // node_t ( not )
 	NT_If,			// node_if_t ( _if )
-	NT_Jump,		// node_t ( jump )
+	NT_Jump,		// char *( jump_label )
 	NT_BranchZ=15, // node_branchz_t ( branchZ )
   NT_LessThan,// node_bin_t ( bin )
+  NT_Nop,     // none!!
 };
 
 
@@ -50,7 +51,7 @@ struct NODE_IF_T
 {
 	node_list_t *_true;
 	node_list_t *_false;
-	node_t *condition;
+	node_t *branch;
 };
 
 struct NODE_STRING_T

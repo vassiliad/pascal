@@ -26,7 +26,7 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg, FILE* output
     if ( right->type == NT_Iconst ) {
       fprintf(output, "addi %s, %s, %d\n", reg->name, left->reg.name, right->iconst);
     } else {
-      fprintf(output, "add %s, %s, %s\n", reg->name, left->reg.name, right->reg.name);
+      fprintf(output, "add  %s, %s, %s\n", reg->name, left->reg.name, right->reg.name);
     }
   }
 }
@@ -34,7 +34,7 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg, FILE* output
 void print_instruction_store(reg_t *start, int offset, node_t *data, FILE* output)
 {
   print_instruction(data, output);
-  fprintf(output, "sw %s, %d(%s)\n", data->reg.name, offset, start->name);
+  fprintf(output, "sw   %s, %d(%s)\n", data->reg.name, offset, start->name);
 }
 
 void print_instruction_tree(node_list_t *tree, FILE* output)
@@ -47,12 +47,14 @@ void print_instruction_tree(node_list_t *tree, FILE* output)
 
 void print_instruction_less_than(node_t *left, node_t *right, reg_t* reg, FILE *output)
 {
-  fprintf(output, "slt %s, %s, %s\n", reg->name, left->reg.name, right->reg.name);
+  print_instruction(left, output);
+  print_instruction(right, output);
+  fprintf(output, "slt  %s, %s, %s\n", reg->name, left->reg.name, right->reg.name);
 }
 
 void print_instruction_load(reg_t *start, int offset, reg_t *dest, FILE *output)
 {
-  fprintf(output, "lw %s, %d(%s)\n", dest->name, offset, start->name);
+  fprintf(output, "lw   %s, %d(%s)\n", dest->name, offset, start->name);
 }
 
 void print_instruction(node_t *node, FILE* output)
@@ -63,7 +65,7 @@ void print_instruction(node_t *node, FILE* output)
 	if ( node->label )
 		fprintf(output, "%s : ", node->label );
 
-  printf("#\t\tnode type: %d\n", node->type);
+  //printf("#\t\tnode type: %d\n", node->type);
 	
 	switch ( node->type ) {
 		case NT_Add:
@@ -75,6 +77,10 @@ void print_instruction(node_t *node, FILE* output)
 			print_instruction_add(node, NULL, NULL, output);
 		break;
 		
+    case NT_Nop:
+      fprintf(output, "add  $0, $0, $0\n");
+    break;
+
     case NT_Load:
       print_instruction_load(&node->load.reg, node->load.offset, &node->reg, output);
     break;
@@ -87,8 +93,18 @@ void print_instruction(node_t *node, FILE* output)
       print_instruction_less_than(node->bin.left, node->bin.right, &node->reg, output);
     break;
     
+    case NT_BranchZ:
+      print_instruction(node->branchz.condition, output);
+      fprintf(output, "bne  $0, %s, %s\n", node->branchz.condition->reg.name, node->branchz.label);
+    break;
+    
+    
+    case NT_Jump:
+      fprintf(output, "j    %s\n", node->jump_label);
+    break;
+
     case NT_If:
-      print_instruction(node->_if.condition, output);
+      print_instruction(node->_if.branch, output);
       if ( node->_if._true)
         print_instruction_tree(node->_if._true, output);
       if ( node->_if._false)

@@ -18,6 +18,7 @@ enum LabelType
 	/*  Add more as needed then update instr_label_unique::counter */
 };
 
+static unsigned int label_counter[] = { 0, 0, 0, 0, 0 };
 
 statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *node, scope_t *scope, char *label);
 node_t *tree_generate_address(variable_t *var);
@@ -29,18 +30,15 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope);
 node_t *tree_generate_branchz( node_t *condition, char *label);
 node_t *tree_generate_jump(char* label);
 node_t *tree_generate_nop(char *label);
+statement_t *tree_generate_if(node_t **result, node_t *prev, 
+	statement_if_t *_if, scope_t *scope, char *label);
 
 node_t *tree_generate_nop(char *label)
 {
 	node_t *node;
 	node = (node_t*) calloc(1, sizeof(node_t));
-	node->type = NT_Add;
-	node->bin.left = calloc(1, sizeof(node_t));
-	node->bin.right = calloc(1, sizeof(node_t));
-	node->bin.left->type = NT_Iconst;
-	node->bin.right->type = NT_Iconst;
-	node->bin.left->iconst = 0;
-	node->bin.right->iconst = 0;
+	node->type = NT_Nop;
+  node->label = label;
 
 	return node;
 }
@@ -73,14 +71,22 @@ node_t *tree_generate_branchz(node_t *condition, char *label)
 	return ret;
 }
 
+char *instr_label_last(enum LabelType type) {
+ 	static char lookup[5][10] = { "Else", "Join", "Loop", "Enter", "Exit" };
+
+	char temp[100];
+
+	sprintf(temp, "%s_%d", lookup[type], label_counter[type]);
+	return strdup(temp);
+}
+
 char *instr_label_unique(enum LabelType type)
 {
-	static unsigned int counter[] = { 0, 0, 0, 0, 0 };
 	static char lookup[5][10] = { "Else", "Join", "Loop", "Enter", "Exit" };
 
 	char temp[100];
 
-	sprintf(temp, "%s_%d", lookup[type], ++counter[type]);
+	sprintf(temp, "%s_%d", lookup[type], ++label_counter[type]);
 	return strdup(temp);
 }
 
@@ -89,6 +95,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 { 
 	node_list_t *tree, *cur;
 	statement_t *p;
+  char *label = NULL;
 
 	if ( root == NULL )
 		return NULL;
@@ -106,8 +113,21 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	while ( p ) {
 		cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
 		cur->next->prev = cur;
-		p = tree_generate_node(&cur->next->node, cur->node, p, scope, NULL );
-		cur = cur->next;
+		p = tree_generate_node(&cur->next->node, cur->node, p, scope, label);
+
+    cur = cur->next;
+
+    if ( cur->node->type == NT_If ) {
+        label = instr_label_last(Label_Join);
+      if ( p == NULL ) {
+        cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+        cur->next->prev = cur;
+
+        cur->next->node = tree_generate_nop(label);
+        break;
+      }
+    } else
+      label = NULL;
 	}
 
 	return tree;
@@ -150,7 +170,8 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Load;
-
+  
+  ret->load.reg= rg_get_zero();
   ret->reg = rg_allocate();
 	return ret;
 }
@@ -308,28 +329,19 @@ void tree_generate_assignment(node_t **result, node_t *prev,
 }
 
 statement_t *tree_generate_if(node_t **result, node_t *prev, 
-	statement_if_t *_if, statement_t *join, scope_t *scope, char *label)
+	statement_if_t *_if,  scope_t *scope, char *label)
 {
-	// blocks: btrue, bfalse, bjoin
-	// condition check: ccond
 	statement_t *next = NULL;
 	node_list_t *btrue = NULL,
-			 *bfalse= NULL;
+			 *bfalse= NULL,
+       *p = NULL;
 
 	node_t *jbranch=NULL,
 			  *ccon  = NULL,
-				*njoin = NULL,
 				*node = NULL;
 
 	char *label_false = NULL,
-			 *label_join  = NULL;
-	
-	label_join = instr_label_unique(Label_Join);
-	if ( join )
-		next = tree_generate_node(&njoin, NULL, join, scope, label_join);
-  else
-		njoin = tree_generate_nop(label_join);
-	
+       *label_join = instr_label_unique(Label_Join);
 	
 	if ( _if->_false )
 		label_false = instr_label_unique(Label_Else);
@@ -340,17 +352,27 @@ statement_t *tree_generate_if(node_t **result, node_t *prev,
 	jbranch = tree_generate_branchz(ccon, label_false);
 	btrue  = tree_generate_tree(_if->_true, scope);
 	bfalse = tree_generate_tree(_if->_false, scope);
-	ccon->next = jbranch;
+  
+  if ( bfalse )
+    bfalse->node->label = label_false;
 
 	if ( btrue == NULL ) {
 		assert( 0 && "If statements must have statements in their true block");
 	}
-	
+
+  for ( p = btrue; p->next != NULL; p=p->next );
+
+  p->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+  p->next->prev = p;
+  p = p->next;
+
+  p->node = tree_generate_jump(label_join);
+
 	node = (node_t*) calloc(1, sizeof(node_t));
 	node->type  = NT_If;
 	node->_if._true = btrue;
 	node->_if._false = bfalse;
-	node->_if.condition = ccon;
+  node->_if.branch = jbranch;
 
 	*result = node;
 	
@@ -380,11 +402,11 @@ statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *stmt
 
 		case ST_If:
 		{
-			next = tree_generate_if(result, prev, &stmt->_if, stmt->join,
-							scope, label);
+			tree_generate_if(result, prev, &stmt->_if,	scope, label);
+      next = stmt->next;
 
 			assert( *result!=NULL && "Failed to generate if statement");
-		}
+    }
 		break;
 
 		case ST_While:
