@@ -24,7 +24,7 @@ begin
 
 	if  1 <  3  then 
 		begin
-			x:= 20 + 1 + 10 + 10 + 10;
+			x:= 20 * 5;
 			x:= 10
 		end
 	else

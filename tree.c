@@ -122,7 +122,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 
     if ( cur->node->type == NT_If ) {
         label = instr_label_last(Label_Join);
-      if ( p == NULL ) {
+      if ( p->next == NULL ) {
         cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
         cur->next->prev = cur;
 
