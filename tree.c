@@ -20,7 +20,7 @@ enum LabelType
 
 static unsigned int label_counter[] = { 0, 0, 0, 0, 0 };
 
-statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *node, scope_t *scope, char *label);
+node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope, char *label);
 node_t *tree_generate_address(variable_t *var);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
 node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope);
@@ -30,8 +30,10 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope);
 node_t *tree_generate_branchz( node_t *condition, char *label);
 node_t *tree_generate_jump(char* label);
 node_t *tree_generate_nop(char *label);
-statement_t *tree_generate_if(node_t **result, node_t *prev, 
-	statement_if_t *_if, scope_t *scope, char *label);
+node_t *tree_generate_if(node_t *prev, statement_if_t *_if, 
+												 scope_t *scope, char *label);
+node_t *tree_generate_assignment(node_t *prev,
+		statement_assignment_t *assign, scope_t *scope, char *label);
 
 node_t *tree_generate_nop(char *label)
 {
@@ -101,7 +103,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 		return NULL;
 
 	tree = (node_list_t*) calloc(1, sizeof(node_list_t));
-	p = tree_generate_node( &tree->node, NULL, root, scope, NULL );
+	tree->node = tree_generate_node(NULL, root, scope, NULL );
 
 	if ( tree->node == NULL ) {
 		free(tree);
@@ -109,11 +111,12 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	}
 
 	cur = tree;
+	p = root;
 
-	while ( p ) {
+	while ( (p=p->next) ) {
 		cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
 		cur->next->prev = cur;
-		p = tree_generate_node(&cur->next->node, cur->node, p, scope, label);
+		cur->next->node = tree_generate_node(cur->node, p, scope, label);
 
     cur = cur->next;
 
@@ -145,7 +148,6 @@ node_t *tree_generate_address(variable_t *var)
 
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 {
-	node_t *address = tree_generate_address(var);
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Store;
@@ -154,7 +156,6 @@ node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 
 node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 {
-	node_t *address = tree_generate_address(var);
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Store;
@@ -166,7 +167,6 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 
 node_t *tree_generate_load(variable_t *var, scope_t *scope)
 {
-	node_t *address = tree_generate_address(var);
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Load;
@@ -312,26 +312,27 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	return node;
 }
 
-void tree_generate_assignment(node_t **result, node_t *prev,
+node_t *tree_generate_assignment(node_t *prev,
 		statement_assignment_t *assign, scope_t *scope, char *label)
 {
+	node_t *result = NULL;
 	if ( assign->type == AT_Expression ) {
-		*result = tree_generate_store(assign->var, tree_generate_value(assign->expr, scope), scope);
+		result = tree_generate_store(assign->var, tree_generate_value(assign->expr, scope), scope);
 	} else if ( assign->type == AT_String ) {
 		assert( 0 && "Unimplemented string assignment");
 	} else
-		return;	
+		assert( 0 && "Invalid assignment type");
 	
 	if ( prev )
-		prev->next = *result;
+		prev->next = result;
 
-  (*result)->prev = prev;
+  result->prev = prev;
+	return result;
 }
 
-statement_t *tree_generate_if(node_t **result, node_t *prev, 
+node_t *tree_generate_if(node_t *prev, 
 	statement_if_t *_if,  scope_t *scope, char *label)
 {
-	statement_t *next = NULL;
 	node_list_t *btrue = NULL,
 			 *bfalse= NULL,
        *p = NULL;
@@ -374,15 +375,12 @@ statement_t *tree_generate_if(node_t **result, node_t *prev,
 	node->_if._false = bfalse;
   node->_if.branch = jbranch;
 
-	*result = node;
-	
-	return next;
+	return node;
 }
 
-statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *stmt, scope_t *scope, char* label)
+node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char* label)
 {  
-	statement_t *next;
-
+	node_t *result = NULL;
 	if ( stmt == NULL )
 		return NULL;
 
@@ -392,26 +390,23 @@ statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *stmt
 	{
 		case ST_Assignment:
 		{
-			tree_generate_assignment(result, prev, &(stmt->assignment),
+			result = tree_generate_assignment(prev, &(stmt->assignment),
 										scope, label);
-			assert(*result!=NULL && "Failed to generate Assignment");
-
-			next = stmt->next;
+			assert(result!=NULL && "Failed to generate Assignment");
+			return result;
 		}
 		break;
 
 		case ST_If:
 		{
-			tree_generate_if(result, prev, &stmt->_if,	scope, label);
-      next = stmt->next;
-
-			assert( *result!=NULL && "Failed to generate if statement");
+			result = tree_generate_if(prev, &stmt->_if,	scope, label);
+			assert( result!=NULL && "Failed to generate if statement");
+			return result;
     }
 		break;
 
 		case ST_While:
-		{
-		}
+			NODE_UNIMPLEMENTED("While statement");
 		break;
 
 		case ST_For:
@@ -429,8 +424,9 @@ statement_t *tree_generate_node(node_t **result, node_t *prev, statement_t *stmt
 		case ST_Case:
 			NODE_UNIMPLEMENTED("Case statement");
 		break;
-	}
 
-	return next;
+		default:
+			NODE_UNIMPLEMENTED("Some kind of statement");
+	}
 }
 
