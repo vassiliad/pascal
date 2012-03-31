@@ -30,5 +30,11 @@ begin
 	else
 		x:= 10
   ;
+	
+	if 2 < 3 then
+		x:= 5
+	;
+	
+	papa[0,'a'].arr[0] := 1;
  
 end.

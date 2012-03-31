@@ -325,7 +325,7 @@ node_t *tree_generate_assignment(node_t *prev,
 	
 	if ( prev )
 		prev->next = result;
-
+	result->label = label;
   result->prev = prev;
 	return result;
 }
@@ -374,7 +374,7 @@ node_t *tree_generate_if(node_t *prev,
 	node->_if._true = btrue;
 	node->_if._false = bfalse;
   node->_if.branch = jbranch;
-
+	node->label = label;
 	return node;
 }
 
