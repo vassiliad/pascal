@@ -21,7 +21,7 @@ enum LabelType
 static unsigned int label_counter[] = { 0, 0, 0, 0, 0 };
 
 node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope, char *label);
-node_t *tree_generate_address(variable_t *var);
+struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
 node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope);
 node_t *tree_generate_load(variable_t *var, scope_t *scope);
@@ -136,14 +136,57 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	return tree;
 }
 
-node_t *tree_generate_address(variable_t *var)
+struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 {
+	struct NODE_LOAD_STORE_T ret;
 	/*
 		 Traverse var, and accumulate offsets based on the types of each
 		 @child in var ( see variable_t in bison_union.h ) then add the base
 		 address and return it as a icosnt type node_t.
 	 */
-	return NULL;
+	
+	typedefs_entry_t *ty = NULL;
+	
+	
+	ret.address = NULL; // TODO: This will be generated in case of user_type
+	ret.offset = 0; // TODO: This should indicate where the variable is stored in memory
+	
+	if ( var->type.dataType == VT_User ) {
+		ty = st_typedef_find(var->type.userType, scope);
+
+		assert( (ty!=NULL) && "Type is not defined" );
+
+		ret.offset = 1000;
+		printf("custom: (%s)%s\n",var->id, ty->name);
+		if ( var->expr.size )
+			printf("\tis an array!\n");
+		else
+			printf("\tnot an array\n");
+		
+		return ret;
+	}
+
+	// for scalar types there's no need to compute a register, we only need
+	// to set the offset.
+
+	printf("builtin: (%s)\n", var->id);
+	if ( var->expr.size ) {
+		printf("Is an array!\n");
+#warning Now I have to traverse the array of expressions and compute \
+		a value for every dimension multiply them in the correct order \
+		ie a[a,b,c] = (a*dim2*dim3 + b*dim3 + c)*sizeof(a) \
+		if this is not a constant instructions should be generated \
+	  that actually compute this number in runtime
+	} else {
+		printf("\tnot an array\n");
+		ret.offset = 0;
+	}
+
+
+	ret.reg = rg_get_zero();
+	ret.address = NULL;
+	
+	return ret;
 }
 
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
@@ -159,7 +202,7 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Store;
-	ret->store.reg = rg_get_zero();
+	ret->store = tree_generate_address(var, scope);
   ret->store.offset = 0;
   ret->store.data = data;
 	return ret;
@@ -171,7 +214,8 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 
 	ret->type = NT_Load;
   
-  ret->load.reg= rg_get_zero();
+	printf("load : %s\n", var->id);
+  ret->load = tree_generate_address(var, scope);
   ret->reg = rg_allocate();
 	return ret;
 }

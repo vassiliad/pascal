@@ -18,9 +18,11 @@ var x: integer;
     y: char;
     test: record_2;
     papa: roto;
+		d: array1;
 
 begin
-	x:= papa[0,'a'].arr[0];
+	{ test._size := papa[0,'a'].arr[0]; }
+	test._size := d[0]; 
 
 	if  1 <  3  then 
 		begin
@@ -35,6 +37,6 @@ begin
 		x:= 5
 	;
 	
-	papa[0,'a'].arr[0] := 1;
+	{ papa[0,'a'].arr[0] := 1; }
  
 end.

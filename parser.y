@@ -1,12 +1,10 @@
 %{
-  /*
-     TODO
-   */
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "dead_code.h"
 #include "constants.h"
 #include "bison_union.h"
@@ -489,6 +487,8 @@ variable : ID
   p->child = ( variable_t * ) calloc(1, sizeof(variable_t));
   p = p->child;
   p->id = $3;
+
+	printf("ASDSA: %s.%s\n", $$->id, $3);
 }
 | variable LBRACK expressions RBRACK 
 {
@@ -496,16 +496,15 @@ variable : ID
   p = $$ = $1;
   while ( p->child )
     p = p->child;
-  p->child = ( variable_t * ) calloc(1, sizeof(variable_t));
-  p = p->child;
   p->expr = $3;
+
+	printf("expressions: %s %d\n",$1->id, $3.size);
 }
 | LISTFUNC LPAREN expression RPAREN 
 {
   $$ = NULL;
   printf("%d) Listfunc is not supported\n", yylineno);
-  exit(0);
-#warning  hack
+	assert(0 && "ListFunc is not supported");
 }
 ;
 
@@ -517,16 +516,14 @@ expressions : expressions COMMA expression
   if ( $3 )
     $$.exprs[ $$.size++ ] = *$3;
   else {
-    printf("sapio expressions comma expression\n");
-    //hack
+		assert( 0 && "Failed to parse expression");
     memset( $$.exprs + $$.size++, 0, sizeof(expression_t));
   }
 }
 | expression
 {
   if ( $1 == NULL ) {
-    printf("sapio expression\n");
-    // hack;
+		assert(0 && "Failed to parse expression");
     $$.exprs = ( expression_t* ) calloc(1, sizeof(expression_t));
   } else
     $$.exprs = $1;

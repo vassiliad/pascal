@@ -5,11 +5,11 @@ void print_instruction(node_t *node, FILE* output);
 void print_instruction_add(node_t *left, node_t *right, reg_t *reg, 
 			FILE* output);
 void print_instruction_store(reg_t *start, int offset, node_t *data, 
-			FILE* output);
+			node_t *address, FILE* output);
+void print_instruction_load(reg_t *start, int offset, reg_t *dest,
+		 node_t *address, FILE *output);
 void print_instruction_less_than(node_t *left, node_t *right, 
 		reg_t* reg, FILE *output);
-void print_instruction_load(reg_t *start, int offset, reg_t *dest,
-		 FILE *output);
 
 void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
 			 FILE* output)
@@ -18,8 +18,10 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
 		// this add is used as a move
 		switch(left->type) {
 			case NT_Iconst:
-				fprintf(output, "addi %s, $0, %d\n", left->reg.name, 
+				if ( left->iconst != 0 )
+					fprintf(output, "addi %s, $0, %d\n", left->reg.name, 
 							left->iconst);
+					
 			break;
 
       case NT_Bconst:
@@ -44,10 +46,14 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
   }
 }
 
-void print_instruction_store(reg_t *start, int offset, node_t *data, 
-			FILE* output)
+void print_instruction_store(reg_t *start, int offset, node_t *data,
+			node_t *address, FILE* output)
 {
   print_instruction(data, output);
+	
+	if ( address )
+		print_instruction(address, output);
+	
   fprintf(output, "sw   %s, %d(%s)\n", data->reg.name, offset, 
 		start->name);
 }
@@ -70,8 +76,11 @@ void print_instruction_less_than(node_t *left, node_t *right,
 }
 
 void print_instruction_load(reg_t *start, int offset, reg_t *dest,
-		 FILE *output)
+		 node_t *address, FILE *output)
 {
+	if ( address )
+		print_instruction(address, output);
+	
   fprintf(output, "lw   %s, %d(%s)\n", dest->name, offset, start->name);
 }
 void print_instruction_mult(node_t *left, node_t *right, reg_t *reg, 
@@ -110,12 +119,12 @@ void print_instruction(node_t *node, FILE* output)
 
     case NT_Load:
       print_instruction_load(&node->load.reg, node->load.offset, 
-					&node->reg, output);
+					&node->reg, node->load.address, output);
     break;
 
 		case NT_Store:
 			print_instruction_store(&node->store.reg, node->store.offset,
-					node->store.data, output);
+					node->store.data, node->store.address, output);
 		break;
 
     case NT_LessThan:
@@ -151,5 +160,6 @@ void print_instruction(node_t *node, FILE* output)
 			assert(0 && "Unhandled node type" );
 	}
 }
+
 
 

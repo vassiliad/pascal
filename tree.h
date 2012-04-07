@@ -62,6 +62,12 @@ struct NODE_STRING_T
 
 struct NODE_LOAD_STORE_T
 {
+	node_t *address; // this will be used to generate the address for       //
+									// the memory access at runtime, its result will       //
+								 // be stored in @reg.                                  //
+								// In the event that the generated address is constant //
+							 // i.e. it does not depend on any variable             //
+						  // it will be added to @offset                         //
   reg_t reg;
   int offset;
   node_t *data;

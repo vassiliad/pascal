@@ -52,7 +52,7 @@ typedef struct // array of structs that hold limits ( dimensions )
 
 typedef struct
 {
-	int dataType; 	// see constants.h
+	enum VariableType dataType; 	// see constants.h
 	char *userType; // only used when @variableType = VT_User;
 } data_type_t;
 
