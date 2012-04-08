@@ -512,21 +512,17 @@ expressions : expressions COMMA expression
 {
   $$ = $1;
   $$.exprs = ( expression_t * ) realloc( $$.exprs, sizeof(expression_t) * ( $$.size+1));
-  //TODO auto prepei na fugei
-  if ( $3 )
-    $$.exprs[ $$.size++ ] = *$3;
-  else {
-		assert( 0 && "Failed to parse expression");
-    memset( $$.exprs + $$.size++, 0, sizeof(expression_t));
-  }
+
+	assert( $3 && "Failed to parse expression in expressions(1)");
+
+	$$.exprs[ $$.size++ ] = *$3;
+
+	free($3);
 }
 | expression
 {
-  if ( $1 == NULL ) {
-		assert(0 && "Failed to parse expression");
-    $$.exprs = ( expression_t* ) calloc(1, sizeof(expression_t));
-  } else
-    $$.exprs = $1;
+	assert($1 && "Failed to parse expression in expressions(2)");
+	$$.exprs = $1;
 
   $$.size = 1;
 }

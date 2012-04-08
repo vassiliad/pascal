@@ -15,7 +15,7 @@ type
   end;
   roto = array[dim1,dim2] of record_1;
 var x: integer;
-    y: char;
+    y: integer;
     test: record_2;
     papa: roto;
 		d: array1;
@@ -29,12 +29,14 @@ begin
 			x:= 20 * 5;
 			x:= 10
 		end
-	else
-		x:= 10
   ;
 	
+
 	if 2 < 3 then
-		x:= 5
+		d[3] := 5
+	;
+	if ( 3 < 4 ) then
+		d[5] := 12
 	;
 	
 	{ papa[0,'a'].arr[0] := 1; }

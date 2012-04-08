@@ -114,6 +114,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	p = root;
 
 	while ( (p=p->next) ) {
+		printf("**** generating %s\n", statement_type_to_string(p));
 		cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
 		cur->next->prev = cur;
 		cur->next->node = tree_generate_node(cur->node, p, scope, label);
@@ -138,6 +139,11 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 
 struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 {
+	int i, idim;
+	int isConstant = 1; // assume that the memory address can be computed
+										  // in compile-time
+	node_list_t *dims;
+	node_t *dim;
 	struct NODE_LOAD_STORE_T ret;
 	/*
 		 Traverse var, and accumulate offsets based on the types of each
@@ -147,7 +153,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 	
 	typedefs_entry_t *ty = NULL;
 	
-	
+	ret.reg = rg_get_zero();
 	ret.address = NULL; // TODO: This will be generated in case of user_type
 	ret.offset = 0; // TODO: This should indicate where the variable is stored in memory
 	
@@ -166,26 +172,56 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 		return ret;
 	}
 
-	// for scalar types there's no need to compute a register, we only need
-	// to set the offset.
+	// for scalar types there's no need to compute a register, we just
+	// have to calculate the offset.
 
 	printf("builtin: (%s)\n", var->id);
-	if ( var->expr.size ) {
-		printf("Is an array!\n");
-#warning Now I have to traverse the array of expressions and compute \
-		a value for every dimension multiply them in the correct order \
-		ie a[a,b,c] = (a*dim2*dim3 + b*dim3 + c)*sizeof(a) \
-		if this is not a constant instructions should be generated \
-	  that actually compute this number in runtime
-	} else {
-		printf("\tnot an array\n");
-		ret.offset = 0;
-	}
-
-
-	ret.reg = rg_get_zero();
-	ret.address = NULL;
 	
+	if ( var->expr.size )
+		printf("Is an array!\n");
+	else 
+		printf("\tnot an array\n");
+	
+	dims = NULL;
+	if ( var->expr.size ) {
+		for ( i=0; i<var->expr.size -1; i++ )
+		{
+			dim = NULL;
+			if ( var->expr.exprs[i].type != ET_Constant)
+				dim = tree_generate_value(&(var->expr.exprs[i]), scope);
+			else {
+				switch( var->expr.exprs[i].constant.type ) {
+					case VT_Iconst:
+						idim = var->expr.exprs[i].constant.iconst;
+					break;
+					case VT_Cconst:
+						idim = var->expr.exprs[i].constant.cconst;
+					break;
+					default:
+						assert(0 && "Not supported index type");
+				}
+			}
+		}
+
+		// to this point all dimensions except the last one
+		// have been taken care of
+		
+		// i = var->expr.size-1;
+
+		if ( var->expr.exprs[ i ].type == ET_Constant ) {
+			switch( var->expr.exprs[i].constant.type ) {
+					case VT_Iconst:
+						idim = var->expr.exprs[i].constant.iconst;
+					break;
+					case VT_Cconst:
+						idim = var->expr.exprs[i].constant.cconst;
+					break;
+					default:
+						assert(0 && "Not supported index type");
+				}
+		}
+	}
+		
 	return ret;
 }
 
@@ -388,6 +424,7 @@ node_t *tree_generate_if(node_t *prev,
 	char *label_false = NULL,
        *label_join = instr_label_unique(Label_Join);
 	
+
 	if ( _if->_false )
 		label_false = instr_label_unique(Label_Else);
 	else
@@ -405,13 +442,15 @@ node_t *tree_generate_if(node_t *prev,
 		assert( 0 && "If statements must have statements in their true block");
 	}
 
-  for ( p = btrue; p->next != NULL; p=p->next );
+	if ( bfalse ) {
+		for ( p = btrue; p->next != NULL; p=p->next );
 
-  p->next = (node_list_t*) calloc(1, sizeof(node_list_t));
-  p->next->prev = p;
-  p = p->next;
-
-  p->node = tree_generate_jump(label_join);
+		p->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+		p->next->prev = p;
+		p = p->next;
+		
+		p->node = tree_generate_jump(label_join);
+	}
 
 	node = (node_t*) calloc(1, sizeof(node_t));
 	node->type  = NT_If;

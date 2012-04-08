@@ -3,8 +3,10 @@
 
 statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 {
-	statement_t *p;
-	for( p = root; p; p=p->next ) {
+	statement_t *p, *t;
+	
+	p = root;
+	while ( p ) {
 		switch ( p->type ) {
 			case ST_If:
 			{
@@ -18,14 +20,28 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 					if ( constant.bconst == True ) {
 						if ( p->prev )
 							p->prev->next = n._true;
+
 						n._true->prev = p->prev;
-						p=n._true;
+
+						for ( t=n._true; t->next; t=t->next );
+
+						t->next = p->next;
+
+						if ( p->next )
+							p->next->prev = t;
+
+						p = n._true;
+
+						printf("replaced if with :%s\n", statement_type_to_string(p));
+						continue;
 					}	else {
 					// if the condition is always false replace IF with FALSE block
 						if ( p->prev )
 							p->prev->next = n._false;
 						n._false->prev = p->prev;
 						p = n._false;
+
+						continue;
 					}	
 				} else {
 					dead_code_elimination(n._true, scope);
@@ -79,6 +95,8 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 			case ST_Case:
 			break;
 		}
+
+		p = p->next;
 	}
 	
 
