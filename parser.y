@@ -487,8 +487,6 @@ variable : ID
   p->child = ( variable_t * ) calloc(1, sizeof(variable_t));
   p = p->child;
   p->id = $3;
-
-	printf("ASDSA: %s.%s\n", $$->id, $3);
 }
 | variable LBRACK expressions RBRACK 
 {
@@ -497,8 +495,6 @@ variable : ID
   while ( p->child )
     p = p->child;
   p->expr = $3;
-
-	printf("expressions: %s %d\n",$1->id, $3.size);
 }
 | LISTFUNC LPAREN expression RPAREN 
 {

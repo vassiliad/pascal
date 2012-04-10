@@ -140,13 +140,12 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 {
 	int i, idim, j;
 	int length;
-	int isConstant = 1; // assume that the memory address can be computed
-	// in compile-time
+	int type_size;
 	typedefs_entry_t *ty = NULL;
 	node_list_t *dims;
 	node_t *dim;
 	struct NODE_LOAD_STORE_T ret;
-	int *factors;
+	int *factors = NULL;
 
 	/*
 		 Traverse var, and accumulate offsets based on the types of each
@@ -156,20 +155,15 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 
 
 	ret.reg = rg_get_zero();
-	ret.address = NULL; // TODO: This will be generated in case of user_type
-	ret.offset = 0; // TODO: This should indicate where the variable is stored in memory
-
+	// TODO: This will be generated in case of user_type
+	ret.address = NULL; 
+	// TODO: This should indicate where the variable is stored in memory
+	ret.offset = 0; 
+	
 	if ( var->type.dataType == VT_User ) {
 		ty = st_typedef_find(var->type.userType, scope);
 
 		assert( (ty!=NULL) && "Type is not defined" );
-
-		printf("builtin: (%s)\n", var->id);
-
-		if ( var->expr.size )
-			printf("Is an array!\n");
-		else 
-			printf("\tnot an array\n");
 
 		dims = NULL;
 		if ( var->expr.size ) {
@@ -189,33 +183,23 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 			factors = (int*) malloc(sizeof(int)*var->expr.size);
 
 			assert( (ty->type==TT_Array) && "Type is not an array!");
+			
+			type_size = st_get_type_size(ty->array.typename.dataType
+				, ty->array.typename.userType, scope);
+
 
 			for ( i=0; i<ty->array.dims.size; i++ ) {
 				factors[i] = 1;
 
 				for (j=ty->array.dims.size-1; j>i; j-- ) {
-					printf("%d IsRange: %d\n", j, ty->array.dims.limits[j].isRange);
-					if ( ty->array.dims.limits[j].isRange ) {
+					if ( ty->array.dims.limits[j].isRange )
 						length = ty->array.dims.limits[j].range.to.iconst -
 							ty->array.dims.limits[j].range.from.iconst;
-
-						printf("  %d==>%d\n",
-							ty->array.dims.limits[j].range.to.iconst,
-							ty->array.dims.limits[j].range.from.iconst);
-
-					} else {
+					else
 						length = ty->array.dims.limits[j].limit.iconst;
-						printf("===> %d (%d)\n", 
-						ty->array.dims.limits[j].limit.iconst,
-						ty->array.dims.limits[j].limit.type);
-					}
-
-					printf("j: %d -- %d\n", j, length);
 
 					factors[i] *= length;
 				}
-
-				printf("[%s] Factors[%d] = %d\n",var->id, i, factors[i]);
 			}
 
 			for ( i=0; i<var->expr.size; i++ )
@@ -235,7 +219,15 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 							assert(0 && "Not supported index type");
 					}
 				}
+				if ( ty->array.dims.limits[j].isRange )
+					idim -= ty->array.dims.limits[i].range.from.iconst;
+				
+				idim *= factors[i];
+				ret.offset += idim;
+
 			}
+			
+			ret.offset *= type_size;
 		}
 
 	} else { // Scalar variable
@@ -243,8 +235,16 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 		ret.offset = 0;
 		ret.reg = rg_get_zero();
 	}
+	
+	if ( factors )
+		free(factors);
 
-
+	if ( var->child ) {
+		struct NODE_LOAD_STORE_T child = tree_generate_address(var->child,
+		scope);
+		//TODO: accumulate the registers!!!
+		ret.offset += child.offset;
+	}
 
 	return ret;
 }
@@ -274,7 +274,6 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 
 	ret->type = NT_Load;
 
-	printf("load : %s\n", var->id);
 	ret->load = tree_generate_address(var, scope);
 	ret->reg = rg_allocate();
 	return ret;

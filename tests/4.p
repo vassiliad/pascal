@@ -21,7 +21,7 @@ var x: integer;
 		d: array1;
 
 begin
-	test._size := papa[0,'a'].arr[0];
+	test._size := papa[0,'a'].arr[5];
 	test._size := d[0]; 
 
 	if  1 <  3  then 
