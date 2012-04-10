@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "expressions.h"
 #include "dead_code.h"
 
 statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
@@ -11,10 +12,11 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 			case ST_If:
 			{
 				statement_if_t n = p->_if;
+				constant_t constant;
 
 				// Attempt to evaluate the condition at compile time
-				if ( n.condition->type == ET_Constant ) {
-					constant_t constant = n.condition->constant;
+				if ( expression_evaluate(n.condition, &constant, scope) 
+						== Success ) {
 
 					// if the condition is always true replace IF with TRUE block
 					if ( constant.bconst == True ) {
@@ -51,9 +53,11 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 			case ST_While:
 			{
 				statement_while_t n = p->_while;
+				constant_t constant;
 
-				if ( n.condition->type == ET_Constant ) {
-					constant_t constant = n.condition->constant;
+				// Attempt to evaluate the condition at compile time
+				if ( expression_evaluate(n.condition, &constant, scope) 
+						== Success ) {
 					
 					// this while's loop will never be executed, remove it
 					if ( constant.bconst == False ) {

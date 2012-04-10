@@ -114,7 +114,6 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	p = root;
 
 	while ( (p=p->next) ) {
-		printf("**** generating %s\n", statement_type_to_string(p));
 		cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
 		cur->next->prev = cur;
 		cur->next->node = tree_generate_node(cur->node, p, scope, label);
@@ -492,7 +491,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 	if ( stmt == NULL )
 		return NULL;
 
-	printf("node_type: %s\n", statement_type_to_string(stmt));
+	//printf("node_type: %s\n", statement_type_to_string(stmt));
 
 	switch ( stmt->type )
 	{
