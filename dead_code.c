@@ -31,8 +31,6 @@ statement_t *dead_code_elimination(statement_t *root, scope_t *scope)
 							p->next->prev = t;
 
 						p = n._true;
-
-						printf("replaced if with :%s\n", statement_type_to_string(p));
 						continue;
 					}	else {
 					// if the condition is always false replace IF with FALSE block

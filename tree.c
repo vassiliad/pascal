@@ -31,7 +31,7 @@ node_t *tree_generate_branchz( node_t *condition, char *label);
 node_t *tree_generate_jump(char* label);
 node_t *tree_generate_nop(char *label);
 node_t *tree_generate_if(node_t *prev, statement_if_t *_if, 
-												 scope_t *scope, char *label);
+		scope_t *scope, char *label);
 node_t *tree_generate_assignment(node_t *prev,
 		statement_assignment_t *assign, scope_t *scope, char *label);
 
@@ -40,7 +40,7 @@ node_t *tree_generate_nop(char *label)
 	node_t *node;
 	node = (node_t*) calloc(1, sizeof(node_t));
 	node->type = NT_Nop;
-  node->label = label;
+	node->label = label;
 
 	return node;
 }
@@ -74,7 +74,7 @@ node_t *tree_generate_branchz(node_t *condition, char *label)
 }
 
 char *instr_label_last(enum LabelType type) {
- 	static char lookup[5][10] = { "Else", "Join", "Loop", "Enter", "Exit" };
+	static char lookup[5][10] = { "Else", "Join", "Loop", "Enter", "Exit" };
 
 	char temp[100];
 
@@ -97,7 +97,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 { 
 	node_list_t *tree, *cur;
 	statement_t *p;
-  char *label = NULL;
+	char *label = NULL;
 
 	if ( root == NULL )
 		return NULL;
@@ -119,19 +119,19 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 		cur->next->prev = cur;
 		cur->next->node = tree_generate_node(cur->node, p, scope, label);
 
-    cur = cur->next;
+		cur = cur->next;
 
-    if ( cur->node->type == NT_If ) {
-        label = instr_label_last(Label_Join);
-      if ( p->next == NULL ) {
-        cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
-        cur->next->prev = cur;
+		if ( cur->node->type == NT_If ) {
+			label = instr_label_last(Label_Join);
+			if ( p->next == NULL ) {
+				cur->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+				cur->next->prev = cur;
 
-        cur->next->node = tree_generate_nop(label);
-        break;
-      }
-    } else
-      label = NULL;
+				cur->next->node = tree_generate_nop(label);
+				break;
+			}
+		} else
+			label = NULL;
 	}
 
 	return tree;
@@ -139,89 +139,114 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 
 struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 {
-	int i, idim;
+	int i, idim, j;
+	int length;
 	int isConstant = 1; // assume that the memory address can be computed
-										  // in compile-time
+	// in compile-time
+	typedefs_entry_t *ty = NULL;
 	node_list_t *dims;
 	node_t *dim;
 	struct NODE_LOAD_STORE_T ret;
+	int *factors;
+
 	/*
 		 Traverse var, and accumulate offsets based on the types of each
 		 @child in var ( see variable_t in bison_union.h ) then add the base
 		 address and return it as a icosnt type node_t.
 	 */
-	
-	typedefs_entry_t *ty = NULL;
-	
+
+
 	ret.reg = rg_get_zero();
 	ret.address = NULL; // TODO: This will be generated in case of user_type
 	ret.offset = 0; // TODO: This should indicate where the variable is stored in memory
-	
+
 	if ( var->type.dataType == VT_User ) {
 		ty = st_typedef_find(var->type.userType, scope);
 
 		assert( (ty!=NULL) && "Type is not defined" );
 
-		ret.offset = 1000;
-		printf("custom: (%s)%s\n",var->id, ty->name);
+		printf("builtin: (%s)\n", var->id);
+
 		if ( var->expr.size )
-			printf("\tis an array!\n");
-		else
+			printf("Is an array!\n");
+		else 
 			printf("\tnot an array\n");
-		
-		return ret;
-	}
 
-	// for scalar types there's no need to compute a register, we just
-	// have to calculate the offset.
+		dims = NULL;
+		if ( var->expr.size ) {
+			/*
+				 First generate all factors
 
-	printf("builtin: (%s)\n", var->id);
-	
-	if ( var->expr.size )
-		printf("Is an array!\n");
-	else 
-		printf("\tnot an array\n");
-	
-	dims = NULL;
-	if ( var->expr.size ) {
-		for ( i=0; i<var->expr.size -1; i++ )
-		{
-			dim = NULL;
-			if ( var->expr.exprs[i].type != ET_Constant)
-				dim = tree_generate_value(&(var->expr.exprs[i]), scope);
-			else {
-				switch( var->expr.exprs[i].constant.type ) {
-					case VT_Iconst:
-						idim = var->expr.exprs[i].constant.iconst;
-					break;
-					case VT_Cconst:
-						idim = var->expr.exprs[i].constant.cconst;
-					break;
-					default:
-						assert(0 && "Not supported index type");
+				 &x[i0,i1,i2,...,in-1] = sizeof(x)*( in-1 + (dim_n-1)*in-2 
+				 + (dim_n-1*dim_n-2)*in-3 + 
+				 + ... +
+				 + (dim_n-1*dim_n-2*...*dim_i+1)*ii + 
+				 + ... +
+				 + (dim_n-1*dim_n-2*...*dim1)*i0 )
+
+				 factors[i] = 1 * (dim_n-1*dim_n-2*dim_i+1)
+			 */
+
+			factors = (int*) malloc(sizeof(int)*var->expr.size);
+
+			assert( (ty->type==TT_Array) && "Type is not an array!");
+
+			for ( i=0; i<ty->array.dims.size; i++ ) {
+				factors[i] = 1;
+
+				for (j=ty->array.dims.size-1; j>i; j-- ) {
+					printf("%d IsRange: %d\n", j, ty->array.dims.limits[j].isRange);
+					if ( ty->array.dims.limits[j].isRange ) {
+						length = ty->array.dims.limits[j].range.to.iconst -
+							ty->array.dims.limits[j].range.from.iconst;
+
+						printf("  %d==>%d\n",
+							ty->array.dims.limits[j].range.to.iconst,
+							ty->array.dims.limits[j].range.from.iconst);
+
+					} else {
+						length = ty->array.dims.limits[j].limit.iconst;
+						printf("===> %d (%d)\n", 
+						ty->array.dims.limits[j].limit.iconst,
+						ty->array.dims.limits[j].limit.type);
+					}
+
+					printf("j: %d -- %d\n", j, length);
+
+					factors[i] *= length;
+				}
+
+				printf("[%s] Factors[%d] = %d\n",var->id, i, factors[i]);
+			}
+
+			for ( i=0; i<var->expr.size; i++ )
+			{
+				dim = NULL;
+				if ( var->expr.exprs[i].type != ET_Constant)
+					dim = tree_generate_value(&(var->expr.exprs[i]), scope);
+				else {
+					switch( var->expr.exprs[i].constant.type ) {
+						case VT_Iconst:
+							idim = var->expr.exprs[i].constant.iconst;
+							break;
+						case VT_Cconst:
+							idim = var->expr.exprs[i].constant.cconst;
+							break;
+						default:
+							assert(0 && "Not supported index type");
+					}
 				}
 			}
 		}
 
-		// to this point all dimensions except the last one
-		// have been taken care of
-		
-		// i = var->expr.size-1;
-
-		if ( var->expr.exprs[ i ].type == ET_Constant ) {
-			switch( var->expr.exprs[i].constant.type ) {
-					case VT_Iconst:
-						idim = var->expr.exprs[i].constant.iconst;
-					break;
-					case VT_Cconst:
-						idim = var->expr.exprs[i].constant.cconst;
-					break;
-					default:
-						assert(0 && "Not supported index type");
-				}
-		}
+	} else { // Scalar variable
+		ret.address = NULL;
+		ret.offset = 0;
+		ret.reg = rg_get_zero();
 	}
-		
+
+
+
 	return ret;
 }
 
@@ -239,8 +264,8 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 
 	ret->type = NT_Store;
 	ret->store = tree_generate_address(var, scope);
-  ret->store.offset = 0;
-  ret->store.data = data;
+	ret->store.offset = 0;
+	ret->store.data = data;
 	return ret;
 }
 
@@ -249,10 +274,10 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Load;
-  
+
 	printf("load : %s\n", var->id);
-  ret->load = tree_generate_address(var, scope);
-  ret->reg = rg_allocate();
+	ret->load = tree_generate_address(var, scope);
+	ret->reg = rg_allocate();
 	return ret;
 }
 
@@ -269,7 +294,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	{
 		case ET_Constant:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
-      node->reg = rg_allocate();
+			node->reg = rg_allocate();
 
 			switch ( expr->constant.type )
 			{
@@ -295,7 +320,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 				default:
 					assert(0 && "Unknown constant type");
 					return 0;
-				break;
+					break;
 			}
 			break;
 
@@ -334,7 +359,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 							// slight optimization when both operands are constants
 							// compute the value in compile time
-							
+
 							left = tree_generate_value( e_left, scope );
 							right = tree_generate_value( e_right, scope );
 
@@ -365,27 +390,27 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 							node->bin.left = left;
 							node->bin.right = right;
-              node->reg = rg_allocate();
+							node->reg = rg_allocate();
 						} 
-          break;
-          case RelopL:
-          {
-            node_t *left, *right;
-            left = tree_generate_value(expr->binary.left, scope);
-            right = tree_generate_value(expr->binary.right, scope);
-            node = (node_t*) calloc(1, sizeof(node_t));
-            
-            node->type = NT_LessThan;
-            node->bin.left = left;
-            node->bin.right = right;
-            node->reg = rg_allocate();
-            break;
-          }
+						break;
+					case RelopL:
+						{
+							node_t *left, *right;
+							left = tree_generate_value(expr->binary.left, scope);
+							right = tree_generate_value(expr->binary.right, scope);
+							node = (node_t*) calloc(1, sizeof(node_t));
+
+							node->type = NT_LessThan;
+							node->bin.left = left;
+							node->bin.right = right;
+							node->reg = rg_allocate();
+							break;
+						}
 					default:
-            printf("%d\n",expr->binary.op);
+						printf("%d\n",expr->binary.op);
 						assert(0 && "Unhandled binary expression");
 				}
-					
+
 			}
 	}
 
@@ -402,28 +427,28 @@ node_t *tree_generate_assignment(node_t *prev,
 		assert( 0 && "Unimplemented string assignment");
 	} else
 		assert( 0 && "Invalid assignment type");
-	
+
 	if ( prev )
 		prev->next = result;
 	result->label = label;
-  result->prev = prev;
+	result->prev = prev;
 	return result;
 }
 
 node_t *tree_generate_if(node_t *prev, 
-	statement_if_t *_if,  scope_t *scope, char *label)
+		statement_if_t *_if,  scope_t *scope, char *label)
 {
 	node_list_t *btrue = NULL,
-			 *bfalse= NULL,
-       *p = NULL;
+							*bfalse= NULL,
+							*p = NULL;
 
 	node_t *jbranch=NULL,
-			  *ccon  = NULL,
-				*node = NULL;
+				 *ccon  = NULL,
+				 *node = NULL;
 
 	char *label_false = NULL,
-       *label_join = instr_label_unique(Label_Join);
-	
+			 *label_join = instr_label_unique(Label_Join);
+
 
 	if ( _if->_false )
 		label_false = instr_label_unique(Label_Else);
@@ -434,9 +459,9 @@ node_t *tree_generate_if(node_t *prev,
 	jbranch = tree_generate_branchz(ccon, label_false);
 	btrue  = tree_generate_tree(_if->_true, scope);
 	bfalse = tree_generate_tree(_if->_false, scope);
-  
-  if ( bfalse )
-    bfalse->node->label = label_false;
+
+	if ( bfalse )
+		bfalse->node->label = label_false;
 
 	if ( btrue == NULL ) {
 		assert( 0 && "If statements must have statements in their true block");
@@ -448,7 +473,7 @@ node_t *tree_generate_if(node_t *prev,
 		p->next = (node_list_t*) calloc(1, sizeof(node_list_t));
 		p->next->prev = p;
 		p = p->next;
-		
+
 		p->node = tree_generate_jump(label_join);
 	}
 
@@ -456,7 +481,7 @@ node_t *tree_generate_if(node_t *prev,
 	node->type  = NT_If;
 	node->_if._true = btrue;
 	node->_if._false = bfalse;
-  node->_if.branch = jbranch;
+	node->_if.branch = jbranch;
 	node->label = label;
 	return node;
 }
@@ -472,41 +497,41 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 	switch ( stmt->type )
 	{
 		case ST_Assignment:
-		{
-			result = tree_generate_assignment(prev, &(stmt->assignment),
-										scope, label);
-			assert(result!=NULL && "Failed to generate Assignment");
-			return result;
-		}
-		break;
+			{
+				result = tree_generate_assignment(prev, &(stmt->assignment),
+						scope, label);
+				assert(result!=NULL && "Failed to generate Assignment");
+				return result;
+			}
+			break;
 
 		case ST_If:
-		{
-			result = tree_generate_if(prev, &stmt->_if,	scope, label);
-			assert( result!=NULL && "Failed to generate if statement");
-			return result;
-    }
-		break;
+			{
+				result = tree_generate_if(prev, &stmt->_if,	scope, label);
+				assert( result!=NULL && "Failed to generate if statement");
+				return result;
+			}
+			break;
 
 		case ST_While:
 			NODE_UNIMPLEMENTED("While statement");
-		break;
+			break;
 
 		case ST_For:
 			NODE_UNIMPLEMENTED("For statement");
-		break;
+			break;
 
 		case ST_With:
 			NODE_UNIMPLEMENTED("With statement");
-		break;
+			break;
 
 		case ST_Call:
 			NODE_UNIMPLEMENTED("Call statement");
-		break;
+			break;
 
 		case ST_Case:
 			NODE_UNIMPLEMENTED("Case statement");
-		break;
+			break;
 
 		default:
 			NODE_UNIMPLEMENTED("Some kind of statement");

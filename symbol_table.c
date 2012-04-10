@@ -471,8 +471,16 @@ int st_get_type_size(int type, char* userType, scope_t *scope)
 								printf("%d is less than 1\n", i);
 								return 0;
 							}
+							
+							l->limit.type = LT_Iconst;
+							l->limit.iconst = ret;
+
 							size *= ret;
 						}
+						break;
+
+						case LT_Iconst:
+							size*= l->limit.iconst;
 						break;
 
 						default:
