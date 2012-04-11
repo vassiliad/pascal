@@ -142,8 +142,8 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 	int length;
 	int type_size;
 	typedefs_entry_t *ty = NULL;
-	node_list_t *dims;
 	node_t *dim;
+	node_t *accumulate = NULL;
 	struct NODE_LOAD_STORE_T ret;
 	int *factors = NULL;
 
@@ -153,19 +153,16 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 		 address and return it as a icosnt type node_t.
 	 */
 
-
-	ret.reg = rg_get_zero();
-	// TODO: This will be generated in case of user_type
+	
 	ret.address = NULL; 
-	// TODO: This should indicate where the variable is stored in memory
 	ret.offset = 0; 
+
 	
 	if ( var->type.dataType == VT_User ) {
 		ty = st_typedef_find(var->type.userType, scope);
 
 		assert( (ty!=NULL) && "Type is not defined" );
 
-		dims = NULL;
 		if ( var->expr.size ) {
 			/*
 				 First generate all factors
@@ -204,10 +201,56 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 
 			for ( i=0; i<var->expr.size; i++ )
 			{
-				dim = NULL;
-				if ( var->expr.exprs[i].type != ET_Constant)
-					dim = tree_generate_value(&(var->expr.exprs[i]), scope);
-				else {
+				if ( var->expr.exprs[i].type != ET_Constant) {
+
+					if ( ty->array.dims.limits[j].isRange ) {
+						// since this dimension is a range, we have to subtract
+						// the beginning of the range from the expression that is used
+						// as an index
+						
+						// but first the constant is generated
+
+						int itype;
+						
+						switch( ty->array.dims.limits[j].range.from.type ) {
+							case LT_Iconst:
+								itype = VT_Iconst;
+							break;
+
+							case LT_Bconst:
+								itype = VT_Bconst; // actually this might be overkill
+							break;
+
+							case LT_Cconst:
+								itype = VT_Cconst;
+							break;
+
+							default:
+								assert( 0 && "Invalid index type");
+							break;
+						}
+
+						expression_t *constant = 	expression_constant(itype,
+							&(ty->array.dims.limits[j].range.from.iconst));
+						
+						expression_t *sub = expression_binary(&(var->expr.exprs[i])
+								, constant, AddopM);
+						dim = tree_generate_value(sub, scope);
+					} else 
+						dim = tree_generate_value( &(var->expr.exprs[i]), scope);
+					
+					if ( accumulate == NULL )
+						accumulate = dim;
+					else {
+						node_t *add = (node_t*) calloc(1, sizeof(node_t));
+						add->type = NT_Add;
+						add->bin.left  = accumulate;
+						add->bin.right = dim;
+						add->reg = rg_allocate();
+
+						accumulate = add;
+					}
+				} else {
 					switch( var->expr.exprs[i].constant.type ) {
 						case VT_Iconst:
 							idim = var->expr.exprs[i].constant.iconst;
@@ -218,22 +261,36 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 						default:
 							assert(0 && "Not supported index type");
 					}
-				}
-				if ( ty->array.dims.limits[j].isRange )
-					idim -= ty->array.dims.limits[i].range.from.iconst;
-				
-				idim *= factors[i];
-				ret.offset += idim;
-
+					if ( ty->array.dims.limits[j].isRange )
+						idim -= ty->array.dims.limits[i].range.from.iconst;
+					
+					idim *= factors[i];
+					ret.offset += idim;
+				}	
 			}
 			
 			ret.offset *= type_size;
 		}
 
+		// There's also dynamic parts that need to be calculated
+		// at run-time
+		if ( accumulate != NULL ) {
+			expression_t *constant = expression_constant(VT_Iconst
+				, &type_size);
+			
+			node_t *val = tree_generate_value(constant, NULL);
+
+			ret.address = (node_t*) calloc(1, sizeof(node_t));
+			ret.address->type = NT_Mult;
+			ret.address->bin.left = val;
+			ret.address->bin.right = accumulate;
+			ret.address->reg = rg_allocate();
+
+			free(constant);
+		}
 	} else { // Scalar variable
 		ret.address = NULL;
 		ret.offset = 0;
-		ret.reg = rg_get_zero();
 	}
 	
 	if ( factors )
@@ -242,8 +299,20 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 	if ( var->child ) {
 		struct NODE_LOAD_STORE_T child = tree_generate_address(var->child,
 		scope);
-		//TODO: accumulate the registers!!!
 		ret.offset += child.offset;
+
+		if ( ret.address == NULL )
+			ret.address = child.address;
+		else if ( child.address ) {
+			// accumulate the dynamic parts of the memory address
+			node_t *address;
+			address = (node_t*) calloc(1, sizeof(node_t));
+			address->type = NT_Add;
+			address->bin.left  = ret.address;
+			address->bin.right = child.address;
+
+			ret.address = address;
+		}
 	}
 
 	return ret;

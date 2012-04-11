@@ -13,7 +13,7 @@ register.o: register.c register.h
 dead_code.o: dead_code.c dead_code.h
 	gcc -c -Wall -ggdb dead_code.c -o dead_code.o
 
-printer.o: printer.c printer.h
+printer.o: printer.c printer.h tree.h
 	gcc -c -Wall -ggdb printer.c -o printer.o
 
 tree.o: tree.c tree.h

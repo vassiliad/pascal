@@ -68,7 +68,6 @@ struct NODE_LOAD_STORE_T
 								// In the event that the generated address is constant //
 							 // i.e. it does not depend on any variable             //
 						  // it will be added to @offset                         //
-  reg_t reg;
   int offset;
   node_t *data;
 };

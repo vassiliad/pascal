@@ -22,7 +22,7 @@ var x: integer;
 
 begin
 	test._size := papa[0,'a'].arr[5];
-	test._size := d[0]; 
+	test._size := d[x]; 
 
 	if  1 <  3  then 
 		begin
