@@ -21,7 +21,8 @@ enum LabelType
 static unsigned int label_counter[] = { 0, 0, 0, 0, 0 };
 
 node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope, char *label);
-struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope);
+struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
+	 variable_t *var, scope_t *scope);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
 node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope);
 node_t *tree_generate_load(variable_t *var, scope_t *scope);
@@ -136,7 +137,8 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	return tree;
 }
 
-struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
+struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
+	variable_t *var, scope_t *scope)
 {
 	int i, idim, j;
 	int length;
@@ -153,10 +155,8 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 		 address and return it as a icosnt type node_t.
 	 */
 
-	
 	ret.address = NULL; 
 	ret.offset = 0; 
-
 	
 	if ( var->type.dataType == VT_User ) {
 		ty = st_typedef_find(var->type.userType, scope);
@@ -288,16 +288,46 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 
 			free(constant);
 		}
+
+
+		
 	} else { // Scalar variable
 		ret.address = NULL;
 		ret.offset = 0;
+	}
+
+	if ( parent && parent->type.dataType == VT_User ) {
+
+		ty = st_typedef_find(parent->type.userType, scope);
+		// Next add the offset that originates from record fields
+ 		record_t *rec = NULL;
+		if ( ty->type == TT_Array ) {
+			if ( ty->array.typename.dataType == VT_User ) {
+				ty = st_typedef_find(ty->array.typename.userType, scope);
+				
+				assert( (ty!=NULL) && "Array typedef is not defined!");
+
+				if ( ty->type == TT_Record )
+					rec = &(ty->record);
+			}
+		} else if ( ty->type == TT_Record ) {
+			rec = &(ty->record);
+		} else
+			rec = NULL;
+
+		if ( rec ) {
+			for ( i=0; strcasecmp(var->id,rec->ids[i])!=0 && i<rec->size
+					 ;i++ )
+				ret.offset += st_get_type_size(rec->types[i].dataType
+					, rec->types[i].userType,scope);
+		}
 	}
 	
 	if ( factors )
 		free(factors);
 
 	if ( var->child ) {
-		struct NODE_LOAD_STORE_T child = tree_generate_address(var->child,
+		struct NODE_LOAD_STORE_T child = tree_generate_address(var, var->child,
 		scope);
 		ret.offset += child.offset;
 
@@ -315,6 +345,9 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *var, scope_t *scope)
 		}
 	}
 
+
+
+
 	return ret;
 }
 
@@ -331,7 +364,7 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
 
 	ret->type = NT_Store;
-	ret->store = tree_generate_address(var, scope);
+	ret->store = tree_generate_address(NULL, var, scope);
 	ret->store.offset = 0;
 	ret->store.data = data;
 	return ret;
@@ -343,7 +376,7 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 
 	ret->type = NT_Load;
 
-	ret->load = tree_generate_address(var, scope);
+	ret->load = tree_generate_address(NULL, var, scope);
 	ret->reg = rg_allocate();
 	return ret;
 }
