@@ -151,6 +151,11 @@ void print_instruction(node_t *node, FILE* output)
       fprintf(output, "j    %s\n", node->jump_label);
     break;
 
+		case NT_While:
+			print_instruction(node->_while.branch, output);
+			print_instruction_tree(node->_while.loop, output);
+		break;
+
     case NT_If:
       print_instruction(node->_if.branch, output);
       if ( node->_if._true)

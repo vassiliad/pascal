@@ -221,7 +221,6 @@ statement_t *statement_call(char*id, expression_t *params, int size, scope_t *sc
   call->call.type = func->type;
   call->call.size = size;
   call->call.params = params;
-
   return call;
 }
 

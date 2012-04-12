@@ -12,6 +12,7 @@ typedef struct NODE_LOAD_STORE_T node_store_t;
 typedef struct NODE_STRING_T node_string_t;
 typedef struct NODE_LIST_T node_list_t;
 typedef struct NODE_IF_T node_if_t;
+typedef struct NODE_WHILE_T node_while_t;
 typedef struct NODE_BRANCHZ_T node_branchz_t;
 
 enum NodeType
@@ -33,6 +34,7 @@ enum NodeType
 	NT_Jump,		// char *( jump_label )
 	NT_BranchZ=15, // node_branchz_t ( branchZ )
   NT_LessThan,// node_bin_t ( bin )
+	NT_While,   // node_while_t (_while )
   NT_Nop,     // none!!
 };
 
@@ -58,6 +60,12 @@ struct NODE_STRING_T
 {
   char *mem;
   int size;
+};
+
+struct NODE_WHILE_T
+{
+	node_t *branch;
+	node_list_t *loop;
 };
 
 struct NODE_LOAD_STORE_T
@@ -95,6 +103,7 @@ struct NODE_T
 		char *jump_label;
 		node_branchz_t branchz;
 		node_if_t _if;
+		node_while_t _while;
   };
 	reg_t reg;
   node_t *next, *prev;
