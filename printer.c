@@ -104,7 +104,7 @@ void print_instruction(node_t *node, FILE* output)
 	if ( node->label )
 		fprintf(output, "%s : ", node->label );
 
-  //printf("#\t\tnode type: %d\n", node->type);
+  // printf("#\t\tnode type: %d (%p)\n", node->type, node);
 	
 	switch ( node->type ) {
 		case NT_Add:

@@ -103,6 +103,8 @@ void list_add(node_list_t **root, node_list_t **tail, node_t *node)
 		(*root)->next = NULL;
 		(*root)->prev = NULL;
 		(*root)->node = node;
+		
+		return;
 	}
 
 	(*tail)->next = (node_list_t*) calloc(1, sizeof(node_list_t));
@@ -130,13 +132,14 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 		list_add(&nroot, &ntail, node);
 		prev = ntail->node;
 
+		p = p->next;
 		
 		switch( prev->type ) {
 			case NT_While:
 			case NT_If:
 			{
 				label = instr_label_last(Label_Join);
-				if ( p->next == NULL )
+				if ( p == NULL )
 					list_add(&nroot, &ntail, tree_generate_nop(label));
 			}
 			break;
@@ -145,7 +148,6 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 				label = NULL;
 		}
 
-		p = p->next;
 	}
 
 	return nroot;
@@ -642,7 +644,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 	if ( stmt == NULL )
 		return NULL;
 
-	//printf("node_type: %s\n", statement_type_to_string(stmt));
+	printf("node_type: %s\n", statement_type_to_string(stmt));
 
 	switch ( stmt->type )
 	{
