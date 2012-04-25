@@ -31,6 +31,8 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope);
 node_t *tree_generate_branchz( node_t *condition, char *label);
 node_t *tree_generate_jump(char* label);
 node_t *tree_generate_nop(char *label);
+node_t *tree_generate_for(node_t *prev, statement_for_t *_for, 
+		scope_t *scope, char *label);
 node_t *tree_generate_while(node_t *prev, statement_while_t *_while, 
 		scope_t *scope, char *label);
 node_t *tree_generate_if(node_t *prev, statement_if_t *_if, 
@@ -130,6 +132,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	while ( p ) {
 		node = tree_generate_node(prev, p, scope, label);
 		list_add(&nroot, &ntail, node);
+
 		prev = ntail->node;
 
 		p = p->next;
@@ -551,6 +554,49 @@ node_t *tree_generate_assignment(node_t *prev,
 	result->prev = prev;
 	return result;
 }
+
+node_t *tree_generate_for(node_t *prev, statement_for_t * _for, 
+		scope_t *scope, char *label)
+{
+	node_t *node = NULL;
+	node_list_t *loop = NULL;
+	node_t *ccon = NULL,
+				 *jbranch = NULL;
+
+	char *label_join = instr_label_last(Label_Join);
+	
+	if ( label == NULL )
+		label = instr_label_unique(Label_Enter);
+
+	ccon = tree_generate_value(_for->condition, scope);
+	jbranch = tree_generate_branchz(ccon, label_join);
+	
+	loop = tree_generate_tree(_for->loop, scope);
+
+
+	node = (node_t*) calloc(1, sizeof(node_t));
+	node->type = NT_For;
+	node->_for.loop = loop;
+	node->_for.branch = jbranch;
+	node->label = label;
+
+	while ( loop->next )
+		loop = loop->next;
+	
+	loop->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+	loop->next->prev = loop;
+	loop = loop->next;
+	loop->node = tree_generate_node(NULL, _for->iter_op, scope, NULL );
+
+	loop->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+	loop->next->prev = loop;
+	loop = loop->next;
+	loop->node = tree_generate_jump(label);
+
+	return node;
+}
+
+
 node_t *tree_generate_while(node_t *prev, statement_while_t *_while, 
 		scope_t *scope, char *label)
 {
@@ -638,6 +684,7 @@ node_t *tree_generate_if(node_t *prev,
 	return node;
 }
 
+// TODO @prev is not actually used, it's just passed around
 node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char* label)
 {  
 	node_t *result = NULL;
@@ -674,7 +721,8 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		break;
 
 		case ST_For:
-			NODE_UNIMPLEMENTED("For statement");
+			result  = tree_generate_for(prev, &stmt->_for, scope, label);
+			assert ( (result != NULL ) && "Failed to generate for statement");
 			break;
 
 		case ST_With:
@@ -692,5 +740,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		default:
 			NODE_UNIMPLEMENTED("Some kind of statement");
 	}
+
+	return NULL;
 }
 

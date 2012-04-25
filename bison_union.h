@@ -264,9 +264,11 @@ struct VAR_T
 
 struct STATEMENT_FOR_T
 {
-  expression_t *from, *to;
-  struct VAR_T *var;
+  expression_t *condition;
+	statement_t *init;
   statement_t *loop;
+	statement_t *iter_op; // either increase or decrease iterator
+  struct VAR_T *iterator;
 	enum IterSpaceType type;
 };
 

@@ -145,16 +145,37 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
     printf("%d) statement_for: kati paei poly strava , to iter_space->type einai sapio\n", yylineno);
     return NULL;
   }
-  
+ 
+	expression_t *exp_iter,
+						   *exp_one;
+	
+	variable_t *iterator;
+	iterator = (variable_t*) calloc(1, sizeof(variable_t));
+	iterator->id = var->id;
+	iterator->type = var->type;
+
+	int one = 1;
+	exp_one = expression_constant( VT_Iconst, &(one));
+	exp_iter = expression_variable(iterator, scope);
+
+
   _for = ( statement_t * ) calloc(1, sizeof(statement_t));
   _for->type = ST_For;
-  _for->_for.var = var;
+  _for->_for.iterator = var;
   _for->_for.loop = loop;
-  _for->_for.from = iter_space->from;
-  _for->_for.to = iter_space->to;
+  _for->_for.init = statement_assignment(iterator, iter_space->from, scope);
+	_for->_for.condition = expression_binary( exp_iter,
+			  expression_constant( VT_Iconst, &(iter_space->to)), RelopLE);
 	_for->_for.type = iter_space->type;
-
-	printf("Setting readOnly for %s\n", var->id);
+	
+	
+	if ( iter_space->type == FT_To )
+		_for->_for.iter_op = statement_assignment( iterator,
+				expression_binary(exp_iter, exp_one, AddopP), scope);
+	else
+		_for->_for.iter_op  = statement_assignment( iterator,
+				expression_binary(exp_iter, exp_one, AddopM), scope);
+	
 	var->readOnly = 1;
 
   return _for;
