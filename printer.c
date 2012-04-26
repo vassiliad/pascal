@@ -4,6 +4,8 @@
 void print_instruction(node_t *node, FILE* output);
 void print_instruction_add(node_t *left, node_t *right, reg_t *reg, 
 			FILE* output);
+void print_instruction_sub(node_t *left, node_t *right, reg_t *reg,
+			 FILE* output);
 void print_instruction_store(int offset, node_t *data, 
 			node_t *address, FILE* output);
 void print_instruction_load(int offset, reg_t *dest,
@@ -45,6 +47,17 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
 						left->reg.name, right->reg.name);
     }
   }
+}
+
+
+void print_instruction_sub(node_t *left, node_t *right, reg_t *reg,
+			 FILE* output)
+{
+  print_instruction(left, output);
+  print_instruction(right, output);
+
+  fprintf(output, "sub %s, %s, %s\n", reg->name, 
+        left->reg.name, right->reg.name);
 }
 
 void print_instruction_store(int offset, node_t *data,
@@ -108,6 +121,13 @@ void print_instruction(node_t *node, FILE* output)
   // printf("#\t\tnode type: %d (%p)\n", node->type, node);
 	
 	switch ( node->type ) {
+
+    case NT_Sub:
+			print_instruction_sub(node->bin.left, node->bin.right,
+					&node->reg, output);
+		break;
+
+
 		case NT_Add:
 			print_instruction_add(node->bin.left, node->bin.right,
 					&node->reg, output);
