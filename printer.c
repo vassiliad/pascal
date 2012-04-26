@@ -155,6 +155,12 @@ void print_instruction(node_t *node, FILE* output)
 			print_instruction(node->_while.branch, output);
 			print_instruction_tree(node->_while.loop, output);
 		break;
+    
+    case NT_For:
+      print_instruction(node->_for.init, output);
+      print_instruction(node->_for.branch, output);
+      print_instruction_tree(node->_for.loop, output);
+    break;
 
     case NT_If:
       print_instruction(node->_if.branch, output);

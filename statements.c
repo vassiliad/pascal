@@ -164,17 +164,24 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
   _for->_for.iterator = var;
   _for->_for.loop = loop;
   _for->_for.init = statement_assignment(iterator, iter_space->from, scope);
-	_for->_for.condition = expression_binary( exp_iter,
-			  expression_constant( VT_Iconst, &(iter_space->to)), RelopLE);
-	_for->_for.type = iter_space->type;
+  _for->_for.type = iter_space->type;
 	
 	
-	if ( iter_space->type == FT_To )
+	if ( iter_space->type == FT_To ) {
+    _for->_for.condition = expression_binary(
+          iter_space->to,
+          exp_iter,
+			    RelopL);
+
 		_for->_for.iter_op = statement_assignment( iterator,
 				expression_binary(exp_iter, exp_one, AddopP), scope);
-	else
+	} else {
+    _for->_for.condition = expression_binary( exp_iter,
+			  iter_space->to, RelopL);
+
 		_for->_for.iter_op  = statement_assignment( iterator,
 				expression_binary(exp_iter, exp_one, AddopM), scope);
+  }
 	
 	var->readOnly = 1;
 

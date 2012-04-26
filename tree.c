@@ -139,6 +139,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 		
 		switch( prev->type ) {
 			case NT_While:
+      case NT_For:
 			case NT_If:
 			{
 				label = instr_label_last(Label_Join);
@@ -564,20 +565,22 @@ node_t *tree_generate_for(node_t *prev, statement_for_t * _for,
 				 *jbranch = NULL;
 
 	char *label_join = instr_label_last(Label_Join);
+  char *label_iter_step = instr_label_unique(Label_Enter);
 	
-	if ( label == NULL )
-		label = instr_label_unique(Label_Enter);
 
 	ccon = tree_generate_value(_for->condition, scope);
 	jbranch = tree_generate_branchz(ccon, label_join);
-	
-	loop = tree_generate_tree(_for->loop, scope);
+	jbranch->label = label_iter_step;
 
+	loop = tree_generate_tree(_for->loop, scope);
+  
+  
 
 	node = (node_t*) calloc(1, sizeof(node_t));
 	node->type = NT_For;
 	node->_for.loop = loop;
 	node->_for.branch = jbranch;
+  node->_for.init = tree_generate_node(prev, _for->init, scope, NULL);
 	node->label = label;
 
 	while ( loop->next )
@@ -591,7 +594,7 @@ node_t *tree_generate_for(node_t *prev, statement_for_t * _for,
 	loop->next = (node_list_t*) calloc(1, sizeof(node_list_t));
 	loop->next->prev = loop;
 	loop = loop->next;
-	loop->node = tree_generate_jump(label);
+	loop->node = tree_generate_jump(label_iter_step);
 
 	return node;
 }
@@ -723,6 +726,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		case ST_For:
 			result  = tree_generate_for(prev, &stmt->_for, scope, label);
 			assert ( (result != NULL ) && "Failed to generate for statement");
+      return result;
 			break;
 
 		case ST_With:
@@ -741,6 +745,6 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 			NODE_UNIMPLEMENTED("Some kind of statement");
 	}
 
-	return NULL;
+  assert( 0 && "Unreachable Code");
 }
 

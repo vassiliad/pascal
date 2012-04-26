@@ -13,7 +13,7 @@ typedef struct NODE_STRING_T node_string_t;
 typedef struct NODE_LIST_T node_list_t;
 typedef struct NODE_IF_T node_if_t;
 typedef struct NODE_WHILE_T node_while_t;
-typedef struct NODE_WHILE_T node_for_t;
+typedef struct NODE_FOR_T node_for_t;
 typedef struct NODE_BRANCHZ_T node_branchz_t;
 
 enum NodeType
@@ -39,6 +39,14 @@ enum NodeType
 	NT_For,     // node_for_t ( _for )
   NT_Nop,     // none!!
 };
+
+struct NODE_FOR_T
+{
+	node_t *branch;
+  node_t *init;
+	node_list_t *loop;
+};
+
 
 struct NODE_WHILE_T
 {
