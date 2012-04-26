@@ -14,9 +14,9 @@ begin
 	begin
 	end
 	;
+	{i := try_me(1,1);
 	i := try_me(1,1);
-	i := try_me(1,1);
-	i := try_me(1,1);
+	i := try_me(1,1);}
 
 
 if i < 10 then
@@ -24,13 +24,13 @@ if i < 10 then
 		end
 	;	
 
-	i := try_me(1,1);
+	{i := try_me(1,1); }
 
 	if i < 10 then
 		begin
 		end
-	;
+{	;
 	
 	i := try_me(1,1);
-	i := try_me(1,1);
+	i := try_me(1,1); }
 end.

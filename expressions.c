@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include "expressions.h"
 
 /*TODO
@@ -57,18 +58,21 @@ expression_t *expression_set(expressions_t *exprs)
 
 	if ( exprs == NULL ) {
 		printf("%d) expression_set:: sapio exprs\n", yylineno);
+    assert(0);
 		return 0;
 	}
 
 
 	if ( exprs->size == 0 ) {
 		printf("%d) expression_set:: einai adeio\n", yylineno);
+    assert(0);
 		return 0;
 	}
 
 
 	if ( exprs->exprs[0].dataType == VT_User ) {
 		printf("%d) expression_set:: Den mporw na exw userTypes mesa sto set\n", yylineno);
+    assert(0);
 		return 0;
 	}
 
@@ -76,6 +80,7 @@ expression_t *expression_set(expressions_t *exprs)
 	for ( i = 1; i < exprs->size; i ++ ) {
 		if ( types_compatible(exprs->exprs[i-1].dataType, exprs->exprs[i].dataType) == 0 ) {
 			printf("%d) expression_set:: Prepei na einai symvata ta melh tou set\n", yylineno);
+      assert(0);
 			return 0;
 		} 
 	}
@@ -95,18 +100,21 @@ expression_t *expression_binary(expression_t* left, expression_t *right, int op)
 
 	if ( !left || !right ) {
 		printf("%d expression_binary::sapio left/right\n", yylineno);
+    assert(0);
 		return NULL;
 	}
 
 	if ( left->dataType != right->dataType )  {
 		printf("%d) expression_binary::sapio datatype (%d-%d) gia praksh %d\n",
 				yylineno, left->dataType, right->dataType, op);
+    assert(0);
 		return NULL;
 	}
 
 
 	if ( op == Inop && right->type != ET_Set) {
 		printf("%d) expression_binary::inop Sapio deksi melos (%d)\n", yylineno, right->type);
+    assert(0);
 		return NULL;
 	}
 
@@ -163,6 +171,7 @@ expression_t *expression_constant(int type, void *data)
 
 		default:
 			printf("%d) Is not a constant\n", yylineno);
+      assert(0);
 			return NULL;
 	}
 	ret->type = ET_Constant;
@@ -177,6 +186,7 @@ expression_t *expression_not(expression_t *notExpr)
 
 	if ( !notExpr ) {
 		printf("expression_not::sapio notExpr\n");
+    assert(0);
 		return NULL;
 	}
 
@@ -201,6 +211,7 @@ expression_t *expression_variable(variable_t *var, scope_t *scope)
 
 	if ( var == NULL ) {
 		printf("%d expression_variable sapio var\n", yylineno);
+    assert(0);
 		return NULL;
 	}
 
@@ -217,6 +228,7 @@ expression_t *expression_variable(variable_t *var, scope_t *scope)
 			temp.type.dataType = constant->constant.type;
 		} else {
 			printf("%d: %s is not defined\n", yylineno, var->id);
+      assert(0);
 			return NULL;
 		}
 	}

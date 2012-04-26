@@ -20,5 +20,5 @@ var x: integer;
     papa: roto;
 
 begin
-  x:= papa[0,'a'].arr[0];
+  x:= x + x;
 end.

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "expressions.h"
 #include "statements.h"
 #include "constants.h"
@@ -77,6 +78,8 @@ statement_t *statement_assignment(variable_t *var, expression_t *expr, scope_t *
   assignment->assignment.var = var;
   assignment->assignment.type = AT_Expression;
   assignment->assignment.expr = expr;
+
+  assert( expr!=NULL && "Assignment expression is NULL!");
 
   return assignment;
 }

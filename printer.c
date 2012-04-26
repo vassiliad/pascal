@@ -40,6 +40,7 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
       fprintf(output, "addi %s, %s, %d\n", reg->name, 
 						left->reg.name, right->iconst);
     } else {
+      print_instruction(right, output);
       fprintf(output, "add  %s, %s, %s\n", reg->name, 
 						left->reg.name, right->reg.name);
     }

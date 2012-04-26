@@ -624,15 +624,20 @@ node_t *tree_generate_while(node_t *prev, statement_while_t *_while,
 	node->_while.loop = loop;
 	node->_while.branch = jbranch;
 	node->label = label;
+  
+  if ( loop ) {
+    while ( loop->next )
+      loop = loop->next;
+    
+    loop->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+    loop->next->prev = loop;
+    loop = loop->next;
+  } else {
+    loop = (node_list_t*) calloc(1, sizeof(node_list_t));
+    node->_while.loop = loop;
+  }
 
-	while ( loop->next )
-		loop = loop->next;
-	
-	loop->next = (node_list_t*) calloc(1, sizeof(node_list_t));
-	loop->next->prev = loop;
-	loop = loop->next;
-	loop->node = tree_generate_jump(label);
-
+  loop->node = tree_generate_jump(label);
 	return node;
 }
 
@@ -664,16 +669,17 @@ node_t *tree_generate_if(node_t *prev,
 	if ( bfalse )
 		bfalse->node->label = label_false;
 
-	if ( btrue == NULL ) {
-		assert( 0 && "If statements must have statements in their true block");
-	}
-
 	if ( bfalse ) {
-		for ( p = btrue; p->next != NULL; p=p->next );
+    if ( btrue == NULL ) {
+      btrue = (node_list_t*) calloc(1, sizeof(node_list_t));
+      p = btrue;
+    } else {
+      for ( p = btrue; p->next != NULL; p=p->next );
 
-		p->next = (node_list_t*) calloc(1, sizeof(node_list_t));
-		p->next->prev = p;
-		p = p->next;
+  		p->next = (node_list_t*) calloc(1, sizeof(node_list_t));
+	  	p->next->prev = p;
+      p = p->next;
+    }
 
 		p->node = tree_generate_jump(label_join);
 	}
