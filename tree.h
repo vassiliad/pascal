@@ -15,7 +15,8 @@ typedef struct NODE_IF_T node_if_t;
 typedef struct NODE_WHILE_T node_while_t;
 typedef struct NODE_FOR_T node_for_t;
 typedef struct NODE_BRANCHZ_T node_branchz_t;
-
+typedef struct REG_FILE_T reg_file_t;
+typedef struct REG_T reg_t;
 enum NodeType
 {
   NT_Iconst,  // int  ( iconst )
@@ -98,6 +99,7 @@ struct NODE_T
 {
   char *label;
   int type;
+  long int post;
   union
   {
     node_bin_t bin;

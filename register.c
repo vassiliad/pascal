@@ -1,10 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include "register.h"
+#include "tree.h"
 
 reg_file_t rf_saved, rf_temp,
-					 rf_fsaved, rf_ftemp;
+rf_fsaved, rf_ftemp;
+long int post_number = 0;
 
 void rg_add(reg_file_t* rf, reg_t *reg)
 {
@@ -132,4 +135,95 @@ void rg_init()
 	rg_add(&rf_ftemp,&f28);
 	rg_add(&rf_ftemp,&f30);
 
+}
+
+void givepostnumbers_tree(node_list_t *start){
+  node_list_t *c;
+  printf("giving post in list\n");
+  for(c = start; c!=NULL ; c = c->next)
+    givepostnumbers(c->node);
+  return;
+}
+
+void givepostnumbers(node_t *start){
+  if(!start)
+    return ;
+  switch (start->type){
+    case NT_Iconst: 
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:{
+      //propably constant nodes do not need post number id cause are going to be converted in opi instructions
+      start->post= post_number;
+      post_number++;
+      printf("\t %ld\n",start->post);
+      return;
+      break;
+    }
+    case NT_Load:{
+      givepostnumbers(start->load.address);
+    //  givepostnumbers(start->load.data); load does not have data.
+      start->post = post_number;
+      printf("\t %ld\n",start->post);
+      post_number++;
+      break;
+    }
+    case NT_Store:{
+      givepostnumbers(start->load.data); 
+      givepostnumbers(start->load.address);
+      start->post = post_number;
+      printf("\t %ld\n",start->post);
+      post_number++;
+      break;
+    }
+    case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
+    case NT_Sub:
+    case NT_Div:
+    case NT_Mult:
+    case NT_Mod:{
+      givepostnumbers(start->bin.left);
+      givepostnumbers(start->bin.right);
+      start->post = post_number;
+      printf("\t %ld\n",start->post);
+      post_number++;
+      break;
+    }
+    case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
+      break;
+    case NT_Not: //Not yes seen a valid implementation
+      break;
+    case NT_If:{
+      givepostnumbers(start->_if.branch);
+      givepostnumbers_tree(start->_if._true);
+      givepostnumbers_tree(start->_if._false);
+      break;
+    }
+    case NT_Jump:  
+      break;
+    case NT_BranchZ:{
+      givepostnumbers(start->branchz.condition);
+      break;
+    }
+    case NT_LessThan:{
+      givepostnumbers(start->bin.left);
+      givepostnumbers(start->bin.right);
+      break;
+    }
+    case NT_While:{
+      givepostnumbers(start->_while.branch);
+      givepostnumbers_tree(start->_while.loop);
+      break;
+    }
+    case NT_For:{
+      givepostnumbers(start->_for.init);
+      givepostnumbers(start->_for.branch);
+      givepostnumbers_tree(start->_for.loop);
+      break;
+    }
+    case NT_Nop:
+      break;
+    default:
+      assert(0 && "Unhandled type in tree");
+  }
+  return;
 }

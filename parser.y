@@ -13,7 +13,7 @@
 #include "statements.h"
 #include "tree.h"
 #include "printer.h"
-
+#include "register.h"
 #define YYERROR_VERBOSE 1
 
 extern FILE* yyin;
@@ -132,6 +132,7 @@ program : header declarations subprograms comp_statement DOT
 		printf("[-] Failed to generate instruction tree\n");
   } else {
 		printf("[+] Printing instruction tree\n");
+		givepostnumbers_tree(main_tree);
 		print_instruction_tree(main_tree, stdout);
 	}
 }
