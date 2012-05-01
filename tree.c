@@ -549,10 +549,7 @@ node_t *tree_generate_assignment(node_t *prev,
 	} else
 		assert( 0 && "Invalid assignment type");
 
-	if ( prev )
-		prev->next = result;
 	result->label = label;
-	result->prev = prev;
 	return result;
 }
 
