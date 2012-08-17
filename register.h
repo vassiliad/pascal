@@ -1,9 +1,7 @@
 #ifndef __REGISTER_H
 #define __REGISTER_H
-
-
-typedef struct NODE_LIST_T node_list_t;
 typedef struct NODE_T node_t;
+typedef struct NODE_LIST_T node_list_t;
 typedef struct REG_FILE_T reg_file_t;
 typedef struct REG_T reg_t;
 

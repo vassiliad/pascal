@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-#include "register.h"
 #include "tree.h"
+#include "register.h"
 
 reg_file_t rf_saved, rf_temp,
 rf_fsaved, rf_ftemp;

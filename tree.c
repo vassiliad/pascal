@@ -39,6 +39,7 @@ node_t *tree_generate_if(node_t *prev, statement_if_t *_if,
 		scope_t *scope, char *label);
 node_t *tree_generate_assignment(node_t *prev,
 		statement_assignment_t *assign, scope_t *scope, char *label);
+char *instr_label_unique(enum LabelType type);
 
 node_t *tree_generate_nop(char *label)
 {
@@ -50,7 +51,7 @@ node_t *tree_generate_nop(char *label)
 	return node;
 }
 
-char *instr_label_unique(enum LabelType type);
+
 
 
 node_t *tree_generate_jump(char *label)
@@ -168,7 +169,14 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 	node_t *accumulate = NULL;
 	struct NODE_LOAD_STORE_T ret;
 	int *factors = NULL;
-
+	var_t *v;
+	
+	v = st_var_find(var->id, scope);
+  
+  if ( v )
+    ret.unique_id = v->unique_id;
+  else
+    assert( 0 && "This should not have happened" );
 	/*
 		 Traverse var, and accumulate offsets based on the types of each
 		 @child in var ( see variable_t in bison_union.h ) then add the base
@@ -386,7 +394,7 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 
 	ret->type = NT_Store;
 	ret->store = tree_generate_address(NULL, var, scope);
-	ret->store.offset = 0;
+//	ret->store.offset = 0;
 	ret->store.data = data;
 	return ret;
 }

@@ -254,6 +254,7 @@ struct STATEMENT_ASSIGNMENT_T
 
 struct VAR_T
 {
+  int unique_id;
 	data_type_t type;
 	char *id;
   int pass;
