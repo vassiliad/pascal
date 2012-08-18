@@ -156,7 +156,7 @@ statement_t *statement_for(char *id, iter_space_t *iter_space, statement_t *loop
 	iterator = (variable_t*) calloc(1, sizeof(variable_t));
 	iterator->id = var->id;
 	iterator->type = var->type;
-
+  
 	int one = 1;
 	exp_one = expression_constant( VT_Iconst, &(one));
 	exp_iter = expression_variable(iterator, scope);

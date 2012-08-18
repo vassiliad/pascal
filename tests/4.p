@@ -31,11 +31,12 @@ begin
 		end
   ;
 	
+  x := 1;
 
 	if 2 < 3 then
 		d[3] := 5
 	;
-	if ( 3 < 4 ) then
+	if ( x < 4 ) then
 		d[5] := 12
 	;
 	

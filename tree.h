@@ -5,18 +5,16 @@
 #include "symbol_table.h"
 #include "register.h"
 
-typedef struct NODE_T node_t;
 typedef struct NODE_BIN_T node_bin_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
 typedef struct NODE_LOAD_STORE_T node_store_t;
 typedef struct NODE_STRING_T node_string_t;
-typedef struct NODE_LIST_T node_list_t;
 typedef struct NODE_IF_T node_if_t;
 typedef struct NODE_WHILE_T node_while_t;
 typedef struct NODE_FOR_T node_for_t;
 typedef struct NODE_BRANCHZ_T node_branchz_t;
-typedef struct REG_FILE_T reg_file_t;
-typedef struct REG_T reg_t;
+
+
 enum NodeType
 {
   NT_Iconst,  // int  ( iconst )
@@ -32,12 +30,12 @@ enum NodeType
   NT_Mult=10,    // node_bin_t ( bin )
   NT_String,  // node_string_t ( string )
   NT_Not,     // node_t ( not )
-	NT_If,			// node_if_t ( _if )
-	NT_Jump,		// char *( jump_label )
-	NT_BranchZ=15, // node_branchz_t ( branchZ )
+  NT_If,			// node_if_t ( _if )
+  NT_Jump,		// char *( jump_label )
+  NT_BranchZ=15, // node_branchz_t ( branchZ )
   NT_LessThan,// node_bin_t ( bin )
-	NT_While,   // node_while_t (_while )
-	NT_For,     // node_for_t ( _for )
+  NT_While,   // node_while_t (_while )
+  NT_For,     // node_for_t ( _for )
   NT_Nop,     // none!!
 };
 
@@ -80,6 +78,7 @@ struct NODE_STRING_T
 
 struct NODE_LOAD_STORE_T
 {
+  int unique_id;
 	node_t *address; // this will be used to generate the address for       //
 									// the memory access at runtime, its result will       //
 								 // be stored in @reg.                                  //

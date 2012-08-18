@@ -39,6 +39,7 @@ node_t *tree_generate_if(node_t *prev, statement_if_t *_if,
 		scope_t *scope, char *label);
 node_t *tree_generate_assignment(node_t *prev,
 		statement_assignment_t *assign, scope_t *scope, char *label);
+char *instr_label_unique(enum LabelType type);
 
 node_t *tree_generate_nop(char *label)
 {
@@ -50,7 +51,7 @@ node_t *tree_generate_nop(char *label)
 	return node;
 }
 
-char *instr_label_unique(enum LabelType type);
+
 
 
 node_t *tree_generate_jump(char *label)
@@ -175,8 +176,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 		 address and return it as a icosnt type node_t.
 	 */
 
-	ret.address = NULL; 
-	ret.offset = 0; 
+	ret.address = NULL;
 	
 	if ( var->type.dataType == VT_User ) {
 		ty = st_typedef_find(var->type.userType, scope);
@@ -383,10 +383,17 @@ node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 {
 	node_t *ret = calloc(1, sizeof(node_t));
+  var_t *v;
+  
+  v = st_var_find(var->id, scope);
+    
+  assert( v && "Unknown variable");
 
 	ret->type = NT_Store;
 	ret->store = tree_generate_address(NULL, var, scope);
-	ret->store.offset = 0;
+  
+  ret->store.offset += v->offset;
+  ret->store.unique_id = v->unique_id;
 	ret->store.data = data;
 	return ret;
 }
@@ -394,10 +401,17 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 node_t *tree_generate_load(variable_t *var, scope_t *scope)
 {
 	node_t *ret = calloc(1, sizeof(node_t));
-
+  var_t *v;
+  
+  v = st_var_find(var->id, scope);
+    
+  assert( v && "Unknown variable");
+  
 	ret->type = NT_Load;
 
 	ret->load = tree_generate_address(NULL, var, scope);
+  ret->load.offset += v->offset;
+  ret->load.unique_id = v->unique_id;
 	ret->reg = rg_allocate();
 	return ret;
 }
