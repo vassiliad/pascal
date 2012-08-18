@@ -11,6 +11,10 @@ scope_t *st_init(scope_t *scope)
 {
   scope_t *ret = ( scope_t * ) calloc(1, sizeof(scope_t));
   ret->parent = scope;
+
+  if ( scope )
+    ret->offset = scope->offset;
+
   return ret;
 }
 
@@ -253,8 +257,15 @@ var_t *st_var_define(char* id, data_type_t type, scope_t *scope)
   scope->vars[ scope->vars_size ].id = id;
   scope->vars[ scope->vars_size ].pass = 0;
   scope->vars[ scope->vars_size ].reference = NULL;
+//<<<<<<< HEAD
+//  scope->vars[ scope->vars_size ].type = type;
+//  scope->vars[ scope->vars_size ].unique_id = unique_id++;
+//=======
   scope->vars[ scope->vars_size ].type = type;
   scope->vars[ scope->vars_size ].unique_id = unique_id++;
+  scope->vars[ scope->vars_size ].offset = scope->offset;
+  scope->offset += st_get_type_size(type.dataType, type.userType, scope);
+//>>>>>>> 8392ca1a11ebd38f71d0109804ffe3431aa2dd83
 
   return scope->vars + (scope->vars_size++);
 }

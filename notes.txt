@@ -1,0 +1,58 @@
+Paragwgh telikou dendrou.
+--------------------------
+
+--
+Komvoi me 2 telesteous
+--
+  0) Oi 2 telesteoi einai apo8hkeumenoi se kataxwrhtes
+    Auth einai h eukolh lush, desmevw enan neo kataxwrhth gia to apotelesma kai ekxwrw se auton to
+    apotelesma tou operation
+  1) Enas ek twn telestewn einai sta8era
+    addi, subi ktlp dexontai ws 2o orisma th sta8era MONO efoson auth mporei na apo8hkeutei se 16 bits
+    se opoiadhpote allh periptwsh desmevw enan kataxwrhth gia th sta8era kai thn antigrafw se auton
+    ( dhladh dhmiourgw enan neo komvo )
+  2) Kai oi 2 telesteoi einai sta8eres
+    Desmevw 2 kataxwrhtes kai antigrafw se ka8ena apo autous mia sta8era, epeita xrhsimopoiw tous
+    kataxwrhtes ws orismata sto operation
+  Na dwsw prosoxh sth sta8era 0 ( auth brisketai panta ston kataxwrhth $0 )\
+
+--
+Klhseis Routinwn kai registers
+--
+  Meta apo mia jal, oloi kataxwrhtes ( ektos twn S ) 8ewrountai akuroi, an 8elw na xrhsimopoihsw kapoion
+  kataxwrhth pou exei parei timh prin apo jal 8a prepei autos na einai SAVED kataxwrhths.
+
+  Den mporw omws na kanw oles tis ana8eseis mou se saved kataxwrhtes giati pi8anon na mhn xreiazetai
+  na 8umamai tis times tous.
+
+  SE PERIPTWSH POU APALOIFW KOINES YPOEKFRASEIS
+  Auto pou skeftomai einai na kanw apaloifh koinwn ypoekfrasewn wste na anagnwrisw poia kommatia 
+  tou kwdika xrhsimopoiountai "polles fores" kai etsi na ana8esw ta pio dhmofilh apotelesmata se
+  kataxwrhtes tupou SAVED. ( MONO EFOSON uparxei klhsh sunarthshs, alliws me 'volevei' kai aplh
+  ana8esh se typou TEMP kataxwrhth )
+
+--
+Dhmiourgia telikou dendrou me apaloifh koinwn ypoekfrasewn
+--
+  Akolou8w ton ekshs algori8mo
+
+  Gia ka8e neo komvo node_t an autos einai typou
+
+  Const   : ton dhmiourgw
+  Variable: ksekinw apo ton patera mou kai prospa8w na brw thn pio prosfath timh ths metavlhths
+            kai xrhsimopoiw authn, an den brw tote th diabazw apo th mnhmh
+            An den exw veltistopoihseis thn diabazw tufla apo th mnhmh
+  Binary  : An brw mia praksh idia me emena sto dendro me ta idia paidia gia ta opoia den exei
+            allaksei h timh tous apo thn stigmh upologismou ths prakshs tote apla lew oti auth h
+            praksh eimai egw
+            An vrw kai ta 2 paidia alla diaforetikh praksh ( kai ta paidia einai comple ) tote
+            xrhsimopoiw tis times twn paidiwn gia na paraksw ton eauto mou
+            An den vrw tipota apo ta parapanw dhmiourgw emena kai ta paidia mou
+  Load    : 
+  Store   :
+
+
+--
+Xrwmatismos
+--
+  

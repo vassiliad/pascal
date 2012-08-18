@@ -1,0 +1,55 @@
+Statements are used to generate a list which consists of lists of trees,
+each tree corresponds to the instructions needed to execute a statement.
+
+For example the code snippet 
+                    b = 5;
+                    a = b + 1;
+                    call foo(a,b)
+would result in the following list of node_t structures
+
+[ a = 5 ]----------------------->[a = b + 1]--------->[ call foo(a,b) ]-->NULL
+    |                                 |                     |
+    |                                 |                     |
+    |                                 |                     |
+NT_store                              |                     |
+[                                     |                     |
+  address=&b,                         |                     |
+  data=[ NT_Iconst ]                  |                     |
+           |                          |                     |
+           5                NT_Store[address=&a,            |
+]                              data=[ NT_add ]              |
+          |                           |                     |
+          v                           |                     |
+         NULL                         /\                    |
+                              NT_Load    NT_Iconst          |
+                                 |          |               |
+                            [address=&b]    1            NT_Store
+                                      |                     [ 
+                                      |                 address=stack+off+0,
+                                      v                 data= NT_Load
+                                     NULL                   |
+                                                         [address=&a]
+                                                      ]
+                                                            |
+                                                            |
+                                                            v
+                                                         NT_Store
+                                                      [
+                                                        address=stack+off+4,
+                                                        data=NT_Load
+                                                              |
+                                                          [address=&b]
+                                                      ]
+                                                            |
+                                                            |
+                                                            v
+                                                          NT_jal
+                                                       [where=&foo]
+                                                            |
+                                                            |
+                                                            v
+                                                           NULL
+                                       
+
+
+ 

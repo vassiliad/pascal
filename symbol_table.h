@@ -40,6 +40,8 @@ struct SCOPE_T
   int consts_size;
   
 	scope_t *parent;
+
+  int offset;
 };
 
 scope_t *st_init(scope_t *scope);
