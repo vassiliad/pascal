@@ -133,6 +133,8 @@ program : header declarations subprograms comp_statement DOT
   } else {
 		printf("[+] Printing instruction tree\n");
 		givepostnumbers_tree(main_tree);
+		find_use_def_stmt(main_tree);
+		print_use_def_stmt(main_tree);
 		print_instruction_tree(main_tree, stdout);
 	}
 }

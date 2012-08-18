@@ -5,6 +5,7 @@
 #include "symbol_table.h"
 #include "register.h"
 
+
 typedef struct NODE_BIN_T node_bin_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
 typedef struct NODE_LOAD_STORE_T node_store_t;
@@ -13,7 +14,6 @@ typedef struct NODE_IF_T node_if_t;
 typedef struct NODE_WHILE_T node_while_t;
 typedef struct NODE_FOR_T node_for_t;
 typedef struct NODE_BRANCHZ_T node_branchz_t;
-
 
 enum NodeType
 {
@@ -44,6 +44,8 @@ struct NODE_FOR_T
 	node_t *branch;
   node_t *init;
 	node_list_t *loop;
+	life_t *def;
+	life_t *use;
 };
 
 
@@ -51,11 +53,15 @@ struct NODE_WHILE_T
 {
 	node_t *branch;
 	node_list_t *loop;
+	life_t *def;
+	life_t *use;
 };
 
 struct NODE_LIST_T {
 	struct NODE_LIST_T *next, *prev;
 	struct NODE_T *node;
+	life_t *def;
+	life_t *use;
 };
 struct NODE_BRANCHZ_T // branch on zero
 {
