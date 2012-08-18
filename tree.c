@@ -169,14 +169,6 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 	node_t *accumulate = NULL;
 	struct NODE_LOAD_STORE_T ret;
 	int *factors = NULL;
-	var_t *v;
-	
-	v = st_var_find(var->id, scope);
-  
-  if ( v )
-    ret.unique_id = v->unique_id;
-  else
-    assert( 0 && "This should not have happened" );
 	/*
 		 Traverse var, and accumulate offsets based on the types of each
 		 @child in var ( see variable_t in bison_union.h ) then add the base
