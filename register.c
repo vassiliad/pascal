@@ -254,6 +254,7 @@ int resize (int new_size , life_t *life){
 	int i;
 	for(i = 0 ; i < life->size; i++)
 		temp[i] = life->vars[i];
+	free(life->vars);
 	life->vars = temp;
 	life->size = new_size;
 	return 1;
@@ -422,4 +423,118 @@ void print_use_def(node_t *start){
   }
   return;
 }
+
+int check_life(life_t *life1 , life_t *life2){
+	if(life1->size != life2->size)
+		return(0);
+	int i;
+	for(i = 0 ; i < life1->size ; i++)
+		if(life1->vars[i] != life2->vars[i])
+			return 0;
+	return 1;
+}
+
+int check_lives(life_t **in_temp ,life_t** out_k){
+	int i;
+	for(i = 0; i < post_number  ; i++)
+		if(!check_life(in_temp[i],out_k[i]))
+			return 0;
+	return 1;
+}
+
+void free_lives(life_t **lifes , int size){
+	int i;
+	for(  i = 0 ; i < size ; i++){
+		free(lifes[i]->vars);
+		free(lifes[i]);
+	}
+}
+
+void life_and_life(life_t **result , life_t* temp1 ,  life_t* temp2){
+	int i;
+	int until;
+	*result = (life_t*) malloc (sizeof(life_t));
+	if(temp1->size > temp2->size){
+		(*result)->vars = (int*) calloc (temp1->size,sizeof(int));
+		(*result)->size = temp1->size;
+		until = temp2->size;
+	}
+	else{
+		(*result)->vars = (int*) calloc (temp2->size,sizeof(int));
+		(*result)->size = temp2->size;
+		until = temp1->size;
+	}
+	for(i = 0 ; i < until ; i++)
+		(*result)->vars[i] = temp1->vars[i] & temp2->vars[i];
+		
+}
+
+void lives_and_lives(life_t **result , life_t ** temp1 ,  life_t ** temp2 ){
+	int i;
+	for( i = 0 ; i < post_number ; i++){
+		life_and_life(&result[i],temp2[i],temp1[i]);
+	}
+}
+
+int check_convergence(life_t **in_k , life_t ** out_k ,  life_t **in_temp ,life_t **out_temp ){
+	int k;
+	life_t **result = (life_t**) malloc (post_number*sizeof(life_t*));
+	if(!check_lives(in_temp,out_k))
+		return (0);
+	lives_and_lives(result,in_k,out_temp);
+	k = check_lives(out_k,result);
+	free_lives(result , post_number);
+	free(result);
+	return k;
+}
+
+void pass_tree_for_liveness(life_t** in_k ,life_t** out_k , life_t** in_temp, life_t** out_temp , node_list_t *start ){
+	return;
+}
+
+void find_liveness(node_list_t* start ){
+	life_t **in_temp, **out_temp;
+	in = (life_t **) malloc (post_number*sizeof(life_t*));
+	out = (life_t **) malloc (post_number * sizeof(life_t*));
+	in_temp = (life_t **) malloc (post_number*sizeof(life_t*));
+	out_temp = (life_t **) malloc (post_number * sizeof(life_t*));
+	int i;
+	
+	if( !(out && in && in_temp && out_temp) ){
+		printf("not enough memory for allocating in, out <register.c>\n");
+		exit(0);
+	}
+	
+	for(i = 0 ; i < post_number; i++){
+		init_life(&out[i]);
+		init_life(&in[i]);
+		init_life(&out_temp[i]);
+		init_life(&in_temp[i]);
+	}
+	do{
+		pass_tree_for_liveness(in,out,in_temp,out_temp,start);
+	}while( check_convergence(in,out,in_temp,out_temp) );
+	
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

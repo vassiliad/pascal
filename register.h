@@ -19,6 +19,7 @@ struct REG_FILE_T
 };
 
 
+
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
 #define BYTETOBINARY(byte)  \
   (byte & 0x80 ? 1 : 0), \
@@ -48,6 +49,9 @@ void givepostnumbers(node_t *start);
 
 void find_use_def_stmt(node_list_t *start);	
 void print_use_def_stmt(node_list_t *start);	
+
+life_t **in;
+life_t **out;
 
 #endif //__REGISTER_H
 
