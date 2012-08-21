@@ -123,6 +123,8 @@ struct NODE_T
 		node_for_t _for;
   };
 	reg_t reg;
+
+  node_t *parent;
 };
 
 

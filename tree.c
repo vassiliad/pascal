@@ -465,6 +465,10 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 			node = ( node_t* ) calloc(1, sizeof(node_t));
 			node->type = NT_Not;
 			node->not = tree_generate_value( expr->notExpr, scope );
+      
+      assert(node->not && "Not expression was not generated");
+
+      node->not->parent = node;
 			break;
 
 		case ET_Variable:
@@ -497,6 +501,9 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							left = tree_generate_value( e_left, scope );
 							right = tree_generate_value( e_right, scope );
 
+              assert(left && "Expression left was not generated");
+              assert(right && "Expression right was not generated");
+
 							node = ( node_t * ) calloc(1, sizeof(node_t));
 
 							switch ( expr->binary.op )
@@ -525,6 +532,9 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							node->bin.left = left;
 							node->bin.right = right;
 							node->reg = rg_allocate();
+
+              left->parent = node;
+              right->parent = node;
 						} 
 						break;
 					case RelopL:
@@ -532,12 +542,18 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							node_t *left, *right;
 							left = tree_generate_value(expr->binary.left, scope);
 							right = tree_generate_value(expr->binary.right, scope);
-							node = (node_t*) calloc(1, sizeof(node_t));
+              assert(left && "Expression left was not generated");
+              assert(right && "Expression right was not generated");
+
+    					node = (node_t*) calloc(1, sizeof(node_t));
 
 							node->type = NT_LessThan;
 							node->bin.left = left;
 							node->bin.right = right;
 							node->reg = rg_allocate();
+
+              left->parent = node;
+              right->parent = node;
 							break;
 						}
 					default:
@@ -548,6 +564,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 			}
 	}
 
+  node->parent = NULL;
 	return node;
 }
 
@@ -555,8 +572,16 @@ node_t *tree_generate_assignment(node_t *prev,
 		statement_assignment_t *assign, scope_t *scope, char *label)
 {
 	node_t *result = NULL;
+  node_t *nVal;
+
 	if ( assign->type == AT_Expression ) {
-		result = tree_generate_store(assign->var, tree_generate_value(assign->expr, scope), scope);
+    nVal = tree_generate_value(assign->expr, scope);
+    
+    assert(nVal && "Assignment value was not generated");
+
+		result = tree_generate_store(assign->var, nVal, scope);
+    
+    nVal->parent = result;
 	} else if ( assign->type == AT_String ) {
 		assert( 0 && "Unimplemented string assignment");
 	} else
@@ -719,6 +744,8 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 			result = tree_generate_assignment(prev, &(stmt->assignment),
 					scope, label);
 			assert(result!=NULL && "Failed to generate Assignment");
+
+      result->parent = NULL;
 			return result;
 		}
 		break;
@@ -727,6 +754,8 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		{
 			result = tree_generate_if(prev, &stmt->_if,	scope, label);
 			assert( result!=NULL && "Failed to generate if statement");
+
+      result->parent = NULL;
 			return result;
 		}
 		break;
@@ -735,6 +764,8 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		{
 			result = tree_generate_while(prev, &stmt->_while, scope, label);
 			assert( result != NULL && "Failed to generate while statement");
+
+      result->parent = NULL;
 			return result;
 		}
 		break;
@@ -742,6 +773,9 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		case ST_For:
 			result  = tree_generate_for(prev, &stmt->_for, scope, label);
 			assert ( (result != NULL ) && "Failed to generate for statement");
+
+      result->parent = NULL;
+
       return result;
 			break;
 

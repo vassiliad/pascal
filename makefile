@@ -4,9 +4,11 @@ cloc:
 	make clean
 	cloc --exclude-lang=Pascal,make,"Bourne Shell" ./
 
-ce432: symbol_table.o expressions.o parser.tab.o lex.yy.o statements.o tree.o printer.o dead_code.o register.o 
+ce432: symbol_table.o expressions.o parser.tab.o lex.yy.o statements.o tree.o printer.o dead_code.o register.o subexpression_elim.o
 	gcc -o ce432 -Wall -ggdb symbol_table.o expressions.o lex.yy.o parser.tab.o statements.o tree.o printer.o dead_code.o register.o  -lm 
 
+subexpression_elim.o: subexpression_elim.c subexpression_elim.h
+	gcc -c -Wall -ggdb subexpression_elim.c -o subexpression_elim.o
 
 register.o: register.c register.h
 	gcc -c -Wall -ggdb register.c -o register.o
