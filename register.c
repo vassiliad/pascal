@@ -8,7 +8,7 @@
 reg_file_t rf_saved, rf_temp,
 rf_fsaved, rf_ftemp;
 long int post_number = 0;
-
+int stmt_id = 0;
 void print_use_def(node_t *start);
 void find_use_def(node_t *start , node_list_t *cur_stmt);
 
@@ -144,8 +144,11 @@ void rg_init()
 void givepostnumbers_tree(node_list_t *start){
   node_list_t *c;
   printf("giving post in list\n");
-  for(c = start; c!=NULL ; c = c->next)
+  for(c = start; c!=NULL ; c = c->next){
+		c->id = stmt_id;
+		stmt_id++;
     givepostnumbers(c->node);
+	}
   return;
 }
 
@@ -197,6 +200,8 @@ void givepostnumbers(node_t *start){
     case NT_Not: //Not yes seen a valid implementation
       break;
     case NT_If:{
+			start->_if.id = stmt_id;
+			stmt_id++;
       givepostnumbers(start->_if.branch);
       givepostnumbers_tree(start->_if._true);
       givepostnumbers_tree(start->_if._false);
@@ -214,11 +219,15 @@ void givepostnumbers(node_t *start){
       break;
     }
     case NT_While:{
+			start->_while.id = stmt_id;
+			stmt_id++;
       givepostnumbers(start->_while.branch);
       givepostnumbers_tree(start->_while.loop);
       break;
     }
     case NT_For:{
+			start->_for.id = stmt_id;
+			stmt_id++;
       givepostnumbers(start->_for.init);
       givepostnumbers(start->_for.branch);
       givepostnumbers_tree(start->_for.loop);
@@ -364,6 +373,7 @@ void find_use_def(node_t *start , node_list_t *cur_stmt){
 void print_use_def_stmt(node_list_t *start){
   node_list_t *c;
   for(c = start; c!=NULL ; c = c->next){
+		printf(" %d : ",c->id);
 		print_life(*(c->def));
 		printf("\t");
 		print_life(*(c->use));
@@ -488,7 +498,74 @@ int check_convergence(life_t **in_k , life_t ** out_k ,  life_t **in_temp ,life_
 	return k;
 }
 
+void paste_lives(life_t *dest, life_t *source){
+	dest->vars = (int*) calloc (source->size,sizeof(int));
+	dest->size = source->size;
+	int i;
+	for( i = 0; i < source->size ; i++)
+		dest->vars[i] = source->vars[i];
+}
+
+void pass_nodes_for_liveness(life_t** in_k ,life_t** out_k , life_t** in_temp, life_t** out_temp , node_list_t *cur_stmt ,node_t* start){
+	if(!start)
+    return ;
+  switch (start->type){
+    case NT_Iconst:
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:{
+			paste_lives(in_temp[start->post],in_k[start->post]);
+			paste_lives(out_temp[start->post],out_k[start->post]);
+			break;
+		}
+    case NT_Load:
+    case NT_Store:
+    case NT_Add: 
+		case NT_Sub:
+    case NT_Div:
+    case NT_Mult:
+    case NT_Mod:
+    case NT_String:
+    case NT_Not: 
+			break;
+    case NT_If:{
+			printf("TRUE\n");
+      print_use_def_stmt(start->_if._true);
+      printf("FALSE\n");
+			print_use_def_stmt(start->_if._false);
+			printf("JOIN\n");
+      break;
+    }
+    case NT_Jump:  
+      break;
+    case NT_BranchZ:
+    case NT_LessThan:
+      break;
+    case NT_While:{
+      printf("WHILE\n");
+      print_use_def_stmt(start->_while.loop);
+			printf("END WHILE\n");
+      break;
+    }
+    case NT_For:{
+			printf("FOR\n");
+      print_use_def_stmt(start->_for.loop);
+			printf("END FOR\n");
+      break;
+    }
+    case NT_Nop:
+      break;
+    default:
+      assert(0 && "Unhandled type in tree");
+  }
+  return;
+}
+
 void pass_tree_for_liveness(life_t** in_k ,life_t** out_k , life_t** in_temp, life_t** out_temp , node_list_t *start ){
+	node_list_t *c;
+	for(c = start; c != NULL ; c++){
+		pass_nodes_for_liveness(in_k ,out_k , in_temp, out_temp , start , c->node );
+	}
 	return;
 }
 

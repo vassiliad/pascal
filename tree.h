@@ -46,6 +46,7 @@ struct NODE_FOR_T
 	node_list_t *loop;
 	life_t *def;
 	life_t *use;
+	unsigned int id;
 };
 
 
@@ -55,6 +56,7 @@ struct NODE_WHILE_T
 	node_list_t *loop;
 	life_t *def;
 	life_t *use;
+	unsigned int id;
 };
 
 struct NODE_LIST_T {
@@ -62,6 +64,7 @@ struct NODE_LIST_T {
 	struct NODE_T *node;
 	life_t *def;
 	life_t *use;
+	unsigned int id;
 };
 struct NODE_BRANCHZ_T // branch on zero
 {
@@ -74,6 +77,7 @@ struct NODE_IF_T
 	node_list_t *_true;
 	node_list_t *_false;
 	node_t *branch;
+	unsigned int id;
 };
 
 struct NODE_STRING_T

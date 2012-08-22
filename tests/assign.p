@@ -11,7 +11,6 @@ begin
   if a < 5  then
   begin
    a := 9*b;
-  end
-  else
-		b := a+c;
+  end;
+  b := a+c
 end.
