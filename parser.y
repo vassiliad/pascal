@@ -14,6 +14,7 @@
 #include "tree.h"
 #include "printer.h"
 #include "register.h"
+#include "subexpression_elim.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -21,14 +22,16 @@
 extern FILE* yyin;
 int enable_constant_propagation = 0;
 int enable_dead_code_elimination = 0;
+int enable_subexpression_elimination = 0;
 
 static const struct option l_opts[] = {
   	{	"help",		no_argument,		NULL,	'h' },
 		{ "constant_propagation", no_argument, NULL , 'c' },
-		{ "dead_code_elimination", no_argument, NULL , 'd' }
+		{ "dead_code_elimination", no_argument, NULL , 'd' },
+    { "subexpression_elimination", no_argument, NULL, 'e'}
 	};
 
-static const char s_opts[] = "hcd";
+static const char s_opts[] = "hcde";
 
 
 int yylex(void);
@@ -128,11 +131,16 @@ program : header declarations subprograms comp_statement DOT
 	}
 	
 	main_tree = tree_generate_tree( body, scope );
+ 
 
   if ( main_tree == NULL )
   {
 		printf("[-] Failed to generate instruction tree\n");
   } else {
+
+    if ( enable_subexpression_elimination )
+      subexpressions_eliminate(main_tree);
+
 		printf("[+] Printing instruction tree\n");
 		givepostnumbers_tree(main_tree);
 		find_use_def_stmt(main_tree);
@@ -1345,8 +1353,9 @@ void print_help(char *path)
 	
 	printf("Usage: %s [OPTIONS] SOURCE_FILE\n"
 				 "Options\n"
-				 "\t-c --constant_propagation  Enable constant propagation\n"
-				 "\t-d --dead_code_elimination Enable dead code elimination\n"
+				 "\t-c --constant_propagation      Enable constant propagation\n"
+				 "\t-d --dead_code_elimination     Enable dead code elimination\n"
+         "\t-e --subexpression_elimination Enable common subexpression elimination\n"
 				 "\n"
 				 
 				 , file);
@@ -1377,6 +1386,10 @@ int main(int argc, char* argv[])
 			case 'd':
 				enable_dead_code_elimination = 1;
 			break;
+
+      case 'e':
+        enable_subexpression_elimination = 1;
+      break;
 		}
 	}
 	

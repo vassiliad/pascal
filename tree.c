@@ -20,7 +20,7 @@ enum LabelType
 
 static unsigned int label_counter[] = { 0, 0, 0, 0, 0 };
 
-node_t *tree_generate_node(node_t *prev, statement_t *node, scope_t *scope, char *label);
+node_t *tree_generate_node(node_list_t *ntail, statement_t *node, scope_t *scope, char *label);
 struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 	 variable_t *var, scope_t *scope);
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope);
@@ -31,14 +31,13 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope);
 node_t *tree_generate_branchz( node_t *condition, char *label);
 node_t *tree_generate_jump(char* label);
 node_t *tree_generate_nop(char *label);
-node_t *tree_generate_for(node_t *prev, statement_for_t *_for, 
+node_t *tree_generate_for(node_list_t *ntail, statement_for_t *_for, 
 		scope_t *scope, char *label);
-node_t *tree_generate_while(node_t *prev, statement_while_t *_while, 
+node_t *tree_generate_while(node_list_t *ntail, statement_while_t *_while, 
 		scope_t *scope, char *label);
-node_t *tree_generate_if(node_t *prev, statement_if_t *_if, 
+node_t *tree_generate_if(node_list_t *ntail, statement_if_t *_if, 
 		scope_t *scope, char *label);
-node_t *tree_generate_assignment(node_t *prev,
-		statement_assignment_t *assign, scope_t *scope, char *label);
+node_t *tree_generate_assignment(statement_assignment_t *assign, scope_t *scope, char *label);
 char *instr_label_unique(enum LabelType type);
 
 node_t *tree_generate_nop(char *label)
@@ -131,7 +130,7 @@ node_list_t *tree_generate_tree(statement_t *root, scope_t *scope)
 	p = root;
 
 	while ( p ) {
-		node = tree_generate_node(prev, p, scope, label);
+		node = tree_generate_node(ntail, p, scope, label);
 		list_add(&nroot, &ntail, node);
 
 		prev = ntail->node;
@@ -392,7 +391,7 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 	ret->store = tree_generate_address(NULL, var, scope);
   
   ret->store.offset += v->offset;
-  ret->store.unique_id = v->unique_id;
+  ret->store.unique_id = v->type.dataType == VT_User ? -1  : v->unique_id ;
 	ret->store.data = data;
 	return ret;
 }
@@ -410,7 +409,7 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 
 	ret->load = tree_generate_address(NULL, var, scope);
   ret->load.offset += v->offset;
-  ret->load.unique_id = v->unique_id;
+  ret->load.unique_id = v->type.dataType == VT_User ? -1  : v->unique_id ;
 	ret->reg = rg_allocate();
 	return ret;
 }
@@ -568,8 +567,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	return node;
 }
 
-node_t *tree_generate_assignment(node_t *prev,
-		statement_assignment_t *assign, scope_t *scope, char *label)
+node_t *tree_generate_assignment(statement_assignment_t *assign, scope_t *scope, char *label)
 {
 	node_t *result = NULL;
   node_t *nVal;
@@ -591,7 +589,7 @@ node_t *tree_generate_assignment(node_t *prev,
 	return result;
 }
 
-node_t *tree_generate_for(node_t *prev, statement_for_t * _for, 
+node_t *tree_generate_for(node_list_t *ntail, statement_for_t * _for, 
 		scope_t *scope, char *label)
 {
 	node_t *node = NULL;
@@ -615,7 +613,7 @@ node_t *tree_generate_for(node_t *prev, statement_for_t * _for,
 	node->type = NT_For;
 	node->_for.loop = loop;
 	node->_for.branch = jbranch;
-  node->_for.init = tree_generate_node(prev, _for->init, scope, NULL);
+  node->_for.init = tree_generate_node(ntail, _for->init, scope, NULL);
 	node->label = label;
 
 	while ( loop->next )
@@ -635,7 +633,7 @@ node_t *tree_generate_for(node_t *prev, statement_for_t * _for,
 }
 
 
-node_t *tree_generate_while(node_t *prev, statement_while_t *_while, 
+node_t *tree_generate_while(node_list_t *ntail, statement_while_t *_while, 
 		scope_t *scope, char *label)
 {
 	node_t *node = NULL;
@@ -672,11 +670,13 @@ node_t *tree_generate_while(node_t *prev, statement_while_t *_while,
     node->_while.loop = loop;
   }
 
+
+  loop->prev = ntail;
   loop->node = tree_generate_jump(label);
 	return node;
 }
 
-node_t *tree_generate_if(node_t *prev, 
+node_t *tree_generate_if(node_list_t *ntail, 
 		statement_if_t *_if,  scope_t *scope, char *label)
 {
 	node_list_t *btrue = NULL,
@@ -725,11 +725,16 @@ node_t *tree_generate_if(node_t *prev,
 	node->_if._false = bfalse;
 	node->_if.branch = jbranch;
 	node->label = label;
+
+  if ( btrue )
+    btrue->prev = ntail;
+  if ( bfalse )
+    bfalse->prev = ntail;
+
 	return node;
 }
 
-// TODO @prev is not actually used, it's just passed around
-node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char* label)
+node_t *tree_generate_node(node_list_t *ntail, statement_t *stmt, scope_t *scope, char* label)
 {  
 	node_t *result = NULL;
 	if ( stmt == NULL )
@@ -741,7 +746,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 	{
 		case ST_Assignment:
 		{
-			result = tree_generate_assignment(prev, &(stmt->assignment),
+			result = tree_generate_assignment(&(stmt->assignment),
 					scope, label);
 			assert(result!=NULL && "Failed to generate Assignment");
 
@@ -752,7 +757,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 
 		case ST_If:
 		{
-			result = tree_generate_if(prev, &stmt->_if,	scope, label);
+			result = tree_generate_if(ntail, &stmt->_if,	scope, label);
 			assert( result!=NULL && "Failed to generate if statement");
 
       result->parent = NULL;
@@ -762,7 +767,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 
 		case ST_While:
 		{
-			result = tree_generate_while(prev, &stmt->_while, scope, label);
+			result = tree_generate_while(ntail, &stmt->_while, scope, label);
 			assert( result != NULL && "Failed to generate while statement");
 
       result->parent = NULL;
@@ -771,7 +776,7 @@ node_t *tree_generate_node(node_t *prev, statement_t *stmt, scope_t *scope, char
 		break;
 
 		case ST_For:
-			result  = tree_generate_for(prev, &stmt->_for, scope, label);
+			result  = tree_generate_for(ntail, &stmt->_for, scope, label);
 			assert ( (result != NULL ) && "Failed to generate for statement");
 
       result->parent = NULL;

@@ -20,5 +20,6 @@ var x: integer;
     papa: roto;
 
 begin
+	x:= x + x;
   x:= x + x;
 end.
