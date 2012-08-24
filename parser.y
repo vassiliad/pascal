@@ -137,6 +137,10 @@ program : header declarations subprograms comp_statement DOT
 		givepostnumbers_tree(main_tree);
 		find_use_def_stmt(main_tree);
 		print_use_def_stmt(main_tree);
+		init_reg_lives();
+		assign_nodes_list(main_tree);
+//		print_nodes();
+		give_regs();
 		print_instruction_tree(main_tree, stdout);
 	}
 }

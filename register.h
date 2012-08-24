@@ -50,8 +50,13 @@ void givepostnumbers(node_t *start);
 void find_use_def_stmt(node_list_t *start);	
 void print_use_def_stmt(node_list_t *start);	
 
-life_t **in;
-life_t **out;
+
+void print_nodes();
+void assign_nodes_list(node_list_t *start);
+void init_reg_lives();
+void give_regs();
+node_t **nodes;
+int *reg_nodes_rep;
 
 #endif //__REGISTER_H
 

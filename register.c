@@ -11,7 +11,7 @@ long int post_number = 0;
 int stmt_id = 0;
 void print_use_def(node_t *start);
 void find_use_def(node_t *start , node_list_t *cur_stmt);
-
+void assign_nodes_tree(node_t *start);
 
 void rg_add(reg_file_t* rf, reg_t *reg)
 {
@@ -143,10 +143,10 @@ void rg_init()
 
 void givepostnumbers_tree(node_list_t *start){
   node_list_t *c;
-  printf("giving post in list\n");
   for(c = start; c!=NULL ; c = c->next){
 		c->id = stmt_id;
 		stmt_id++;
+		printf("stmt\n");
     givepostnumbers(c->node);
 	}
   return;
@@ -203,26 +203,37 @@ void givepostnumbers(node_t *start){
 			start->_if.id = stmt_id;
 			stmt_id++;
       givepostnumbers(start->_if.branch);
+			printf("IF\n");
       givepostnumbers_tree(start->_if._true);
+			printf("ELSE\n");
       givepostnumbers_tree(start->_if._false);
+			printf("END\n");
       break;
     }
     case NT_Jump:  
       break;
     case NT_BranchZ:{
       givepostnumbers(start->branchz.condition);
+			start->post = post_number;
+      printf("\t %ld\n",start->post);
+      post_number++;
       break;
     }
     case NT_LessThan:{
       givepostnumbers(start->bin.left);
       givepostnumbers(start->bin.right);
+			start->post = post_number;
+      printf("\t %ld\n",start->post);
+      post_number++;
       break;
     }
     case NT_While:{
 			start->_while.id = stmt_id;
 			stmt_id++;
-      givepostnumbers(start->_while.branch);
+      givepostnumbers(start->_while.branch);+
+			printf("WHILE\n");
       givepostnumbers_tree(start->_while.loop);
+			printf("END\n");
       break;
     }
     case NT_For:{
@@ -230,7 +241,9 @@ void givepostnumbers(node_t *start){
 			stmt_id++;
       givepostnumbers(start->_for.init);
       givepostnumbers(start->_for.branch);
-      givepostnumbers_tree(start->_for.loop);
+      printf("FOR\n");
+			givepostnumbers_tree(start->_for.loop);
+			printf("END\n");
       break;
     }
     case NT_Nop:
@@ -250,6 +263,7 @@ int init_life(life_t **new){
 		exit(0);
 	}
 	(*new)->vars = (int*) malloc (sizeof(int));
+	(*new)->vars[0] = 0;
 	(*new)->size = 1;
 	return 1;
 }
@@ -434,123 +448,91 @@ void print_use_def(node_t *start){
   return;
 }
 
-int check_life(life_t *life1 , life_t *life2){
-	if(life1->size != life2->size)
-		return(0);
-	int i;
-	for(i = 0 ; i < life1->size ; i++)
-		if(life1->vars[i] != life2->vars[i])
-			return 0;
-	return 1;
+void init_reg_lives(){
+		reg_nodes_rep = (int *) malloc (post_number*sizeof(int));
+		nodes = (node_t**) malloc (post_number*sizeof(node_t*));
+		if(!(nodes&&reg_nodes_rep)){
+			printf("NOT ENOUGH MEMORY\n");
+			exit(0);
+		}
 }
 
-int check_lives(life_t **in_temp ,life_t** out_k){
-	int i;
-	for(i = 0; i < post_number  ; i++)
-		if(!check_life(in_temp[i],out_k[i]))
-			return 0;
-	return 1;
-}
-
-void free_lives(life_t **lifes , int size){
-	int i;
-	for(  i = 0 ; i < size ; i++){
-		free(lifes[i]->vars);
-		free(lifes[i]);
+void assign_nodes_list(node_list_t *start){
+  node_list_t *c;
+  for(c = start; c!=NULL ; c = c->next){
+    assign_nodes_tree(c->node);
 	}
+  return;
 }
 
-void life_and_life(life_t **result , life_t* temp1 ,  life_t* temp2){
-	int i;
-	int until;
-	*result = (life_t*) malloc (sizeof(life_t));
-	if(temp1->size > temp2->size){
-		(*result)->vars = (int*) calloc (temp1->size,sizeof(int));
-		(*result)->size = temp1->size;
-		until = temp2->size;
-	}
-	else{
-		(*result)->vars = (int*) calloc (temp2->size,sizeof(int));
-		(*result)->size = temp2->size;
-		until = temp1->size;
-	}
-	for(i = 0 ; i < until ; i++)
-		(*result)->vars[i] = temp1->vars[i] & temp2->vars[i];
-		
-}
-
-void lives_and_lives(life_t **result , life_t ** temp1 ,  life_t ** temp2 ){
-	int i;
-	for( i = 0 ; i < post_number ; i++){
-		life_and_life(&result[i],temp2[i],temp1[i]);
-	}
-}
-
-int check_convergence(life_t **in_k , life_t ** out_k ,  life_t **in_temp ,life_t **out_temp ){
-	int k;
-	life_t **result = (life_t**) malloc (post_number*sizeof(life_t*));
-	if(!check_lives(in_temp,out_k))
-		return (0);
-	lives_and_lives(result,in_k,out_temp);
-	k = check_lives(out_k,result);
-	free_lives(result , post_number);
-	free(result);
-	return k;
-}
-
-void paste_lives(life_t *dest, life_t *source){
-	dest->vars = (int*) calloc (source->size,sizeof(int));
-	dest->size = source->size;
-	int i;
-	for( i = 0; i < source->size ; i++)
-		dest->vars[i] = source->vars[i];
-}
-
-void pass_nodes_for_liveness(life_t** in_k ,life_t** out_k , life_t** in_temp, life_t** out_temp , node_list_t *cur_stmt ,node_t* start){
-	if(!start)
+void assign_nodes_tree(node_t *start){
+  if(!start)
     return ;
   switch (start->type){
-    case NT_Iconst:
+    case NT_Iconst: 
     case NT_Bconst:
     case NT_Rconst:
     case NT_Cconst:{
-			paste_lives(in_temp[start->post],in_k[start->post]);
-			paste_lives(out_temp[start->post],out_k[start->post]);
+      //propably constant nodes do not need post number id cause are going to be converted in opi instructions
+      nodes[start->post]=start;
+      return;
+      break;
+    }
+    case NT_Load:{
+      assign_nodes_tree(start->load.address);
+    //  givepostnumbers(start->load.data); load does not have data.
+      nodes[start->post]=start;
+      break;
+    }
+    case NT_Store:{
+      assign_nodes_tree(start->load.data); 
+      assign_nodes_tree(start->load.address);
+      nodes[start->post]=start;
 			break;
-		}
-    case NT_Load:
-    case NT_Store:
-    case NT_Add: 
-		case NT_Sub:
+    }
+    case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
+    case NT_Sub:
     case NT_Div:
     case NT_Mult:
-    case NT_Mod:
-    case NT_String:
-    case NT_Not: 
+    case NT_Mod:{
+      assign_nodes_tree(start->bin.left);
+      assign_nodes_tree(start->bin.right);
+      nodes[start->post]=start;
 			break;
+    }
+    case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
+      break;
+    case NT_Not: //Not yet seen a valid implementation
+      break;
     case NT_If:{
-			printf("TRUE\n");
-      print_use_def_stmt(start->_if._true);
-      printf("FALSE\n");
-			print_use_def_stmt(start->_if._false);
-			printf("JOIN\n");
+      assign_nodes_tree(start->_if.branch);
+      assign_nodes_list(start->_if._true);
+      assign_nodes_list(start->_if._false);
       break;
     }
     case NT_Jump:  
       break;
-    case NT_BranchZ:
-    case NT_LessThan:
+    case NT_BranchZ:{
+      assign_nodes_tree(start->branchz.condition);
+			nodes[start->post]=start;
       break;
+    }
+    case NT_LessThan:{
+      assign_nodes_tree(start->bin.left);
+      assign_nodes_tree(start->bin.right);
+			nodes[start->post]=start;
+      break;
+    }
     case NT_While:{
-      printf("WHILE\n");
-      print_use_def_stmt(start->_while.loop);
-			printf("END WHILE\n");
+      assign_nodes_tree(start->_while.branch);
+      assign_nodes_list(start->_while.loop);
       break;
     }
     case NT_For:{
-			printf("FOR\n");
-      print_use_def_stmt(start->_for.loop);
-			printf("END FOR\n");
+
+      assign_nodes_tree(start->_for.init);
+      assign_nodes_tree(start->_for.branch);
+      assign_nodes_list(start->_for.loop);
       break;
     }
     case NT_Nop:
@@ -561,55 +543,77 @@ void pass_nodes_for_liveness(life_t** in_k ,life_t** out_k , life_t** in_temp, l
   return;
 }
 
-void pass_tree_for_liveness(life_t** in_k ,life_t** out_k , life_t** in_temp, life_t** out_temp , node_list_t *start ){
-	node_list_t *c;
-	for(c = start; c != NULL ; c++){
-		pass_nodes_for_liveness(in_k ,out_k , in_temp, out_temp , start , c->node );
-	}
-	return;
+
+int cmp_lives(const void *a, const void *b){
+	const node_t **_a = (const node_t**)a;
+	const node_t **_b = (const node_t**)b;
+	if(!((*_a)->parent))
+		return 1;
+	if(!((*_b)->parent))
+		return -1;
+	return ((*_b)->parent->post - (*_b)->post) - ((*_a)->parent->post - (*_a)->post) ;
 }
 
-void find_liveness(node_list_t* start ){
-	life_t **in_temp, **out_temp;
-	in = (life_t **) malloc (post_number*sizeof(life_t*));
-	out = (life_t **) malloc (post_number * sizeof(life_t*));
-	in_temp = (life_t **) malloc (post_number*sizeof(life_t*));
-	out_temp = (life_t **) malloc (post_number * sizeof(life_t*));
+void print_nodes(){
 	int i;
-	
-	if( !(out && in && in_temp && out_temp) ){
-		printf("not enough memory for allocating in, out <register.c>\n");
-		exit(0);
+	for(i = 0 ; i < post_number ; i++){
+		printf("(%d)\t: %ld \t",i,nodes[i]->post);
+		if(!(nodes[i]->parent))
+			printf(" 0 \n");
+		else
+			printf(" %ld\n",nodes[i]->parent->post - nodes[i]->post);
+			
 	}
-	
-	for(i = 0 ; i < post_number; i++){
-		init_life(&out[i]);
-		init_life(&in[i]);
-		init_life(&out_temp[i]);
-		init_life(&in_temp[i]);
+}
+
+int find_reg(node_t *cur_node){
+	long int time = cur_node->post;
+	int life  ;
+	int i,j;
+	unsigned int temp;
+	if(!(cur_node->parent))
+		life = 1;
+	else
+		life = cur_node->parent->post - cur_node->post;
+	for(i =  0 ; i < 32 ; i++){
+		temp = 1;
+		temp = temp & (reg_nodes_rep[time] >> i);
+		if(!temp){
+			j = time;
+			
+			while ((!(0 & (reg_nodes_rep[j] >> i))) && j < time+life){
+				j++;
+			}
+			if (j == time+life  ){
+				temp = 1<<i;
+				for(j = time ; j < time+life ; j++)
+					reg_nodes_rep[j] = reg_nodes_rep[j]|temp;
+				return i;
+			}
+		}
 	}
-	do{
-		pass_tree_for_liveness(in,out,in_temp,out_temp,start);
-	}while( check_convergence(in,out,in_temp,out_temp) );
-	
-	
+	return -1;
 	
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void give_regs(){
+	int k,i;
+	qsort(nodes,post_number,sizeof(node_t*),cmp_lives);
+	for(i = 0 ; i < post_number ; i++){
+		k = find_reg(nodes[i]);
+		if(k == -1){
+			printf("split occasion not yet implemented\n");
+		}
+		else{
+			nodes[i]->reg_id = k;
+		}
+	}
+	print_nodes();
+	for(i = 0; i < post_number ; i++){
+		printf(""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN"\n",
+			BYTETOBINARY(reg_nodes_rep[i]>>24),BYTETOBINARY(reg_nodes_rep[i]>>16) , BYTETOBINARY(reg_nodes_rep[i]>>8) , BYTETOBINARY(reg_nodes_rep[i]));
+	}
+}
 
 
 

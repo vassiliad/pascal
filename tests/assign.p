@@ -2,9 +2,9 @@ program test1;
 var a,b,c,d,e,f,g: integer;
 begin
   a := 5;
-  b := 10;
-  f := 3;
-  g := 7;
+  b := a+5;
+  f := 5+b+a;
+  g := 7+f;
   d := a-b+f*g;
   c := a*f;
   a := a+b+c+d+e+f+g;

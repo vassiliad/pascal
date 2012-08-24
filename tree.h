@@ -127,7 +127,7 @@ struct NODE_T
 		node_for_t _for;
   };
 	reg_t reg;
-
+	int reg_id;
   node_t *parent;
 };
 
