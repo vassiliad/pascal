@@ -12,6 +12,7 @@
 #include "symbol_table.h"
 #include "statements.h"
 #include "tree.h"
+#include "graph.h"
 #include "printer.h"
 #include "register.h"
 #include "subexpression_elim.h"
@@ -145,6 +146,10 @@ program : header declarations subprograms comp_statement DOT
 
 		printf("[+] Printing instruction tree\n");
 		find_use_def_stmt(main_tree);
+    
+    graph_t g;
+
+    
 		print_use_def_stmt(main_tree);
 		rg_init();
 		init_reg_lives();
@@ -152,7 +157,13 @@ program : header declarations subprograms comp_statement DOT
 //		print_nodes();
 		give_regs();
 		print_instruction_tree(main_tree, stdout);
-	}
+
+	  g = graph_init(fopen("plot","w"));
+    graph_tree(main_tree, &g);
+    graph_finalize(&g);
+
+   fclose(g.output);
+ }
 }
 ;
 

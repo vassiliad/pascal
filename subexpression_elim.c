@@ -25,7 +25,7 @@ void update_node(node_t *update, node_t *prev, node_t *new);
 
 int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode)
 {
-  printf("visiting %ld - %ld [%d,%d] [dir: %d]\n", past->post, cur->post, past->type, cur->type, mode);
+  // printf("visiting %ld - %ld [%d,%d] [dir: %d]\n", past->post, cur->post, past->type, cur->type, mode);
   assert(past);
   assert(cur);
   // We need to visit every node of the @past tree for every node of @cur tree,
@@ -319,8 +319,20 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         update->bin.left = new;
       else if ( update->bin.right == prev )
         update->bin.right = new;
-      else
+      else {
+        printf("***************\n");
+
+        print_instruction(update, stdout);
+        
+        printf("***\n");
+
+        print_instruction(prev, stdout);
+
+        printf("***\n");
+
+        print_instruction(new, stdout);
         assert(0 && "Should never happen");
+      }
       
     }
     break;
@@ -359,6 +371,6 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       assert(0 && "Unhandled type in tree");
   }
 
-  new->parent = update;
+  //new->parent = update;
 }
 
