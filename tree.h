@@ -32,7 +32,7 @@ enum NodeType
   NT_Not,     // node_t ( not )
   NT_If,			// node_if_t ( _if )
   NT_Jump,		// char *( jump_label )
-  NT_BranchZ=15, // node_branchz_t ( branchZ )
+  NT_BranchZ=15, // node_branchz_t ( branchz )
   NT_LessThan,// node_bin_t ( bin )
   NT_While,   // node_while_t (_while )
   NT_For,     // node_for_t ( _for )

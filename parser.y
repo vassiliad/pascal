@@ -138,11 +138,12 @@ program : header declarations subprograms comp_statement DOT
 		printf("[-] Failed to generate instruction tree\n");
   } else {
 
+		givepostnumbers_tree(main_tree);
+
     if ( enable_subexpression_elimination )
       subexpressions_eliminate(main_tree);
 
 		printf("[+] Printing instruction tree\n");
-		givepostnumbers_tree(main_tree);
 		find_use_def_stmt(main_tree);
 		print_use_def_stmt(main_tree);
 		init_reg_lives();

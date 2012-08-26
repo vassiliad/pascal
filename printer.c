@@ -107,7 +107,7 @@ void print_instruction_mult(node_t *left, node_t *right, reg_t *reg,
 	print_instruction(left, output);
 	print_instruction(right, output);
 	fprintf(output, "mult %s, %s\n", left->reg.name, right->reg.name);
-	fprintf(output, "mfhi %s\n", reg->name);
+	fprintf(output, "mflo %s\n", reg->name);
 }
 
 void print_instruction(node_t *node, FILE* output)
