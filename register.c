@@ -5,8 +5,7 @@
 #include "tree.h"
 #include "register.h"
 
-reg_file_t rf_saved, rf_temp,
-rf_fsaved, rf_ftemp;
+reg_file_t rf_saved, rf_temp, rf_fsaved, rf_ftemp;
 long int post_number = 0;
 int stmt_id = 0;
 void print_use_def(node_t *start);
@@ -19,6 +18,17 @@ void rg_add(reg_file_t* rf, reg_t *reg)
 				, ( rf->size+1 ) * sizeof(reg_t) );
 	rf->regs[ rf->size++ ] = *reg;
 }
+
+reg_t give_reg_id(reg_file_t *rf, int id){
+	if(id>=rf->size){
+		printf("fatal error\n line 24");
+		exit(0);
+	}
+	else{
+		return((rf->regs[id]));
+	}
+}
+
 
 reg_t rg_get_zero()
 {
@@ -48,33 +58,42 @@ void rg_init()
 	// info taken from 
 	// http://msdn.microsoft.com/en-us/library/ms253512(v=vs.80).aspx
 
-	reg_t s0 = { .name="$s0", .id=16, .in_use=0 };
-	reg_t s1 = { .name="$s1", .id=17, .in_use=0 };
-	reg_t s2 = { .name="$s2", .id=18, .in_use=0 };
-	reg_t s3 = { .name="$s3", .id=19, .in_use=0 };
-	reg_t s4 = { .name="$s4", .id=20, .in_use=0 };
-	reg_t s5 = { .name="$s5", .id=21, .in_use=0 };
-	reg_t s6 = { .name="$s6", .id=22, .in_use=0 };
-	reg_t s7 = { .name="$s7", .id=23, .in_use=0 };
-	reg_t s8 = { .name="$s8", .id=30, .in_use=0 };
 
-	reg_t t0 = { .name="$t0", .id= 8, .in_use=0 };
-	reg_t t1 = { .name="$t1", .id= 9, .in_use=0 };
-	reg_t t2 = { .name="$t2", .id=10, .in_use=0 };
-	reg_t t3 = { .name="$t3", .id=11, .in_use=0 };
-	reg_t t4 = { .name="$t4", .id=12, .in_use=0 };
-	reg_t t5 = { .name="$t5", .id=13, .in_use=0 };
-	reg_t t6 = { .name="$t6", .id=14, .in_use=0 };
-	reg_t t7 = { .name="$t7", .id=15, .in_use=0 };
-	reg_t t8 = { .name="$t8", .id=24, .in_use=0 };
-	reg_t t9 = { .name="$t9", .id=25, .in_use=0 };
-	reg_t v0 = { .name="$v0", .id= 2, .in_use=0 };
-	reg_t v1 = { .name="$v1", .id= 3, .in_use=0 };
-	reg_t a0 = { .name="$a0", .id= 4, .in_use=0 };
-	reg_t a1 = { .name="$a1", .id= 5, .in_use=0 };
-	reg_t a2 = { .name="$a2", .id= 6, .in_use=0 };
-	reg_t a3 = { .name="$a3", .id= 7, .in_use=0 };
 	
+	reg_t v2 = { .name="$g1", .id= 1, .in_use=0 };
+	reg_t v0 = { .name="$g2", .id= 2, .in_use=0 };
+	reg_t v1 = { .name="$g3", .id= 3, .in_use=0 };
+	reg_t a0 = { .name="$g4", .id= 4, .in_use=0 };
+	reg_t a1 = { .name="$g5", .id= 5, .in_use=0 };
+	reg_t a2 = { .name="$g6", .id= 6, .in_use=0 };
+	reg_t a3 = { .name="$g7", .id= 7, .in_use=0 };
+	
+	reg_t t0 = { .name="$g8", .id= 8, .in_use=0 };
+	reg_t t1 = { .name="$g9", .id= 9, .in_use=0 };
+	reg_t t2 = { .name="$g10", .id=10, .in_use=0 };
+	reg_t t3 = { .name="$g11", .id=11, .in_use=0 };
+	reg_t t4 = { .name="$g12", .id=12, .in_use=0 };
+	reg_t t5 = { .name="$g13", .id=13, .in_use=0 };
+	reg_t t6 = { .name="$g14", .id=14, .in_use=0 };
+	reg_t t7 = { .name="$g15", .id=15, .in_use=0 };
+	
+	reg_t s0 = { .name="$g16", .id=16, .in_use=0 };
+	reg_t s1 = { .name="$g17", .id=17, .in_use=0 };
+	reg_t s2 = { .name="$g18", .id=18, .in_use=0 };
+	reg_t s3 = { .name="$g19", .id=19, .in_use=0 };
+	reg_t s4 = { .name="$g20", .id=20, .in_use=0 };
+	reg_t s5 = { .name="$g21", .id=21, .in_use=0 };
+	reg_t s6 = { .name="$g22", .id=22, .in_use=0 };
+	reg_t s7 = { .name="$g23", .id=23, .in_use=0 };
+	
+	reg_t t8 = { .name="$g24", .id=24, .in_use=0 };
+	reg_t t9 = { .name="$g25", .id=25, .in_use=0 };
+	reg_t t10 = { .name="$g26", .id=26, .in_use=0 };
+	reg_t t11 = { .name="$g27", .id=27, .in_use=0 };
+	reg_t t12 = { .name="$g28", .id=28, .in_use=0 };
+	reg_t t13 = { .name="$g29", .id=29, .in_use=0 };
+	reg_t t14 = { .name="$g30", .id=30, .in_use=0 };
+	reg_t t15 = { .name="$g31", .id=31, .in_use=0 };
 	
 	reg_t f0  = { .name="$f0", .id=32, .in_use=0 };
 	reg_t f4  = { .name="$f4", .id=36, .in_use=0 };
@@ -105,24 +124,33 @@ void rg_init()
 	rg_add(&rf_saved, &s5);
 	rg_add(&rf_saved, &s6);
 	rg_add(&rf_saved, &s7);
-	rg_add(&rf_saved, &s8);
 
-	rg_add(&rf_temp,&t0);
-	rg_add(&rf_temp,&t1);
-	rg_add(&rf_temp,&t2);
-	rg_add(&rf_temp,&t3);
-	rg_add(&rf_temp,&t4);
-	rg_add(&rf_temp,&t5);
-	rg_add(&rf_temp,&t6);
-	rg_add(&rf_temp,&t7);
-	rg_add(&rf_temp,&t8);
-	rg_add(&rf_temp,&t9);
-	rg_add(&rf_temp,&v0);
-	rg_add(&rf_temp,&v1);
-	rg_add(&rf_temp,&a0);
-	rg_add(&rf_temp,&a1);
-	rg_add(&rf_temp,&a2);
-	rg_add(&rf_temp,&a3);
+	rg_add(&rf_saved,&t0);
+	rg_add(&rf_saved,&t1);
+	rg_add(&rf_saved,&t2);
+	rg_add(&rf_saved,&t3);
+	rg_add(&rf_saved,&t4);
+	rg_add(&rf_saved,&t5);
+	rg_add(&rf_saved,&t6);
+	rg_add(&rf_saved,&t7);
+	rg_add(&rf_saved,&t8);
+	rg_add(&rf_saved,&t9);
+	rg_add(&rf_saved,&t10);
+	rg_add(&rf_saved,&t11);
+	rg_add(&rf_saved,&t12);
+	rg_add(&rf_saved,&t13);
+	rg_add(&rf_saved,&t14);
+	rg_add(&rf_saved,&t15);	
+	
+	rg_add(&rf_saved,&v0);
+	rg_add(&rf_saved,&v1);
+	rg_add(&rf_saved,&v1);
+	rg_add(&rf_saved,&v2);
+	
+	rg_add(&rf_saved,&a0);
+	rg_add(&rf_saved,&a1);
+	rg_add(&rf_saved,&a2);
+	rg_add(&rf_saved,&a3);
 
 	rg_add(&rf_fsaved, &f0);
 	rg_add(&rf_fsaved, &f4);
@@ -574,7 +602,7 @@ int find_reg(node_t *cur_node){
 	if(!(cur_node->parent))
 		life = 1;
 	else
-		life = cur_node->parent->post - cur_node->post;
+		life = cur_node->parent->post - cur_node->post ;
 	for(i =  0 ; i < 32 ; i++){
 		temp = 1;
 		temp = temp & (reg_nodes_rep[time] >> i);
@@ -605,7 +633,7 @@ void give_regs(){
 			printf("split occasion not yet implemented\n");
 		}
 		else{
-			nodes[i]->reg_id = k;
+			nodes[i]->reg = give_reg_id(&rf_saved, k);
 		}
 	}
 	print_nodes();

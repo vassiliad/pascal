@@ -1,7 +1,7 @@
 program test1;
 var a,b,c,d,e,f,g: integer;
 begin
-  a := 5+5;
+  a := 5;
   b := a+5;
   f := 5+b+a;
   g := 7+f;

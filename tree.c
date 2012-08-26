@@ -264,7 +264,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 						add->type = NT_Add;
 						add->bin.left  = accumulate;
 						add->bin.right = dim;
-						add->reg = rg_allocate();
+//						add->reg = rg_allocate();
 
 						accumulate = add;
 					}
@@ -302,7 +302,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 			ret.address->type = NT_Mult;
 			ret.address->bin.left = val;
 			ret.address->bin.right = accumulate;
-			ret.address->reg = rg_allocate();
+//			ret.address->reg = rg_allocate();
 
 			free(constant);
 		}
@@ -358,7 +358,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 			address->type = NT_Add;
 			address->bin.left  = ret.address;
 			address->bin.right = child.address;
-			address->reg = rg_allocate();
+//			address->reg = rg_allocate();
 
 			ret.address = address;
 		}
@@ -410,7 +410,7 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 	ret->load = tree_generate_address(NULL, var, scope);
   ret->load.offset += v->offset;
   ret->load.unique_id = v->type.dataType == VT_User ? -1  : v->unique_id ;
-	ret->reg = rg_allocate();
+//	ret->reg = rg_allocate();
 	return ret;
 }
 
@@ -427,7 +427,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	{
 		case ET_Constant:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
-			node->reg = rg_allocate();
+//			node->reg = rg_allocate();
 
 			switch ( expr->constant.type )
 			{
@@ -530,7 +530,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 							node->bin.left = left;
 							node->bin.right = right;
-							node->reg = rg_allocate();
+//							node->reg = rg_allocate();
 
               left->parent = node;
               right->parent = node;
@@ -549,7 +549,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							node->type = NT_LessThan;
 							node->bin.left = left;
 							node->bin.right = right;
-							node->reg = rg_allocate();
+//							node->reg = rg_allocate();
 
               left->parent = node;
               right->parent = node;

@@ -146,6 +146,7 @@ program : header declarations subprograms comp_statement DOT
 		printf("[+] Printing instruction tree\n");
 		find_use_def_stmt(main_tree);
 		print_use_def_stmt(main_tree);
+		rg_init();
 		init_reg_lives();
 		assign_nodes_list(main_tree);
 //		print_nodes();
