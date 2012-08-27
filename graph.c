@@ -134,10 +134,10 @@ void graph_instruction(node_t *n, graph_t *graph)
 
       fprintf(graph->output, "n%p -> n%p\n", n, p->branchz.condition);
       if ( n->label )
-        fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, n->post, p->label, 
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, p->post, p->label, 
               p->branchz.condition->reg.name, p->branchz.label);
       else
-       fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", n,  n->post,
+       fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", n,  p->post,
               p->branchz.condition->reg.name, p->branchz.label);
 
       if ( n->_if._true ) {

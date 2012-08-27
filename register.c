@@ -198,7 +198,8 @@ void givepostnumbers(node_t *start){
       break;
     }
     case NT_Load:{
-      givepostnumbers(start->load.address);
+      if ( start->load.address )
+        givepostnumbers(start->load.address);
     //  givepostnumbers(start->load.data); load does not have data.
       start->post = post_number++;
       printf("\t %ld\n",start->post);
