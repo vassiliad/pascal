@@ -244,18 +244,21 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
                  break;
 
     case NT_If:{
-                 // assert(0 && "Should never happen");
-                 break;
-               }
+      subexpr_eliminate_children(past, cur->_if.branch, TraverseCur);
+      subexpressions_eliminate(cur->_if._true);
+      subexpressions_eliminate(cur->_if._false);
+       break;
+     }
     case NT_BranchZ:{
                       assert(0 && "Should never happen");
                       break;
                     }
 
     case NT_While:{
-                    assert(0 && "Should never happen");
-                    break;
-                  }
+      subexpr_eliminate_children(past, cur->_while.branch, TraverseCur);
+      subexpressions_eliminate(cur->_while.loop);
+      break;
+    }
     case NT_For:{
                   assert(0 && "Should never happen");
                   break;
