@@ -496,7 +496,7 @@ void assign_nodes_list(node_list_t *start){
 }
 
 void assign_nodes_tree(node_t *start){
-  static int id = 0;
+  //static int id = 0;
   if ( !start )
     return;
   
@@ -510,14 +510,14 @@ void assign_nodes_tree(node_t *start){
     case NT_Rconst:
     case NT_Cconst:{
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld) (%p :: %p)\n", id++, start->post,
-          nodes[start->post]->parent, start->parent);
+      // printf("Visiting %d (post: %ld) (%p :: %p)\n", id++, start->post,
+      //    nodes[start->post]->parent, start->parent);
       break;
     }
     case NT_Load:{
       assign_nodes_tree(start->load.address);
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_Store:{
@@ -527,7 +527,7 @@ void assign_nodes_tree(node_t *start){
         assign_nodes_tree(start->load.address);
 
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_Add: 
@@ -539,7 +539,7 @@ void assign_nodes_tree(node_t *start){
       assign_nodes_tree(start->bin.right);
 
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_String:
@@ -557,21 +557,21 @@ void assign_nodes_tree(node_t *start){
     case NT_BranchZ:{
       assign_nodes_tree(start->branchz.condition);
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_LessThan:{
       assign_nodes_tree(start->bin.left);
       assign_nodes_tree(start->bin.right);
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_While:{
       assign_nodes_tree(start->_while.branch);
       assign_nodes_list(start->_while.loop);
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_For:{
@@ -579,7 +579,7 @@ void assign_nodes_tree(node_t *start){
       assign_nodes_tree(start->_for.branch);
 			assign_nodes_list(start->_for.loop);
       nodes[start->post] = start;
-      printf("Visiting %d (post: %ld)\n", id++, start->post);
+      // printf("Visiting %d (post: %ld)\n", id++, start->post);
       break;
     }
     case NT_Nop:
@@ -609,11 +609,12 @@ int cmp_lives(const void *a, const void *b){
 void print_nodes(){
 	int i;
 	for(i = 0 ; i < post_number ; i++){
-		printf("(%d)\t: %ld \t",i,nodes[i]->post);
+		printf("(%d)\t: %ld::%p \t",i,nodes[i]->post, nodes[i]);
 		if(!(nodes[i]->parent))
 			printf(" 0 \n");
 		else
-			printf(" %ld (%ld)\n",nodes[i]->parent->post - nodes[i]->post, nodes[i]->parent->post);
+			printf(" %ld (%ld::%p)\n",nodes[i]->parent->post - nodes[i]->post, nodes[i]->parent->post,
+            nodes[i]->parent);
 			
 	}
 }
@@ -624,10 +625,16 @@ int find_reg(node_t *cur_node){
 	int i,j;
 	unsigned int temp;
 	if(!(cur_node->parent))
- #warning aslkdjaslkj
 		life = 0;
-  else
+  else {
 		life = cur_node->parent->post - cur_node->post ;
+    if ( cur_node->parent->post <= 0 )  {
+      printf("WRONG post: %ld (%ld)\n", cur_node->post, cur_node->parent->post);
+      printf("parent is : %d : %p\n", cur_node->parent->type, cur_node->parent);
+      printf("i am : %p\n", cur_node);
+    }
+  }
+
 
 	for(i =  0 ; i < 32 ; i++){
 		temp = 1;

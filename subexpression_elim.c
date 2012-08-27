@@ -6,7 +6,7 @@
 #include "printer.h"
 #include "subexpression_elim.h"
 
-#define EXPRS_IDENTICAL(past, cur) do { printf("%ld \e[32mIDENTICAL \e[m%ld\n", past->post, cur->post); \
+#define EXPRS_IDENTICAL(past, cur) do { printf("%p \e[32mIDENTICAL \e[m%p\n", past, cur); \
                                         printf("\033[22;34m");\
                                         print_instruction(past, stdout);\
                                         printf("\033[22;33m");\
@@ -22,6 +22,7 @@
 enum TraverseMode { TraversePast, TraverseCur };
 
 void update_node(node_t *update, node_t *prev, node_t *new);
+int subexpr_eliminate(node_t *past, node_t *cur);
 
 int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode)
 {
@@ -300,6 +301,8 @@ void update_node(node_t *update, node_t *prev, node_t *new)
   if ( new == prev )
     return;
 
+  prev->parent = NULL;
+
   switch(update->type) {
     case NT_Iconst:
     case NT_Bconst:
@@ -309,7 +312,13 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       assert(0 && "Should never happen");
 
     case NT_Store:
-      update->store.data = new;
+      if ( update->store.data == prev )
+        update->store.data = new;
+      else if ( update->store.address == prev )
+        update->store.address = new;
+      else
+        assert(0);
+      new->parent = update;
     break;
 
     break;
@@ -339,6 +348,7 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         assert(0 && "Should never happen");
       }
       printf("REPLACING %p with %p\n\n\n", prev, new);
+      new->parent = update;
     }
     break;
 
@@ -375,7 +385,70 @@ void update_node(node_t *update, node_t *prev, node_t *new)
     default:
       assert(0 && "Unhandled type in tree");
   }
+  
+  switch(prev->type) {
+    case NT_Iconst:
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:
+    case NT_Load:
+    break;
 
-  new->parent = update;
+    case NT_Store:
+      if ( prev->store.data == prev )
+        prev->store.data->parent = new;
+      else if ( prev->store.address == prev )
+        prev->store.address->parent = new;
+      else
+        assert(0);
+    break;
+
+    break;
+
+    case NT_Add:
+    case NT_Mult:
+    case NT_Sub:
+    case NT_Div:
+    case NT_LessThan:
+    case NT_Mod: {
+      prev->bin.left->parent = new;
+      prev->bin.right->parent = new;
+    }
+    break;
+
+    case NT_String:
+      assert( 0 && "Not implemented");
+      break;
+
+    case NT_Not:
+      assert( 0 && "Not implemented");
+      break;
+
+    case NT_If:{
+      // assert(0 && "Should never happen");
+      break;
+    }
+    case NT_BranchZ:{
+      prev->branchz.condition->parent = new;
+      break;
+    }
+
+    case NT_While:{
+      assert(0 && "Should never happen");
+      break;
+    }
+    case NT_For:{
+      assert(0 && "Should never happen");
+      break;
+    }
+
+    case NT_Jump:
+    case NT_Nop:
+      assert(0 && "Should never happen");
+      break;
+    default:
+      assert(0 && "Unhandled type in tree");
+  }
+ 
 }
 
