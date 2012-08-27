@@ -47,7 +47,7 @@ void graph_instruction(node_t *n, graph_t *graph)
 
   switch(n->type) {
     case NT_Iconst:
-      fprintf(graph->output, "n%p [label=\"addi %s, $0, %d\"];\n", n, n->reg.name, n->iconst);
+      fprintf(graph->output, "n%p [label=\"[%ld]  addi %s, $0, %d\"];\n", n, n->post, n->reg.name, n->iconst);
     break;
     
 
@@ -56,13 +56,13 @@ void graph_instruction(node_t *n, graph_t *graph)
         fprintf(graph->output, "n%p -> n%p;\n", n, n->load.address);
         graph_instruction(n->load.address, graph);
         if ( n->label )
-          fprintf(graph->output, "n%p [label=\"%s: lw %s, %d(%s)\"];\n", n, n->label, n->reg.name, n->load.offset,
+          fprintf(graph->output, "n%p [label=\"[%ld]  %s: lw %s, %d(%s)\"];\n", n, n->post, n->label, n->reg.name, n->load.offset,
           n->load.address->reg.name);
         else 
-          fprintf(graph->output, "n%p [label=\"lw %s, %d(%s)\"];\n", n, n->reg.name, n->load.offset,
+          fprintf(graph->output, "n%p [label=\"[%ld]  lw %s, %d(%s)\"];\n", n, n->post, n->reg.name, n->load.offset,
           n->load.address->reg.name);
       } else {
-        fprintf(graph->output, "n%p [label=\"lw %s, %d($00)\"];\n", n, n->reg.name, n->load.offset);
+        fprintf(graph->output, "n%p [label=\"[%ld]  lw %s, %d($00)\"];\n", n, n->post, n->reg.name, n->load.offset);
       }
 
     break;
@@ -77,10 +77,10 @@ void graph_instruction(node_t *n, graph_t *graph)
         graph_instruction(n->bin.right, graph);
         
         if ( n->label )
-          fprintf(graph->output, "n%p [label=\"%s: add %s, %s, %s\"];\n", n, n->label, n->reg.name,
+          fprintf(graph->output, "n%p [label=\"[%ld]  %s: add %s, %s, %s\"];\n", n, n->post, n->label, n->reg.name,
                     n->bin.left->reg.name, n->bin.right->reg.name);
         else
-          fprintf(graph->output, "n%p [label=\"add %s, %s, %s\"];\n", n, n->reg.name,
+          fprintf(graph->output, "n%p [label=\"[%ld]  add %s, %s, %s\"];\n", n, n->post, n->reg.name,
                     n->bin.left->reg.name, n->bin.right->reg.name);
      } else {
         fprintf(graph->output, "n%p -> n%p\n", n, n->bin.left);
@@ -88,7 +88,7 @@ void graph_instruction(node_t *n, graph_t *graph)
 
         graph_instruction(n->bin.left, graph);
 
-        fprintf(graph->output, "n%p [label=\"addi %s, %s, %d\"];\n", n, n->reg.name,
+        fprintf(graph->output, "n%p [label=\"[%ld]  addi %s, %s, %d\"];\n", n, n->post, n->reg.name,
                   n->bin.left->reg.name, n->bin.right->iconst);
        
      }
@@ -101,8 +101,8 @@ void graph_instruction(node_t *n, graph_t *graph)
       graph_instruction(n->bin.left, graph);
       graph_instruction(n->bin.right, graph);
 
-      fprintf(graph->output, "n%p [label=\"mult %s, %s\\nmflo %s\"];\n", n, 
-                  n->bin.left->reg.name, n->bin.right->reg.name, n->reg.name);
+      fprintf(graph->output, "n%p [label=\"[%ld]  mult %s, %s\\nmflo %s\"];\n", n, 
+                  n->post, n->bin.left->reg.name, n->bin.right->reg.name, n->reg.name);
       
     break;
 
@@ -119,7 +119,7 @@ void graph_instruction(node_t *n, graph_t *graph)
       graph_instruction(n->bin.left, graph);
       graph_instruction(n->bin.right, graph);
 
-      fprintf(graph->output, "n%p [label=\"%s %s, %s, %s\"];\n", n, instr_name, n->reg.name,
+      fprintf(graph->output, "n%p [label=\"[%ld]  %s %s, %s, %s\"];\n", n, n->post, instr_name, n->reg.name,
                 n->bin.left->reg.name, n->bin.right->reg.name);
 
     break;
@@ -134,10 +134,10 @@ void graph_instruction(node_t *n, graph_t *graph)
 
       fprintf(graph->output, "n%p -> n%p\n", n, p->branchz.condition);
       if ( n->label )
-        fprintf(graph->output, "n%p [label=\"%s: bne %s, %s\"];\n", n, p->label, 
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, n->post, p->label, 
               p->branchz.condition->reg.name, p->branchz.label);
       else
-       fprintf(graph->output, "n%p [label=\"bne %s, %s\"];\n", n, 
+       fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", n,  n->post,
               p->branchz.condition->reg.name, p->branchz.label);
 
       if ( n->_if._true ) {
@@ -161,10 +161,10 @@ void graph_instruction(node_t *n, graph_t *graph)
       graph_instruction(n->branchz.condition, graph);
       fprintf(graph->output, "n%p -> n%p\n", n, n->branchz.condition);
       if ( n->label )
-        fprintf(graph->output, "n%p [label=\"%s: bne %s, %s\"];\n", n, n->label, 
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, n->post, n->label, 
               n->branchz.condition->reg.name, n->branchz.condition->label);
       else
-       fprintf(graph->output, "n%p [label=\"bne %s, %s\"];\n", n, 
+       fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", n,  n->post,
               n->branchz.condition->reg.name, n->branchz.label);
 
     break;
@@ -181,9 +181,9 @@ void graph_instruction(node_t *n, graph_t *graph)
       graph_instruction(n->store.data, graph);
       
       if ( n->label )
-        fprintf(graph->output, "n%p [label=\"%s: sw %s, %d(0)\"];\n", n, n->label, n->store.data->reg.name, n->store.offset);
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: sw %s, %d(0)\"];\n", n,n->post, n->label, n->store.data->reg.name, n->store.offset);
       else
-       fprintf(graph->output, "n%p [label=\"sw %s, %d(0)\"];\n", n, n->store.data->reg.name, n->store.offset);
+       fprintf(graph->output, "n%p [label=\"[%ld]  sw %s, %d(0)\"];\n", n,n->post, n->store.data->reg.name, n->store.offset);
     break;
 
     default: {

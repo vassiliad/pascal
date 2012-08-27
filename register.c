@@ -624,7 +624,7 @@ int find_reg(node_t *cur_node){
 	unsigned int temp;
 	if(!(cur_node->parent))
  #warning aslkdjaslkj
-		life = 1;
+		life = 0;
   else
 		life = cur_node->parent->post - cur_node->post ;
 
@@ -645,6 +645,7 @@ int find_reg(node_t *cur_node){
 			}
 		}
 	}
+
 	return -1;
 	
 }
