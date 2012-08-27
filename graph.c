@@ -26,6 +26,9 @@ void graph_tree(node_list_t *n, graph_t *graph) {
   node_list_t *p;
 
   for (p=n; p; p=p->next ) {
+    if ( p->prev )
+      fprintf(graph->output, "n%p -> n%p [style=dotted];\n", p->prev->node, p->node);
+
     graph_instruction(p->node, graph);
   }
 }
