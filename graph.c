@@ -27,7 +27,7 @@ void graph_tree(node_list_t *n, graph_t *graph) {
 
   for (p=n; p; p=p->next ) {
     if ( p->prev )
-      fprintf(graph->output, "n%p -> n%p [style=dotted];\n",p->node, p->prev->node);
+      fprintf(graph->output, "n%p -> n%p [style=dotted];\n",p->node, p->prev->node); 
 
     graph_instruction(p->node, graph);
   }
@@ -126,19 +126,34 @@ void graph_instruction(node_t *n, graph_t *graph)
     
     case NT_If: {
       node_t *p;
-      p = n->_if.branch->branchz.condition;
+      p = n->_if.branch;
+
+      graph_instruction(p->branchz.condition, graph);
+
+      assert(n->_if.branch->type == NT_BranchZ);
+
       fprintf(graph->output, "n%p -> n%p\n", n, p->branchz.condition);
       if ( n->label )
         fprintf(graph->output, "n%p [label=\"%s: bne %s, %s\"];\n", n, p->label, 
-              p->branchz.condition->reg.name, p->branchz.condition->label);
+              p->branchz.condition->reg.name, p->branchz.label);
       else
        fprintf(graph->output, "n%p [label=\"bne %s, %s\"];\n", n, 
-              p->branchz.condition->reg.name, p->branchz.condition->label);
+              p->branchz.condition->reg.name, p->branchz.label);
 
-      if ( n->_if._true )
+      if ( n->_if._true ) {
+#warning fix this hack ?
+        node_list_t *hack = n->_if._true->prev;
+        n->_if._true->prev = NULL;
+        fprintf(graph->output, "n%p -> n%p [style=dotted];\n", n->_if._true->node, n);
         graph_tree(n->_if._true, graph);
-      if ( n->_if._false )
+        n->_if._true->prev = hack;
+      } if ( n->_if._false ) {
+        node_list_t *hack = n->_if._true->prev;
+        n->_if._false->prev = NULL;
+        fprintf(graph->output, "n%p -> n%p [style=dotted];\n", n->_if._false->node, n);
         graph_tree(n->_if._false, graph);
+        n->_if._false->prev = hack;
+      }
     break;
   }
 
@@ -172,6 +187,7 @@ void graph_instruction(node_t *n, graph_t *graph)
     break;
 
     default: {
+     printf("CANNOT HANDLE %d\n", n->type);
      // assert(0 && "Not implemented");
     }
   }

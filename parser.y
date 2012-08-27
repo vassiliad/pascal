@@ -124,6 +124,7 @@ scope_t *scope;
 
 program : header declarations subprograms comp_statement DOT 
 {
+  graph_t g;
   node_list_t *main_tree;
 	statement_t *body = $4;
 	
@@ -138,31 +139,31 @@ program : header declarations subprograms comp_statement DOT
   {
 		printf("[-] Failed to generate instruction tree\n");
   } else {
+    if ( enable_subexpression_elimination ) 
+      subexpressions_eliminate(main_tree);
 
 		givepostnumbers_tree(main_tree);
 
-    if ( enable_subexpression_elimination )
-      subexpressions_eliminate(main_tree);
+ 		
+    printf("[+] Printing instruction tree\n");
+    //find_use_def_stmt(main_tree);
 
-		printf("[+] Printing instruction tree\n");
-		find_use_def_stmt(main_tree);
-    
-    graph_t g;
-
-    
-		print_use_def_stmt(main_tree);
+		//print_use_def_stmt(main_tree);
 		rg_init();
 		init_reg_lives();
 		assign_nodes_list(main_tree);
-//		print_nodes();
+//	print_nodes();
 		give_regs();
-		print_instruction_tree(main_tree, stdout);
 
+		print_instruction_tree(main_tree, stdout);
 	  g = graph_init(fopen("plot","w"));
     graph_tree(main_tree, &g);
     graph_finalize(&g);
+    fclose(g.output);
 
-   fclose(g.output);
+
+
+
  }
 }
 ;

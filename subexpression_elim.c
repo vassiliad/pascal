@@ -15,7 +15,7 @@
                                         update_node(cur->parent, cur, past);\
                                         return 1;\
                                         } while(0)
-#define EXPRS_DIFFERENT(past, cur) do { printf("%ld DIFFERENT %ld\n", past->post, cur->post); return 0; } while(0)
+#define EXPRS_DIFFERENT(past, cur) do { /*printf("%ld DIFFERENT %ld\n", past->post, cur->post);*/ return 0; } while(0)
 
 
 
@@ -134,11 +134,11 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         break;
 
       case NT_If:{
-        // assert(0 && "Should never happen");
+        subexpr_eliminate_children(past->_if.branch, cur, TraversePast);
         break;
       }
       case NT_BranchZ:{
-        assert(0 && "Should never happen");
+        subexpr_eliminate_children(past->branchz.condition, cur, TraversePast);
         break;
       }
 
@@ -294,7 +294,9 @@ void subexpressions_eliminate(node_list_t *t)
 
 
 void update_node(node_t *update, node_t *prev, node_t *new)
-{
+{ 
+  assert(update);
+
   switch(update->type) {
     case NT_Iconst:
     case NT_Bconst:
@@ -371,6 +373,6 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       assert(0 && "Unhandled type in tree");
   }
 
-  //new->parent = update;
+  new->parent = update;
 }
 

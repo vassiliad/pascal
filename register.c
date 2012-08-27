@@ -183,6 +183,10 @@ void givepostnumbers_tree(node_list_t *start){
 void givepostnumbers(node_t *start){
   if(!start)
     return ;
+
+  if ( start->post != 0 )
+    return;
+
   switch (start->type){
     case NT_Iconst: 
     case NT_Bconst:
@@ -192,7 +196,6 @@ void givepostnumbers(node_t *start){
       start->post= post_number;
       post_number++;
       printf("\t %ld\n",start->post);
-      return;
       break;
     }
     case NT_Load:{
@@ -258,7 +261,7 @@ void givepostnumbers(node_t *start){
     case NT_While:{
 			start->_while.id = stmt_id;
 			stmt_id++;
-      givepostnumbers(start->_while.branch);+
+      givepostnumbers(start->_while.branch);
 			printf("WHILE\n");
       givepostnumbers_tree(start->_while.loop);
 			printf("END\n");
@@ -478,7 +481,7 @@ void print_use_def(node_t *start){
 
 void init_reg_lives(){
 		reg_nodes_rep = (int *) malloc (post_number*sizeof(int));
-		nodes = (node_t**) malloc (post_number*sizeof(node_t*));
+		nodes = (node_t**) calloc (post_number,sizeof(node_t*));
 		if(!(nodes&&reg_nodes_rep)){
 			printf("NOT ENOUGH MEMORY\n");
 			exit(0);
@@ -488,14 +491,31 @@ void init_reg_lives(){
 void assign_nodes_list(node_list_t *start){
   node_list_t *c;
   for(c = start; c!=NULL ; c = c->next){
+    assert(c->node);
     assign_nodes_tree(c->node);
 	}
   return;
 }
 
 void assign_nodes_tree(node_t *start){
-  if(!start)
-    return ;
+  static int id = 0;
+  if ( !start )
+    return;
+  
+  if ( nodes[start->post] != NULL ) {
+    switch (start->type ) {
+      case NT_If:
+      case NT_While:
+      case NT_For:
+    break;
+
+      default:
+        #warning fix me 
+        if ( start->post != 0 )
+          return;
+    }
+  }
+
   switch (start->type){
     case NT_Iconst: 
     case NT_Bconst:
@@ -503,19 +523,21 @@ void assign_nodes_tree(node_t *start){
     case NT_Cconst:{
       //propably constant nodes do not need post number id cause are going to be converted in opi instructions
       nodes[start->post]=start;
-      return;
+      printf("visit %d %d\n", id++, start->post);
       break;
     }
     case NT_Load:{
       assign_nodes_tree(start->load.address);
     //  givepostnumbers(start->load.data); load does not have data.
       nodes[start->post]=start;
+      printf("visit %d %d\n", id++, start->post);
       break;
     }
     case NT_Store:{
       assign_nodes_tree(start->load.data); 
       assign_nodes_tree(start->load.address);
       nodes[start->post]=start;
+      printf("visit %d %d\n", id++, start->post);
 			break;
     }
     case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
@@ -526,6 +548,7 @@ void assign_nodes_tree(node_t *start){
       assign_nodes_tree(start->bin.left);
       assign_nodes_tree(start->bin.right);
       nodes[start->post]=start;
+      printf("visit %d %d\n", id++, start->post);
 			break;
     }
     case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
@@ -543,12 +566,14 @@ void assign_nodes_tree(node_t *start){
     case NT_BranchZ:{
       assign_nodes_tree(start->branchz.condition);
 			nodes[start->post]=start;
+      printf("visit %d %d\n", id++, start->post);
       break;
     }
     case NT_LessThan:{
       assign_nodes_tree(start->bin.left);
       assign_nodes_tree(start->bin.right);
 			nodes[start->post]=start;
+      printf("visit %d %d\n", id++, start->post);
       break;
     }
     case NT_While:{
@@ -568,6 +593,7 @@ void assign_nodes_tree(node_t *start){
     default:
       assert(0 && "Unhandled type in tree");
   }
+
   return;
 }
 
@@ -575,41 +601,50 @@ void assign_nodes_tree(node_t *start){
 int cmp_lives(const void *a, const void *b){
 	const node_t **_a = (const node_t**)a;
 	const node_t **_b = (const node_t**)b;
-	if(!((*_a)->parent))
+
+
+	if(!*_a || !((*_a)->parent))
 		return 1;
-	if(!((*_b)->parent))
+	if(!*_b || !((*_b)->parent))
 		return -1;
+
 	return ((*_b)->parent->post - (*_b)->post) - ((*_a)->parent->post - (*_a)->post) ;
 }
 
 void print_nodes(){
 	int i;
 	for(i = 0 ; i < post_number ; i++){
-		printf("(%d)\t: %ld \t",i,nodes[i]->post);
-		if(!(nodes[i]->parent))
-			printf(" 0 \n");
-		else
-			printf(" %ld\n",nodes[i]->parent->post - nodes[i]->post);
-			
+    if ( nodes[i] ) {
+      printf("(%d)\t: %ld \t",i,nodes[i]->post);
+      if(!(nodes[i]->parent))
+        printf(" 0 \n");
+      else
+        printf(" %ld (%d)\n",nodes[i]->parent->post - nodes[i]->post, nodes[i]->parent->post);
+			}
 	}
 }
 
 int find_reg(node_t *cur_node){
+  if ( cur_node == NULL )
+    return -1;
+
 	long int time = cur_node->post;
 	int life  ;
 	int i,j;
 	unsigned int temp;
 	if(!(cur_node->parent))
+ #warning aslkdjaslkj
 		life = 1;
-	else
+  else
 		life = cur_node->parent->post - cur_node->post ;
+
 	for(i =  0 ; i < 32 ; i++){
 		temp = 1;
 		temp = temp & (reg_nodes_rep[time] >> i);
-		if(!temp){
+		if(!(temp&1)){
 			j = time;
 			
-			while ((!(0 & (reg_nodes_rep[j] >> i))) && j < time+life){
+			while ((!((reg_nodes_rep[j] >> i)&1)) && j < time+life){
 				j++;
 			}
 			if (j == time+life  ){
@@ -626,7 +661,17 @@ int find_reg(node_t *cur_node){
 
 void give_regs(){
 	int k,i;
+
+	for(i = 0 ; i < post_number ; i++)
+    printf("i: %d %p\n", i, nodes[i]);
+  
+  printf("****\n");
 	qsort(nodes,post_number,sizeof(node_t*),cmp_lives);
+
+	for(i = 0 ; i < post_number ; i++)
+    printf("i: %d %p\n", i, nodes[i]);
+
+
 	for(i = 0 ; i < post_number ; i++){
 		k = find_reg(nodes[i]);
 		if(k == -1){
