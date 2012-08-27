@@ -52,7 +52,11 @@ void graph_instruction(node_t *n, graph_t *graph)
       if ( n->load.address ) {
         fprintf(graph->output, "n%p -> n%p;\n", n, n->load.address);
         graph_instruction(n->load.address, graph);
-        fprintf(graph->output, "n%p [label=\"lw %s, %d(%s)\"];\n", n, n->reg.name, n->load.offset,
+        if ( n->label )
+          fprintf(graph->output, "n%p [label=\"%s: lw %s, %d(%s)\"];\n", n, n->label, n->reg.name, n->load.offset,
+          n->load.address->reg.name);
+        else 
+          fprintf(graph->output, "n%p [label=\"lw %s, %d(%s)\"];\n", n, n->reg.name, n->load.offset,
           n->load.address->reg.name);
       } else {
         fprintf(graph->output, "n%p [label=\"lw %s, %d($00)\"];\n", n, n->reg.name, n->load.offset);
@@ -68,9 +72,13 @@ void graph_instruction(node_t *n, graph_t *graph)
 
         graph_instruction(n->bin.left, graph);
         graph_instruction(n->bin.right, graph);
-
-        fprintf(graph->output, "n%p [label=\"add %s, %s, %s\"];\n", n, n->reg.name,
-                  n->bin.left->reg.name, n->bin.right->reg.name);
+        
+        if ( n->label )
+          fprintf(graph->output, "n%p [label=\"%s: add %s, %s, %s\"];\n", n, n->label, n->reg.name,
+                    n->bin.left->reg.name, n->bin.right->reg.name);
+        else
+          fprintf(graph->output, "n%p [label=\"add %s, %s, %s\"];\n", n, n->reg.name,
+                    n->bin.left->reg.name, n->bin.right->reg.name);
      } else {
         fprintf(graph->output, "n%p -> n%p\n", n, n->bin.left);
        
@@ -112,6 +120,27 @@ void graph_instruction(node_t *n, graph_t *graph)
                 n->bin.left->reg.name, n->bin.right->reg.name);
 
     break;
+    
+    case NT_If:
+      graph_instruction(n->_if.branch, graph);
+      if ( n->_if._true )
+        graph_tree(n->_if._true, graph);
+      if ( n->_if._false )
+        graph_tree(n->_if._false, graph);
+    break;
+
+
+    case NT_BranchZ:
+      graph_instruction(n->branchz.condition, graph);
+      fprintf(graph->output, "n%p -> n%p\n", n, n->branchz.condition);
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"%s: bne %s, %s\"];\n", n, n->label, 
+              n->branchz.condition->reg.name, n->branchz.condition->label);
+      else
+       fprintf(graph->output, "n%p [label=\"bne %s, %s\"];\n", n, 
+              n->branchz.condition->reg.name, n->branchz.label);
+
+    break;
 
     case NT_Store:
 
@@ -123,8 +152,11 @@ void graph_instruction(node_t *n, graph_t *graph)
       }
 
       graph_instruction(n->store.data, graph);
-
-      fprintf(graph->output, "n%p [label=\"sw %s, %d(0)\"];\n", n, n->store.data->reg.name, n->store.offset);
+      
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"%s: sw %s, %d(0)\"];\n", n, n->label, n->store.data->reg.name, n->store.offset);
+      else
+       fprintf(graph->output, "n%p [label=\"sw %s, %d(0)\"];\n", n, n->store.data->reg.name, n->store.offset);
     break;
 
     default: {
