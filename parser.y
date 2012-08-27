@@ -155,7 +155,6 @@ program : header declarations subprograms comp_statement DOT
 //	print_nodes();
 		give_regs();
 
-		print_instruction_tree(main_tree, stdout);
 	  g = graph_init(fopen("plot","w"));
     graph_tree(main_tree, &g);
     graph_finalize(&g);

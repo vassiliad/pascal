@@ -297,6 +297,9 @@ void update_node(node_t *update, node_t *prev, node_t *new)
 { 
   assert(update);
 
+  if ( new == prev )
+    return;
+
   switch(update->type) {
     case NT_Iconst:
     case NT_Bconst:
@@ -335,7 +338,7 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         print_instruction(new, stdout);
         assert(0 && "Should never happen");
       }
-      
+      printf("REPLACING %p with %p\n\n\n", prev, new);
     }
     break;
 

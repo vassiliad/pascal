@@ -44,6 +44,7 @@ node_t *tree_generate_nop(char *label)
 {
 	node_t *node;
 	node = (node_t*) calloc(1, sizeof(node_t));
+  node->post = -1;
 	node->type = NT_Nop;
 	node->label = label;
 
@@ -58,6 +59,7 @@ node_t *tree_generate_jump(char *label)
 	node_t *ret;
 
 	ret = ( node_t* ) calloc(1, sizeof(node_t));
+  ret->post = -1;
 
 	ret->type = NT_Jump;
 	ret->jump_label = label;
@@ -70,6 +72,7 @@ node_t *tree_generate_branchz(node_t *condition, char *label)
 	node_t *ret;
 
 	ret = ( node_t * ) calloc(1, sizeof(node_t));
+  ret->post = -1;
 
 	ret->type = NT_BranchZ;
 	ret->branchz.label = label;
@@ -261,6 +264,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 						accumulate = dim;
 					else {
 						node_t *add = (node_t*) calloc(1, sizeof(node_t));
+            add->post = -1;
 						add->type = NT_Add;
 						add->bin.left  = accumulate;
 						add->bin.right = dim;
@@ -299,6 +303,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 			node_t *val = tree_generate_value(constant, NULL);
 
 			ret.address = (node_t*) calloc(1, sizeof(node_t));
+      ret.address->post = -1;
 			ret.address->type = NT_Mult;
 			ret.address->bin.left = val;
 			ret.address->bin.right = accumulate;
@@ -355,6 +360,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 			// accumulate the dynamic parts of the memory address
 			node_t *address;
 			address = (node_t*) calloc(1, sizeof(node_t));
+      address->post = -1;
 			address->type = NT_Add;
 			address->bin.left  = ret.address;
 			address->bin.right = child.address;
@@ -373,6 +379,7 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 {
 	node_t *ret = calloc(1, sizeof(node_t));
+  ret->post = -1;
 
 	ret->type = NT_Store;
 	return ret;
@@ -383,6 +390,8 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
   var_t *v;
   
+  ret->post = -1;
+
   v = st_var_find(var->id, scope);
     
   assert( v && "Unknown variable");
@@ -401,6 +410,7 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 	node_t *ret = calloc(1, sizeof(node_t));
   var_t *v;
   
+  ret->post = -1;
   v = st_var_find(var->id, scope);
     
   assert( v && "Unknown variable");
@@ -427,6 +437,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	{
 		case ET_Constant:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
+      node->post = -1;
 //			node->reg = rg_allocate();
 
 			switch ( expr->constant.type )
@@ -462,6 +473,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 		case ET_Not:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
+      node->post = -1;
 			node->type = NT_Not;
 			node->not = tree_generate_value( expr->notExpr, scope );
       
@@ -504,6 +516,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
               assert(right && "Expression right was not generated");
 
 							node = ( node_t * ) calloc(1, sizeof(node_t));
+              node->post = -1;
 
 							switch ( expr->binary.op )
 							{
@@ -545,6 +558,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
               assert(right && "Expression right was not generated");
 
     					node = (node_t*) calloc(1, sizeof(node_t));
+              node->post = -1;
 
 							node->type = NT_LessThan;
 							node->bin.left = left;
@@ -610,6 +624,7 @@ node_t *tree_generate_for(node_list_t *ntail, statement_for_t * _for,
   
 
 	node = (node_t*) calloc(1, sizeof(node_t));
+  node->post = -1;
 	node->type = NT_For;
 	node->_for.loop = loop;
 	node->_for.branch = jbranch;
@@ -653,6 +668,7 @@ node_t *tree_generate_while(node_list_t *ntail, statement_while_t *_while,
 
 
 	node = (node_t*) calloc(1, sizeof(node_t));
+  node->post = -1;
 	node->type = NT_While;
 	node->_while.loop = loop;
 	node->_while.branch = jbranch;
@@ -720,7 +736,8 @@ node_t *tree_generate_if(node_list_t *ntail,
 	}
 
 	node = (node_t*) calloc(1, sizeof(node_t));
-	node->type  = NT_If;
+  node->post = -1;
+  node->type  = NT_If;
 	node->_if._true = btrue;
 	node->_if._false = bfalse;
 	node->_if.branch = jbranch;

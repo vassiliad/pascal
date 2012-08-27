@@ -52,7 +52,6 @@ void print_use_def_stmt(node_list_t *start);
 
 
 void print_nodes();
-void assign_nodes_list(node_list_t *start);
 void init_reg_lives();
 void give_regs();
 node_t **nodes;
