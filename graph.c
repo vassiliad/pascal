@@ -27,7 +27,7 @@ void graph_tree(node_list_t *n, graph_t *graph) {
 
   for (p=n; p; p=p->next ) {
     if ( p->prev )
-      fprintf(graph->output, "n%p -> n%p [style=dotted];\n", p->prev->node, p->node);
+      fprintf(graph->output, "n%p -> n%p [style=dotted];\n",p->node, p->prev->node);
 
     graph_instruction(p->node, graph);
   }
@@ -124,14 +124,23 @@ void graph_instruction(node_t *n, graph_t *graph)
 
     break;
     
-    case NT_If:
-      graph_instruction(n->_if.branch, graph);
+    case NT_If: {
+      node_t *p;
+      p = n->_if.branch->branchz.condition;
+      fprintf(graph->output, "n%p -> n%p\n", n, p->branchz.condition);
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"%s: bne %s, %s\"];\n", n, p->label, 
+              p->branchz.condition->reg.name, p->branchz.condition->label);
+      else
+       fprintf(graph->output, "n%p [label=\"bne %s, %s\"];\n", n, 
+              p->branchz.condition->reg.name, p->branchz.condition->label);
+
       if ( n->_if._true )
         graph_tree(n->_if._true, graph);
       if ( n->_if._false )
         graph_tree(n->_if._false, graph);
     break;
-
+  }
 
     case NT_BranchZ:
       graph_instruction(n->branchz.condition, graph);

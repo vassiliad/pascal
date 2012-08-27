@@ -1,3 +1,3 @@
 #!/bin/bash
 
-dot -Tps  plot -o file.ps
+dot -Tpng  plot -o graph.png
