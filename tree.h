@@ -4,7 +4,7 @@
 #include "constants.h"
 #include "symbol_table.h"
 #include "register.h"
-
+#include "schedule.h"
 
 typedef struct NODE_BIN_T node_bin_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
@@ -46,6 +46,7 @@ struct NODE_FOR_T
 	node_list_t *loop;
 	life_t *def;
 	life_t *use;
+	int scheduled;
 	unsigned int id;
 };
 
@@ -56,6 +57,7 @@ struct NODE_WHILE_T
 	node_list_t *loop;
 	life_t *def;
 	life_t *use;
+	int scheduled;
 	unsigned int id;
 };
 
@@ -64,10 +66,14 @@ struct NODE_LIST_T {
 	struct NODE_T *node;
 	life_t *def;
 	life_t *use;
+	int scheduled;
 	unsigned int id;
 };
+
+
 struct NODE_BRANCHZ_T // branch on zero
 {
+	
 	node_t *condition;
 	char *label;
 };
@@ -77,6 +83,7 @@ struct NODE_IF_T
 	node_list_t *_true;
 	node_list_t *_false;
 	node_t *branch;
+	int scheduled;
 	unsigned int id;
 };
 
@@ -109,6 +116,7 @@ struct NODE_T
   char *label;
   int type;
   long int post;
+	int scheduled;
   union
   {
     node_bin_t bin;

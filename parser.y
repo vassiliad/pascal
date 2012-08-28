@@ -16,6 +16,7 @@
 #include "printer.h"
 #include "register.h"
 #include "subexpression_elim.h"
+#include "schedule.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -151,6 +152,9 @@ program : header declarations subprograms comp_statement DOT
 		//print_use_def_stmt(main_tree);
 		rg_init();
 		init_reg_lives();
+		
+		//schedule(main_tree); CAUSES SEG FAULT AT THE MOMENT!
+		
 		assign_nodes_list(main_tree);
 //	print_nodes();
 		give_regs();

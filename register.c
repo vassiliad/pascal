@@ -8,8 +8,7 @@
 reg_file_t rf_saved, rf_temp, rf_fsaved, rf_ftemp;
 long int post_number = 0;
 int stmt_id = 0;
-void print_use_def(node_t *start);
-void find_use_def(node_t *start , node_list_t *cur_stmt);
+
 void assign_nodes_tree(node_t *start);
 
 void rg_add(reg_file_t* rf, reg_t *reg)
@@ -194,6 +193,7 @@ void givepostnumbers(node_t *start){
     case NT_Cconst:{
       //propably constant nodes do not need post number id cause are going to be converted in opi instructions
       start->post= post_number++;
+			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -202,6 +202,7 @@ void givepostnumbers(node_t *start){
         givepostnumbers(start->load.address);
     //  givepostnumbers(start->load.data); load does not have data.
       start->post = post_number++;
+			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -212,6 +213,7 @@ void givepostnumbers(node_t *start){
         givepostnumbers(start->store.address);
 
       start->post = post_number++;
+			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -223,6 +225,7 @@ void givepostnumbers(node_t *start){
       givepostnumbers(start->bin.left);
       givepostnumbers(start->bin.right);
       start->post = post_number++;
+			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -246,6 +249,7 @@ void givepostnumbers(node_t *start){
     case NT_BranchZ:{
       givepostnumbers(start->branchz.condition);
 			start->post = post_number++;
+			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -253,6 +257,7 @@ void givepostnumbers(node_t *start){
       givepostnumbers(start->bin.left);
       givepostnumbers(start->bin.right);
 			start->post = post_number++;
+			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -285,197 +290,6 @@ void givepostnumbers(node_t *start){
 
 
 
-int init_life(life_t **new){
-	*new = (life_t*) malloc (sizeof(life_t));
-	if(!*new){
-		printf("Not enough memory abandoning program \"liveness.c \" \n");
-		exit(0);
-	}
-	(*new)->vars = (int*) malloc (sizeof(int));
-	(*new)->vars[0] = 0;
-	(*new)->size = 1;
-	return 1;
-}
-
-int resize (int new_size , life_t *life){
-	int *temp= (int*) malloc(new_size * sizeof(int));
-	if(!temp){
-		printf("Not enough memory abandoning program \"liveness.c \" \n");
-		exit(0);
-	}
-	int i;
-	for(i = 0 ; i < life->size; i++)
-		temp[i] = life->vars[i];
-	free(life->vars);
-	life->vars = temp;
-	life->size = new_size;
-	return 1;
-	
-}
-
-int add_var(int id , life_t* cur_life){
-	int div = id/(sizeof(int)*8);
-	int mod = (int) id % (sizeof(int)*8);
-	int dummy = 1;
-	dummy = dummy<<mod;
-	if(div + 1 > (cur_life)->size)
-		if (! resize(div+1,cur_life) )
-			return 0;
-	cur_life->vars[div] = cur_life->vars[div] | dummy;
-	return 1;
-}
-
-void print_life(life_t life){
-	int i;
-	for(i = 0 ; i < life.size; i++){
-			printf(""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN" ",
-			BYTETOBINARY(life.vars[i]>>24),BYTETOBINARY(life.vars[i]>>16) , BYTETOBINARY(life.vars[i]>>8) , BYTETOBINARY(life.vars[i]));
-	}
-}
-
-void find_use_def_stmt(node_list_t *start){
-  node_list_t *c;
-  for(c = start; c!=NULL ; c = c->next){
-		init_life(&(c->def));
-		init_life(&(c->use));
-    find_use_def(c->node,c);
-	}
-  return;
-}
-
-void find_use_def(node_t *start , node_list_t *cur_stmt){
-  if(!start)
-    return ;
-  switch (start->type){
-    case NT_Iconst: 
-    case NT_Bconst:
-    case NT_Rconst:
-    case NT_Cconst:{
-      break;
-    }
-    case NT_Load:{
-      find_use_def(start->load.address , cur_stmt);
-			add_var(start->load.unique_id,cur_stmt->use);
-      break;
-    }
-    case NT_Store:{
-      find_use_def(start->store.data , cur_stmt); 
-      find_use_def(start->store.address , cur_stmt);
-      add_var(start->load.unique_id,cur_stmt->def);
-      break;
-    }
-    case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
-    case NT_Sub:
-    case NT_Div:
-    case NT_Mult:
-    case NT_Mod:{
-      find_use_def(start->bin.left,cur_stmt);
-      find_use_def(start->bin.right,cur_stmt);
-      break;
-    }
-    case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
-      break;
-    case NT_Not: //Not yes seen a valid implementation
-      break;
-    case NT_If:{
-      find_use_def(start->_if.branch,cur_stmt);
-      find_use_def_stmt(start->_if._true);
-      find_use_def_stmt(start->_if._false);
-      break;
-    }
-    case NT_Jump:  
-      break;
-    case NT_BranchZ:{
-      find_use_def(start->branchz.condition,cur_stmt);
-      break;
-    }
-    case NT_LessThan:{
-      find_use_def(start->bin.left,cur_stmt);
-      find_use_def(start->bin.right,cur_stmt);
-      break;
-    }
-    case NT_While:{
-      find_use_def(start->_while.branch,cur_stmt);
-      find_use_def_stmt(start->_while.loop);
-      break;
-    }
-    case NT_For:{
-      find_use_def(start->_for.init,cur_stmt);
-      find_use_def(start->_for.branch,cur_stmt);
-      find_use_def_stmt(start->_for.loop);
-      break;
-    }
-    case NT_Nop:
-      break;
-    default:
-      assert(0 && "Unhandled type in tree");
-  }
-  return;
-}
-
-void print_use_def_stmt(node_list_t *start){
-  node_list_t *c;
-  for(c = start; c!=NULL ; c = c->next){
-		printf(" %d : ",c->id);
-		print_life(*(c->def));
-		printf("\t");
-		print_life(*(c->use));
-		printf("\n");
-    print_use_def(c->node);
-	}
-  return;
-}
-
-void print_use_def(node_t *start){
-	  if(!start)
-    return ;
-  switch (start->type){
-    case NT_Iconst: 
-    case NT_Bconst:
-    case NT_Rconst:
-    case NT_Cconst:
-    case NT_Load:
-    case NT_Store:
-    case NT_Add: 
-		case NT_Sub:
-    case NT_Div:
-    case NT_Mult:
-    case NT_Mod:
-    case NT_String:
-    case NT_Not: 
-			break;
-    case NT_If:{
-			printf("TRUE\n");
-      print_use_def_stmt(start->_if._true);
-      printf("FALSE\n");
-			print_use_def_stmt(start->_if._false);
-			printf("JOIN\n");
-      break;
-    }
-    case NT_Jump:  
-      break;
-    case NT_BranchZ:
-    case NT_LessThan:
-      break;
-    case NT_While:{
-      printf("WHILE\n");
-      print_use_def_stmt(start->_while.loop);
-			printf("END WHILE\n");
-      break;
-    }
-    case NT_For:{
-			printf("FOR\n");
-      print_use_def_stmt(start->_for.loop);
-			printf("END FOR\n");
-      break;
-    }
-    case NT_Nop:
-      break;
-    default:
-      assert(0 && "Unhandled type in tree");
-  }
-  return;
-}
 
 void init_reg_lives(){
 		reg_nodes_rep = (int *) malloc (post_number*sizeof(int));

@@ -32,10 +32,6 @@ struct REG_FILE_T
   (byte & 0x01 ? 1 : 0) 
 
 
-typedef struct liveness{
-	int *vars;
-	int size;
-	}life_t;
 
 
 
@@ -44,11 +40,6 @@ reg_t rg_get_zero();
 reg_t rg_allocate();
 void givepostnumbers_tree(node_list_t *start);
 void givepostnumbers(node_t *start);
-
-
-
-void find_use_def_stmt(node_list_t *start);	
-void print_use_def_stmt(node_list_t *start);	
 
 
 void print_nodes();
