@@ -153,7 +153,7 @@ program : header declarations subprograms comp_statement DOT
 		rg_init();
 		init_reg_lives();
 		
-		//schedule(main_tree); CAUSES SEG FAULT AT THE MOMENT!
+		schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
 		
 		assign_nodes_list(main_tree);
 //	print_nodes();

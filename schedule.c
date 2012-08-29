@@ -58,9 +58,10 @@ int add_var(int id , life_t* cur_life){
 	int mod = (int) id % (sizeof(int)*8);
 	int dummy = 1;
 	dummy = dummy<<mod;
-	if(div + 1 > (cur_life)->size)
+	if(div + 1 > (cur_life)->size){
 		if (! resize(div+1,cur_life) )
 			return 0;
+	}
 	cur_life->vars[div] = cur_life->vars[div] | dummy;
 	return 1;
 }
@@ -81,8 +82,13 @@ int able_to_read(int id){
 	if(div > pending_writes->size )
 		return 1;
 	else{
-		result = !(((pending_writes->vars[div])>>mod)&1);
-		return result;
+		div = pending_writes->vars[div];
+		result = (div)&(1<<mod);
+		if(result == 1<<mod)
+			return 0;
+		else
+			return 1;
+		
 	}
 }
 
@@ -90,19 +96,27 @@ int able_to_write(int id){
 	int div = id/(sizeof(int)*8);
 	int mod = (int) id % (sizeof(int)*8);
 	int result;
+	int dummy;
 	if(div > pending_reads->size && div > pending_writes->size )
 		return 1;
 	else if(div > pending_reads->size ){
-		result = !(((pending_writes->vars[div])>>mod)&1);
+		dummy = pending_writes->vars[div];
+		result = dummy & (1<<mod);
 	}
 	else if(div > pending_writes->size ){
-		result = !(((pending_reads->vars[div])>>mod)&1);
+		dummy = pending_reads->vars[div];
+		result = dummy & (1<<mod);
 	}
 	else{
-		result = (((pending_reads->vars[div])>>mod)&1);
-		result = !(result | (((pending_writes->vars[div])>>mod)&1));
+		dummy = pending_reads->vars[div];
+		result = dummy & (1<<mod);
+		dummy = pending_writes->vars[div];
+		result = (result | ( dummy & (1<<mod)  ));
 	}
-	return result;
+	if(result)
+			return 0;
+		else
+			return 1;
 }
 
 
@@ -110,8 +124,8 @@ void find_node_to_schedule_tree(node_t* start){
   if(!start)
     return ;
 
-// if ( start->post != -1 )
-//    return;
+ if ( start->scheduled == 1 )
+    return;
 
   switch (start->type){
     case NT_Iconst: 
@@ -121,7 +135,6 @@ void find_node_to_schedule_tree(node_t* start){
 			nodes[node_index] = start;
       start->scheduled = 1;
 			node_index++;
-			printf("in here\n");
       break;
     }
     case NT_Load:{
@@ -130,7 +143,7 @@ void find_node_to_schedule_tree(node_t* start){
 					find_node_to_schedule_tree(start->load.address);
 					add_var(start->load.unique_id,pending_reads) ; //ADD THIS READ TO PENDING READS NOT YET SCHEDULED
 				}
-				else{
+				else if(start->load.address->scheduled == 1){
 					if(able_to_read(start->load.unique_id)){
 						nodes[node_index] = start;
 						start->scheduled = 1;
@@ -145,29 +158,47 @@ void find_node_to_schedule_tree(node_t* start){
 					node_index++;	
 				}
 			}
+			break;
     }
     case NT_Store:{
-			if(start->store.data->scheduled == 0 && start->store.address->scheduled == 0){
-				find_node_to_schedule_tree(start->store.data);
-				find_node_to_schedule_tree(start->store.address);
-				add_var(start->store.unique_id,pending_writes) ;
-			}
-			else if(start->store.data->scheduled == 1 && start->store.address->scheduled == 0){
-				find_node_to_schedule_tree(start->store.address);
-				add_var(start->store.unique_id,pending_writes) ;				
-			}
-			else if(start->store.data->scheduled == 0 && start->store.address->scheduled == 1){
-				find_node_to_schedule_tree(start->store.data);
-				add_var(start->store.unique_id,pending_writes);
+			if(start->store.address){
+					if(start->store.data->scheduled == 0 && start->store.address->scheduled == 0){
+						find_node_to_schedule_tree(start->store.data);
+						find_node_to_schedule_tree(start->store.address);
+						add_var(start->store.unique_id,pending_writes) ;
+					}
+					else if(start->store.data->scheduled == 1 && start->store.address->scheduled == 0){
+						find_node_to_schedule_tree(start->store.address);
+						add_var(start->store.unique_id,pending_writes) ;	
+					}
+					else if(start->store.data->scheduled == 0 && start->store.address->scheduled == 1){
+						find_node_to_schedule_tree(start->store.data);
+						add_var(start->store.unique_id,pending_writes);
+					}
+					else if(start->store.data->scheduled == 1 && start->store.address->scheduled == 1){
+						if(able_to_write(start->store.unique_id)){
+							nodes[node_index] = start;
+							start->scheduled = 1;
+							node_index++;
+						}
+					}
 			}
 			else{
-				if(able_to_write(start->store.unique_id)){
-					nodes[node_index] = start;
-					start->scheduled = 1;
-					node_index++;	
-				}
+				if(start->store.data->scheduled == 0 ){
+						find_node_to_schedule_tree(start->store.data);
+						add_var(start->store.unique_id,pending_writes) ;
+					}
+					else if(start->store.data->scheduled == 1 ){
+						if(able_to_write(start->store.unique_id)){
+							nodes[node_index] = start;
+							start->scheduled = 1;
+							node_index++;
+						}
+					}
 			}
+			break;
     }
+    
     case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
     case NT_Sub:
     case NT_Div:
@@ -179,19 +210,20 @@ void find_node_to_schedule_tree(node_t* start){
 				find_node_to_schedule_tree(start->bin.right);
 			}
 			else if(start->bin.left->scheduled == 0 && start->bin.right->scheduled == 1){
-				find_node_to_schedule_tree(start->bin.left);				
+				find_node_to_schedule_tree(start->bin.left);
 			}
 			else if(start->bin.left->scheduled == 1 && start->bin.right->scheduled == 0){
 				find_node_to_schedule_tree(start->bin.right);
 			}
-			else{
+			else if(start->bin.left->scheduled == 1 && start->bin.right->scheduled == 1){
 				nodes[node_index] = start;
 				start->scheduled = 1;
 				node_index++;	
 			}
+			break;
     }
     case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
-    case NT_Not: //Not yes seen a valid implementation
+    case NT_Not: //Not yet seen a valid implementation
     case NT_If:
     case NT_Jump:  
     case NT_BranchZ:
@@ -208,8 +240,10 @@ void find_node_to_schedule_tree(node_t* start){
 
 void set_life(life_t* life){
 	int i; 
-	for( i  = 0 ; i < life->size ; i++)
+	for( i  = 0 ; i < life->size ; i++){
+	//	printf("xxxxxxx : %d\n",i);
 		life->vars[i] = 0;
+	}
 }
 
 
@@ -223,14 +257,13 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end){
 			set_life(pending_reads);
 			set_life(pending_writes);
 			cur_index = node_index;
-			for(c = start;  c!=end && c!=NULL ; c= c->next){	
-				printf("schedule number of stmt : %d\n",i++);
+			for(c = start;  c!=end->next && c!=NULL ; c= c->next){	
+//				printf("schedule number of stmt : %d\n",i++);
 				find_node_to_schedule_tree(c->node);
 			}
-			printf("@@@@@@\tscheduled : %d \n",node_index - cur_index);
+//			printf("@@@@@@\tscheduled : %d \n",node_index - cur_index);
 		
-			set_life(pending_reads);
-			set_life(pending_writes);
+			
 		
 		}while(cur_index - node_index != 0 );	
 		
@@ -259,9 +292,18 @@ node_list_t* find_start_end(node_list_t *start ){
 
 void schedule(node_list_t *start){
 	node_list_t *end = NULL;
+	int i;
 	node_index = 0;
 	end = find_start_end(start);
 	find_node_to_schedule(start,end);
+	printf("***************************quick check***************************\n");
+	for(i = 0; i < node_index ; i++){
+		if(nodes[i])
+			printf("\t\t %d %d %d\n",i,nodes[i]->post);
+		else
+			printf("\t\t\%d (NUL) fix \n",i);
+	}
+	printf("*************************** end of checking ***************************\n");
 }
 
 
