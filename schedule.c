@@ -225,13 +225,29 @@ void find_node_to_schedule_tree(node_t* start){
     case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
     case NT_Not: //Not yet seen a valid implementation
     case NT_If:
-    case NT_Jump:  
+    case NT_Jump:
+			if(node_index == start->post){
+				nodes[node_index] = start;
+				start->scheduled = 1;
+				node_index++;	
+			}
+			break;
     case NT_BranchZ:
+			if(start->branchz.condition->scheduled == 1){
+				nodes[node_index] = start;
+				start->scheduled = 1;
+				node_index++;	
+			}
+			else{
+				find_node_to_schedule_tree(start->branchz.condition);
+			}
+			break;
     case NT_While:
     case NT_For:
     case NT_Nop:
       break;
     default:
+			printf("start->type : %d\n",start->type);
       assert(0 && "Unhandled type in tree");
   }
   return;
@@ -247,25 +263,62 @@ void set_life(life_t* life){
 }
 
 
-void find_node_to_schedule(node_list_t* start,node_list_t* end){
+void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 		node_list_t *c;
+		node_t *k;
 		int cur_index;
-		int i = 0;
+		int i;
+		if(!start)
+			return;
 		init_life(&pending_writes);
 		init_life(&pending_reads);
 		do{
 			set_life(pending_reads);
 			set_life(pending_writes);
 			cur_index = node_index;
-			for(c = start;  c!=end->next && c!=NULL ; c= c->next){	
-//				printf("schedule number of stmt : %d\n",i++);
+			for(c = start;  c!=end && c!=NULL ; c= c->next){	
 				find_node_to_schedule_tree(c->node);
+				
 			}
-//			printf("@@@@@@\tscheduled : %d \n",node_index - cur_index);
+			printf("schedule number of stmt : %d\n",cur_index - node_index);
+		}while(cur_index - node_index != 0 );	
+		
+		if(end){
+			switch (end->node->type){
+				case NT_If:{
+					k  = end->node->_if.branch;
+					do{
+						find_node_to_schedule_tree(k);
+					}while(k->scheduled != 1);
+					break;	
+				}
+				case NT_For:{
+					k = end->node->_for.init;
+					do{
+						find_node_to_schedule_tree(k);
+					}while(k->scheduled != 1);
+					k = end->node->_for.branch;
+					do{
+						find_node_to_schedule_tree(k);
+					}while(k->scheduled != 1);
+					break;
+				}
+				case NT_While:{
+					k = end->node->_while.branch;
+					do{
+						find_node_to_schedule_tree(k);
+					}while(k->scheduled != 1);
+					break;
+				}
+			}
+			
+			
+		}
+			printf("@@@@@@\tscheduled : %d \n",node_index - cur_index);
 		
 			
 		
-		}while(cur_index - node_index != 0 );	
+		
 		
 }
 
@@ -273,33 +326,54 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end){
 
 
 
-node_list_t* find_start_end(node_list_t *start ){
-	node_list_t *c, *k;
+void find_start_end(node_list_t *start ,node_list_t *end ){
+	node_list_t *c;
+	static int i = 0;
 //	int i = 0;
-	for(c = start ; c!=NULL ; c= c->next){
-	//	printf("schedule number of stmt : %d\n",i++);
-		switch (c->node->type){
-			case NT_If:
-			case NT_For:
-			case NT_While:{
-				return c;
+	if(!start)
+		return;
+	for(c = start ; c!=end && c!=NULL ; c= c->next){
+		printf("schedule number of stmt : %d\n",i++);
+		if(c->node){
+			switch ( c->node->type){
+				case NT_If:{
+						printf("NT IF ENCOUNTERED\n");
+						find_node_to_schedule(start,c);
+						printf("NT IF ENCOUNTERED TRUE\n");
+						find_start_end(c->node->_if._true,c->next);
+						printf("NT IF ENCOUNTERED FALSE\n");
+						find_start_end(c->node->_if._false,c->next);
+					break;	
+				}
+				case NT_For:{
+						printf("NT _FOR ENCOUNTERED\n");
+						find_node_to_schedule(start,c);
+						printf("NT WHILE ENCOUNTERED LOOP\n");
+						find_start_end(c->node->_for.loop,c->next);
+					break;
+				}
+				case NT_While:{
+					printf("NT WHILE ENCOUNTERED \n");
+					find_node_to_schedule(start,c);
+					printf("NT WHILE ENCOUNTERED LOOP\n");
+					find_start_end(c->node->_while.loop,c->next);
+					break;
+				}
 			}
 		}
-		k = c;
 	}
-	return k;
+	find_node_to_schedule(start,end);
+	return ;
 }
 
 void schedule(node_list_t *start){
-	node_list_t *end = NULL;
 	int i;
 	node_index = 0;
-	end = find_start_end(start);
-	find_node_to_schedule(start,end);
+	find_start_end(start,NULL);
 	printf("***************************quick check***************************\n");
 	for(i = 0; i < node_index ; i++){
 		if(nodes[i])
-			printf("\t\t %d %d %d\n",i,nodes[i]->post);
+			printf("\t\t %d %ld \n",i,nodes[i]->post);
 		else
 			printf("\t\t\%d (NUL) fix \n",i);
 	}
