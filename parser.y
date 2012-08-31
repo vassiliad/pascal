@@ -155,7 +155,7 @@ program : header declarations subprograms comp_statement DOT
 		
 		schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
 		
-		assign_nodes_list(main_tree);
+//		assign_nodes_list(main_tree);
 //	print_nodes();
 		give_regs();
 
@@ -163,7 +163,7 @@ program : header declarations subprograms comp_statement DOT
     graph_tree(main_tree, &g);
     graph_finalize(&g);
     fclose(g.output);
-
+		print_code();
 
 
 

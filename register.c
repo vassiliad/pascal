@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include "tree.h"
 #include "register.h"
@@ -8,6 +9,9 @@
 reg_file_t rf_saved, rf_temp, rf_fsaved, rf_ftemp;
 long int post_number = 0;
 int stmt_id = 0;
+node_t **printer;
+
+
 
 void assign_nodes_tree(node_t *start);
 
@@ -244,7 +248,9 @@ void givepostnumbers(node_t *start){
 			printf("END\n");
       break;
     }
-    case NT_Jump:  
+    case NT_Jump:
+			start->post= post_number++;
+			start->scheduled = 0;
       break;
     case NT_BranchZ:{
       givepostnumbers(start->branchz.condition);
@@ -294,6 +300,7 @@ void givepostnumbers(node_t *start){
 void init_reg_lives(){
 		reg_nodes_rep = (int *) malloc (post_number*sizeof(int));
 		nodes = (node_t**) calloc (post_number,sizeof(node_t*));
+		printer = (node_t**) malloc (post_number*sizeof(node_t*));
 		if(!(nodes&&reg_nodes_rep)){
 			printf("NOT ENOUGH MEMORY\n");
 			exit(0);
@@ -417,33 +424,33 @@ int cmp_lives(const void *a, const void *b){
 	if(!*_b || !((*_b)->parent))
 		return -1;
 
-	return ((*_b)->parent->post - (*_b)->post) - ((*_a)->parent->post - (*_a)->post) ;
+	return ((*_b)->parent->time - (*_b)->time) - ((*_a)->parent->time - (*_a)->time) ;
 }
 
 void print_nodes(){
 	int i;
 	for(i = 0 ; i < post_number ; i++){
-		printf("(%d)\t: %ld::%p \t",i,nodes[i]->post, nodes[i]);
+		printf("(%d)\t: %ld::%p \t",i,nodes[i]->time, nodes[i]);
 		if(!(nodes[i]->parent))
 			printf(" 0 \n");
 		else
-			printf(" %ld (%ld::%p)\n",nodes[i]->parent->post - nodes[i]->post, nodes[i]->parent->post,
+			printf(" %ld (%ld::%p)\n",nodes[i]->parent->time - nodes[i]->time, nodes[i]->parent->time,
             nodes[i]->parent);
 			
 	}
 }
 
 int find_reg(node_t *cur_node){
-	long int time = cur_node->post;
+	long int time = cur_node->time;
 	int life  ;
 	int i,j;
 	unsigned int temp;
 	if(!(cur_node->parent))
 		life = 0;
   else {
-		life = cur_node->parent->post - cur_node->post ;
-    if ( cur_node->parent->post <= 0 )  {
-      printf("WRONG post: %ld (%ld)\n", cur_node->post, cur_node->parent->post);
+		life = cur_node->parent->time - cur_node->time ;
+    if ( cur_node->parent->time <= 0 )  {
+      printf("WRONG post: %ld (%ld)\n", cur_node->time, cur_node->parent->time);
       printf("parent is : %d : %p\n", cur_node->parent->type, cur_node->parent);
       printf("i am : %p\n", cur_node);
     }
@@ -479,6 +486,7 @@ void give_regs(){
     printf("i: %d %p\n", i, nodes[i]);
   
   printf("****\n");
+	memcpy(printer,nodes,post_number*sizeof(node_t*));
 	qsort(nodes,post_number,sizeof(node_t*),cmp_lives);
 
 	for(i = 0 ; i < post_number ; i++)
@@ -500,6 +508,122 @@ void give_regs(){
 			BYTETOBINARY(reg_nodes_rep[i]>>24),BYTETOBINARY(reg_nodes_rep[i]>>16) , BYTETOBINARY(reg_nodes_rep[i]>>8) , BYTETOBINARY(reg_nodes_rep[i]));
 	}
 }
+
+
+void print_code(){
+		int i;
+		for(i = 0 ; i < post_number ; i++ ){
+			switch(printer[i]->type){
+				case NT_Iconst:{
+					printf("%ld addi %s, $0, %d\n",printer[i]->post,printer[i]->reg.name,printer[i]->iconst );
+					break;
+				} 
+				case NT_Bconst:
+				case NT_Rconst:
+				case NT_Cconst:{
+					break;
+				}
+				case NT_Load:{
+						if(printer[i]->load.address){
+							printf( "%ld lw   %s, %d(%s)\n",printer[i]->post, printer[i]->reg.name, printer[i]->load.offset, 
+								printer[i]->load.address->reg.name);
+						}
+						else{
+							printf("%ld lw   %s, %d($0)\n",printer[i]->post,  printer[i]->reg.name, printer[i]->load.offset);
+						}
+					break;
+				}
+				case NT_Store:{
+						if(printer[i]->store.address){
+							printf("%ld sw   %s, %d(%s)\n",printer[i]->post, printer[i]->store.data->reg.name, printer[i]->store.offset, 
+								printer[i]->store.address->reg.name);
+						}
+						else{
+							printf("%ld sw   %s, %d($0)\n",printer[i]->post,  printer[i]->store.data->reg.name, printer[i]->store.offset);
+						}
+					break;
+				}
+				case NT_Add:{
+					if(printer[i]->bin.right->type == NT_Iconst){
+						printf("%ld addi %s, %s, %d\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->iconst);
+					}
+					else if(printer[i]->bin.left->type == NT_Iconst){
+						printf("%ld addi %s, %s, %d\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.right->reg.name, printer[i]->bin.left->iconst);
+					}
+					else{
+						printf("%ld add %s, %s, %s\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+					}
+					break;
+				} 
+				case NT_Sub:{
+					printf("%ld sub %s, %s, %s\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+					break;
+				}
+				case NT_Div:
+					break;
+				case NT_Mult:{
+					printf( "%ld mult %s, %s\n",printer[i]->post, printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+					printf( "mflo %s\n", printer[i]->reg.name);
+					break;
+				}
+				case NT_Mod:{
+					break;
+				}
+				case NT_String:
+					break;
+				case NT_Not: //Not yes seen a valid implementation
+					break;
+				case NT_If:{
+					break;
+				}
+				case NT_Jump:
+						printf("%ld j    %s\n",printer[i]->post, printer[i]->jump_label);
+					break;
+				case NT_BranchZ:{
+						printf("%ld bne  $0, %s, %s\n",printer[i]->post,printer[i]->branchz.condition->reg.name, printer[i]->branchz.label);
+					break;
+				}
+				case NT_LessThan:{
+					printf( "%ld slt  %s, %s, %s\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+					break;
+				}
+				case NT_While:{
+					break;
+				}
+				case NT_For:{
+					break;
+				}
+				case NT_Nop:
+					printf("add  $0, $0, $0\n");
+					break;
+				default:
+					assert(0 && "Unhandled type in tree");	
+			}
+		}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

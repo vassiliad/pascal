@@ -117,6 +117,7 @@ struct NODE_T
   int type;
   long int post;
 	int scheduled;
+	long int time;
   union
   {
     node_bin_t bin;
@@ -136,6 +137,7 @@ struct NODE_T
   };
 	reg_t reg;
 	int reg_id;
+
   node_t *parent;
 };
 

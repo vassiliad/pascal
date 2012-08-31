@@ -134,6 +134,7 @@ void find_node_to_schedule_tree(node_t* start){
     case NT_Cconst:{
 			nodes[node_index] = start;
       start->scheduled = 1;
+			start->time = node_index;
 			node_index++;
       break;
     }
@@ -147,6 +148,7 @@ void find_node_to_schedule_tree(node_t* start){
 					if(able_to_read(start->load.unique_id)){
 						nodes[node_index] = start;
 						start->scheduled = 1;
+						start->time = node_index;
 						node_index++;	
 					}
 				}
@@ -155,6 +157,7 @@ void find_node_to_schedule_tree(node_t* start){
 				if(able_to_read(start->load.unique_id)){
 					nodes[node_index] = start;
 					start->scheduled = 1;
+					start->time = node_index;
 					node_index++;	
 				}
 			}
@@ -179,6 +182,7 @@ void find_node_to_schedule_tree(node_t* start){
 						if(able_to_write(start->store.unique_id)){
 							nodes[node_index] = start;
 							start->scheduled = 1;
+							start->time = node_index;
 							node_index++;
 						}
 					}
@@ -192,6 +196,7 @@ void find_node_to_schedule_tree(node_t* start){
 						if(able_to_write(start->store.unique_id)){
 							nodes[node_index] = start;
 							start->scheduled = 1;
+							start->time = node_index;
 							node_index++;
 						}
 					}
@@ -218,6 +223,7 @@ void find_node_to_schedule_tree(node_t* start){
 			else if(start->bin.left->scheduled == 1 && start->bin.right->scheduled == 1){
 				nodes[node_index] = start;
 				start->scheduled = 1;
+				start->time = node_index;
 				node_index++;	
 			}
 			break;
@@ -229,6 +235,7 @@ void find_node_to_schedule_tree(node_t* start){
 			if(node_index == start->post){
 				nodes[node_index] = start;
 				start->scheduled = 1;
+				start->time = node_index;
 				node_index++;	
 			}
 			break;
@@ -236,6 +243,7 @@ void find_node_to_schedule_tree(node_t* start){
 			if(start->branchz.condition->scheduled == 1){
 				nodes[node_index] = start;
 				start->scheduled = 1;
+				start->time = node_index;
 				node_index++;	
 			}
 			else{
@@ -286,8 +294,12 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 		if(end){
 			switch (end->node->type){
 				case NT_If:{
+					set_life(pending_reads);
+					set_life(pending_writes);
 					k  = end->node->_if.branch;
 					do{
+						set_life(pending_reads);
+						set_life(pending_writes);
 						find_node_to_schedule_tree(k);
 					}while(k->scheduled != 1);
 					break;	
@@ -295,10 +307,15 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 				case NT_For:{
 					k = end->node->_for.init;
 					do{
+						set_life(pending_reads);
+						set_life(pending_writes);
 						find_node_to_schedule_tree(k);
+						printf("stacked here %d\n",k->type);
 					}while(k->scheduled != 1);
 					k = end->node->_for.branch;
 					do{
+						set_life(pending_reads);
+						set_life(pending_writes);
 						find_node_to_schedule_tree(k);
 					}while(k->scheduled != 1);
 					break;
@@ -306,6 +323,8 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 				case NT_While:{
 					k = end->node->_while.branch;
 					do{
+						set_life(pending_reads);
+						set_life(pending_writes);
 						find_node_to_schedule_tree(k);
 					}while(k->scheduled != 1);
 					break;
@@ -327,42 +346,46 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 
 
 void find_start_end(node_list_t *start ,node_list_t *end ){
-	node_list_t *c;
+	node_list_t *c , *begin;
 	static int i = 0;
 //	int i = 0;
 	if(!start)
 		return;
+	begin = start;
 	for(c = start ; c!=end && c!=NULL ; c= c->next){
 		printf("schedule number of stmt : %d\n",i++);
 		if(c->node){
 			switch ( c->node->type){
 				case NT_If:{
 						printf("NT IF ENCOUNTERED\n");
-						find_node_to_schedule(start,c);
+						find_node_to_schedule(begin,c);
 						printf("NT IF ENCOUNTERED TRUE\n");
 						find_start_end(c->node->_if._true,c->next);
 						printf("NT IF ENCOUNTERED FALSE\n");
 						find_start_end(c->node->_if._false,c->next);
+						begin = c->next;
 					break;	
 				}
 				case NT_For:{
 						printf("NT _FOR ENCOUNTERED\n");
-						find_node_to_schedule(start,c);
+						find_node_to_schedule(begin,c);
 						printf("NT WHILE ENCOUNTERED LOOP\n");
 						find_start_end(c->node->_for.loop,c->next);
+						begin = c->next;
 					break;
 				}
 				case NT_While:{
 					printf("NT WHILE ENCOUNTERED \n");
-					find_node_to_schedule(start,c);
+					find_node_to_schedule(begin,c);
 					printf("NT WHILE ENCOUNTERED LOOP\n");
 					find_start_end(c->node->_while.loop,c->next);
+					begin = c->next;
 					break;
 				}
 			}
 		}
 	}
-	find_node_to_schedule(start,end);
+	find_node_to_schedule(begin,end);
 	return ;
 }
 
