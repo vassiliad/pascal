@@ -37,6 +37,9 @@ void graph_instruction(node_t *n, graph_t *graph)
 { 
   char *instr_name;
   int i = 0;
+  
+  if ( n == NULL ) 
+    return;
 
   for ( i=0; i<graph->num; i++ )
     if ( graph->printed[i] == n )
