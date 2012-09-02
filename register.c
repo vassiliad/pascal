@@ -286,6 +286,21 @@ void givepostnumbers(node_t *start){
 			printf("END\n");
       break;
     }
+    
+    case NT_LessThani:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi: {
+      givepostnumbers(start->bin_semi.left);
+      start->post = post_number++;
+      break;
+    }
+    
+    case NT_Lui: {
+      start->post = post_number++;
+      break;
+    }
+
     case NT_Nop:
       break;
     default:
@@ -593,6 +608,31 @@ void print_code(){
 				case NT_For:{
 					break;
 				}
+        case NT_Subi:{
+          printf("%ld subi %s, %s, %d\n", printer[i]->post, printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          break;
+        }
+
+
+        case NT_Ori:{
+          printf("%ld ori %s, %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          break;
+        }
+        case NT_LessThani:{
+          printf("%ld slti %s, %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          break;
+        }
+        
+        case NT_Addi:{
+          printf("%ld addi %s, %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          break;
+        }
+          
+        case NT_Lui: {
+          printf("%ld lui %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->iconst);
+          break;
+        }
+
 				case NT_Nop:
 					printf("add  $0, $0, $0\n");
 					break;

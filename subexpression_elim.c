@@ -32,7 +32,9 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
   // We need to visit every node of the @past tree for every node of @cur tree,
   // we traverse both in post order
   if ( mode == TraverseCur ) {
+
     switch(cur->type) {
+      case NT_Lui:
       case NT_Iconst:
       case NT_Bconst:
       case NT_Rconst:
@@ -65,26 +67,34 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
 
       case NT_If:{
         subexpr_eliminate_children(past, cur->_if.branch, TraverseCur);
+        subexpressions_eliminate(cur->_if._true);
+        subexpressions_eliminate(cur->_if._false);
         break;
       }
       case NT_BranchZ:{
         subexpr_eliminate_children(past, cur->branchz.condition, TraverseCur);
-
         break;
       }
 
       case NT_While:{
-        assert(0 && "Should never happen");
+        subexpr_eliminate_children(past, cur->_while.branch, TraverseCur);
+        subexpressions_eliminate(cur->_while.loop);
         break;
       }
       case NT_For:{
-        assert(0 && "Should never happen");
+        subexpr_eliminate_children(past, cur->_for.init, TraverseCur);
+        subexpressions_eliminate(cur->_for.loop);
         break;
       }
-
+      
+      case NT_Addi:
+      case NT_Ori:
+      case NT_Subi:
+      case NT_LessThani:
+        subexpr_eliminate_children(past, cur->bin_semi.left, TraverseCur);
+      break;
       case NT_Jump:
       case NT_Nop:
-        assert(0 && "Should never happen");
         break;
       default:
         assert(0 && "Unhandled type in tree");
@@ -92,6 +102,7 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
     subexpr_eliminate_children(past, cur, TraversePast);
   } else {
     switch(past->type) {
+      case NT_Lui:
       case NT_Iconst:
       case NT_Bconst:
       case NT_Rconst:
@@ -109,7 +120,6 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         return 0;
       break;
 
-      break;
 
       case NT_Add:
       case NT_Mult:
@@ -125,6 +135,19 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         return 0;
       }
       break;
+      
+      case NT_Addi:
+      case NT_Subi:
+      case NT_Ori:
+      case NT_LessThani: {
+        subexpr_eliminate_children(past->bin_semi.left, cur, TraversePast);
+
+        if ( past->type == cur->type )
+          return subexpr_eliminate(past, cur);
+        return 0;
+      }
+      break;
+
 
       case NT_String:
         assert( 0 && "Not implemented");
@@ -144,17 +167,17 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
       }
 
       case NT_While:{
-        assert(0 && "Should never happen");
+        subexpr_eliminate_children(past->_while.branch, cur, TraversePast);
         break;
       }
       case NT_For:{
-        assert(0 && "Should never happen");
+        subexpr_eliminate_children(past->_for.init, cur, TraversePast);
         break;
       }
+      
 
       case NT_Jump:
       case NT_Nop:
-        assert(0 && "Should never happen");
         break;
       default:
         assert(0 && "Unhandled type in tree");
@@ -173,6 +196,7 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
     EXPRS_IDENTICAL(past, cur);
 
   switch(past->type) {
+    case NT_Lui:
     case NT_Iconst:
       if ( past->iconst == cur->iconst )
         EXPRS_IDENTICAL(past, cur);
@@ -222,6 +246,18 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
         EXPRS_DIFFERENT(past, cur);
       break;
      }
+    
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi:
+    case NT_LessThani: {
+      if ( subexpr_eliminate(past->bin_semi.left, cur->bin_semi.left) &&
+           past->bin_semi.immediate == cur->bin_semi.immediate )
+        EXPRS_IDENTICAL(past, cur);
+      else
+        EXPRS_DIFFERENT(past, cur);
+      break;
+    }
 
     case NT_Sub:
     case NT_Div:
@@ -243,33 +279,30 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
                  assert( 0 && "Not implemented");
                  break;
 
-    case NT_If:{
-      subexpr_eliminate_children(past, cur->_if.branch, TraverseCur);
-      subexpressions_eliminate(cur->_if._true);
-      subexpressions_eliminate(cur->_if._false);
-       break;
-     }
-    case NT_BranchZ:{
-                      assert(0 && "Should never happen");
-                      break;
-                    }
-
     case NT_While:{
-      subexpr_eliminate_children(past, cur->_while.branch, TraverseCur);
-      subexpressions_eliminate(cur->_while.loop);
+      subexpr_eliminate_children(past->_while.branch, cur->_while.branch, TraverseCur);
       break;
     }
     case NT_For:{
-                  assert(0 && "Should never happen");
-                  break;
-                }
+      return 0;
+      break;
+    }
+
+    case NT_If:{
+      subexpr_eliminate_children(past->_if.branch, cur->_if.branch, TraverseCur);
+      break;
+    }
+
+    case NT_BranchZ:{
+      assert(0 && "Should never happen");
+      break;
+    }
 
     case NT_Jump:
     case NT_Nop:
-                assert(0 && "Should never happen");
-                break;
+      break;
     default:
-                assert(0 && "Unhandled type in tree");
+      assert(0 && "Unhandled type in tree");
 
   }
   return 0;
@@ -299,96 +332,96 @@ void subexpressions_eliminate(node_list_t *t)
 
 void update_node(node_t *update, node_t *prev, node_t *new)
 { 
-  assert(update);
-
+  
   if ( new == prev )
     return;
 
   prev->parent = NULL;
-
-  switch(update->type) {
-    case NT_Iconst:
-    case NT_Bconst:
-    case NT_Rconst:
-    case NT_Cconst:
-    case NT_Load:
-      assert(0 && "Should never happen");
-
-    case NT_Store:
-      if ( update->store.data == prev )
-        update->store.data = new;
-      else if ( update->store.address == prev )
-        update->store.address = new;
-      else
-        assert(0);
-      new->parent = update;
-    break;
-
-    break;
-
-    case NT_Add:
-    case NT_Mult:
-    case NT_Sub:
-    case NT_Div:
-    case NT_LessThan:
-    case NT_Mod: {
-      if ( update->bin.left == prev )
-        update->bin.left = new;
-      else if ( update->bin.right == prev )
-        update->bin.right = new;
-      else {
-        printf("***************\n");
-
-        print_instruction(update, stdout);
-        
-        printf("***\n");
-
-        print_instruction(prev, stdout);
-
-        printf("***\n");
-
-        print_instruction(new, stdout);
-        assert(0 && "Should never happen");
-      }
-      printf("REPLACING %p with %p\n\n\n", prev, new);
-      new->parent = update;
-    }
-    break;
-
-    case NT_String:
-      assert( 0 && "Not implemented");
-      break;
-
-    case NT_Not:
-      assert( 0 && "Not implemented");
-      break;
-
-    case NT_If:{
-      // assert(0 && "Should never happen");
-      break;
-    }
-    case NT_BranchZ:{
-      update->branchz.condition = new;
-      break;
-    }
-
-    case NT_While:{
-      assert(0 && "Should never happen");
-      break;
-    }
-    case NT_For:{
-      assert(0 && "Should never happen");
-      break;
-    }
-
-    case NT_Jump:
-    case NT_Nop:
-      assert(0 && "Should never happen");
-      break;
-    default:
-      assert(0 && "Unhandled type in tree");
-  }
   
+  if ( update )
+    switch(update->type) {
+      case NT_Iconst:
+      case NT_Bconst:
+      case NT_Rconst:
+      case NT_Cconst:
+      case NT_Load:
+        assert(0 && "Should never happen");
+
+      case NT_Store:
+        if ( update->store.data == prev )
+          update->store.data = new;
+        else if ( update->store.address == prev )
+          update->store.address = new;
+        else
+          assert(0);
+        new->parent = update;
+      break;
+
+      break;
+
+      case NT_Addi:
+      case NT_Subi:
+      case NT_Ori:
+      case NT_LessThani:
+        assert( update->bin_semi.left == prev );
+
+        update->bin_semi.left = new;
+        new->parent = update;
+      break;
+
+      case NT_Add:
+      case NT_Mult:
+      case NT_Sub:
+      case NT_Div:
+      case NT_LessThan:
+      case NT_Mod: {
+        if ( update->bin.left == prev )
+          update->bin.left = new;
+        else if ( update->bin.right == prev )
+          update->bin.right = new;
+        else {
+          assert(0 && "Should never happen");
+        }
+
+        printf("REPLACING %p with %p\n\n\n", prev, new);
+        new->parent = update;
+      }
+      break;
+
+      case NT_String:
+        assert( 0 && "Not implemented");
+        break;
+
+      case NT_Not:
+        assert( 0 && "Not implemented");
+        break;
+
+      case NT_If:{
+        // assert(0 && "Should never happen");
+        break;
+      }
+      case NT_BranchZ:{
+        update->branchz.condition = new;
+        break;
+      }
+
+      case NT_While:{
+        assert(0 && "Should never happen");
+        break;
+      }
+      case NT_For:{
+        assert(0 && "Should never happen");
+        break;
+      }
+
+      case NT_Jump:
+      case NT_Nop:
+        assert(0 && "Should never happen");
+        break;
+      default:
+        assert(0 && "Unhandled type in tree");
+    }
+    
   switch(prev->type) {
     case NT_Iconst:
     case NT_Bconst:
