@@ -72,29 +72,18 @@ void graph_instruction(node_t *n, graph_t *graph)
 
     
     case NT_Add:
-      if ( n->bin.right->type != NT_Iconst ) {
-        fprintf(graph->output, "n%p -> { n%p ; n%p };\n",n, n->bin.left, n->bin.right );
-        
+      fprintf(graph->output, "n%p -> { n%p ; n%p };\n",n, n->bin.left, n->bin.right );
+      
 
-        graph_instruction(n->bin.left, graph);
-        graph_instruction(n->bin.right, graph);
-        
-        if ( n->label )
-          fprintf(graph->output, "n%p [label=\"[%ld]  %s: add %s, %s, %s\"];\n", n, n->post, n->label, n->reg.name,
-                    n->bin.left->reg.name, n->bin.right->reg.name);
-        else
-          fprintf(graph->output, "n%p [label=\"[%ld]  add %s, %s, %s\"];\n", n, n->post, n->reg.name,
-                    n->bin.left->reg.name, n->bin.right->reg.name);
-     } else {
-        fprintf(graph->output, "n%p -> n%p\n", n, n->bin.left);
-       
-
-        graph_instruction(n->bin.left, graph);
-
-        fprintf(graph->output, "n%p [label=\"[%ld]  addi %s, %s, %d\"];\n", n, n->post, n->reg.name,
-                  n->bin.left->reg.name, n->bin.right->iconst);
-       
-     }
+      graph_instruction(n->bin.left, graph);
+      graph_instruction(n->bin.right, graph);
+      
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: add %s, %s, %s\"];\n", n, n->post, n->label, n->reg.name,
+                  n->bin.left->reg.name, n->bin.right->reg.name);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  add %s, %s, %s\"];\n", n, n->post, n->reg.name,
+                  n->bin.left->reg.name, n->bin.right->reg.name);
     break;
     
     case NT_Mult:
