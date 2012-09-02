@@ -46,8 +46,6 @@ struct NODE_FOR_T
 	node_list_t *loop;
 	life_t *def;
 	life_t *use;
-
-	
 	int scheduled;
 	unsigned int id;
 };
@@ -59,9 +57,7 @@ struct NODE_WHILE_T
 	node_list_t *loop;
 	life_t *def;
 	life_t *use;
-	int scheduled;
-	
-	
+	int scheduled;	
 	unsigned int id;
 };
 
@@ -70,7 +66,6 @@ struct NODE_LIST_T {
 	struct NODE_T *node;
 	life_t *def;
 	life_t *use;
-	int precoditioner;
 	int scheduled;
 	unsigned int id;
 };
@@ -89,7 +84,6 @@ struct NODE_IF_T
 	node_list_t *_false;
 	node_t *branch;
 	int scheduled;
-
 	unsigned int id;
 };
 
