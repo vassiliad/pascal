@@ -32,7 +32,9 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
   // We need to visit every node of the @past tree for every node of @cur tree,
   // we traverse both in post order
   if ( mode == TraverseCur ) {
+
     switch(cur->type) {
+      case NT_Lui:
       case NT_Iconst:
       case NT_Bconst:
       case NT_Rconst:
@@ -100,6 +102,7 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
     subexpr_eliminate_children(past, cur, TraversePast);
   } else {
     switch(past->type) {
+      case NT_Lui:
       case NT_Iconst:
       case NT_Bconst:
       case NT_Rconst:
@@ -171,6 +174,7 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         subexpr_eliminate_children(past->_for.init, cur, TraversePast);
         break;
       }
+      
 
       case NT_Jump:
       case NT_Nop:
@@ -192,6 +196,7 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
     EXPRS_IDENTICAL(past, cur);
 
   switch(past->type) {
+    case NT_Lui:
     case NT_Iconst:
       if ( past->iconst == cur->iconst )
         EXPRS_IDENTICAL(past, cur);
