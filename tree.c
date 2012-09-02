@@ -448,8 +448,30 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 					break;
 
 				case VT_Iconst:
-					node->type = NT_Iconst;
-					node->iconst = expr->constant.iconst;
+          if ( expr->constant.iconst <= ( (1<<16) - 1 ) ) {
+            node->type = NT_Iconst;
+            node->iconst = expr->constant.iconst;
+          } else {
+            node_t *lui;
+            
+            lui = (node_t*) calloc(1, sizeof(node_t));
+            lui->post = -1;
+            lui->type = NT_Lui;
+            lui->iconst = ((1<<16) -1 ) << 16;
+            lui->iconst &= expr->constant.iconst;
+            (lui->iconst)>>= 16;
+            
+
+            node = (node_t*) calloc(1, sizeof(node_t));
+            node->post = -1;
+            node->type = NT_Ori;
+            node->bin_semi.left = lui;
+            node->bin_semi.immediate = ((1<<16) -1 );
+            node->bin_semi.immediate &= expr->constant.iconst;
+
+            node->parent = NULL;
+            return node;
+          }
 					break;
 
 				case VT_Rconst:
@@ -494,6 +516,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 			{
 				switch ( expr->binary.op )
 				{
+          case RelopL:
 					case AddopM:
 					case MuldivandopDiv:
 					case MuldivandopM:
@@ -510,9 +533,44 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							// compute the value in compile time
 
 							left = tree_generate_value( e_left, scope );
-							right = tree_generate_value( e_right, scope );
 
               assert(left && "Expression left was not generated");
+              
+              if ( ( expr->binary.op == AddopP ||
+                   expr->binary.op == AddopM ||
+                   expr->binary.op == RelopL )
+                   && e_right->type == ET_Constant
+                   && e_right->constant.iconst <= ( (1<<16) - 1 )) {
+
+                assert( e_right->constant.type == VT_Iconst );
+                
+                node = (node_t*) calloc(1, sizeof(node_t));
+                node->post = -1;
+
+                switch ( expr->binary.op )
+                {
+                  case AddopP:
+                    node->type = NT_Addi;
+                  break;
+
+                  case AddopM:
+                    node->type = NT_Subi;
+                  break;
+
+                  case RelopL:
+                    node->type = NT_LessThani;
+                  break;
+                }
+                
+                node->bin_semi.left = left;
+                node->bin_semi.immediate = e_right->constant.iconst;
+
+                node->parent = NULL;
+                return node;
+              }
+
+              right = tree_generate_value( e_right, scope );
+
               assert(right && "Expression right was not generated");
 
 							node = ( node_t * ) calloc(1, sizeof(node_t));
@@ -522,53 +580,36 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							{
 								case AddopP:
 									node->type = NT_Add;
-									break;
+                break;
 
 								case AddopM:
 									node->type = NT_Sub;
-									break;
+                break;
 
 								case MuldivandopDiv:
 									node->type = NT_Div;
-									break;
+                break;
 
 								case MuldivandopMod:
 									node->type = NT_Mod;
-									break;
+                break;
 
 								case MuldivandopM:
 									node->type = NT_Mult;
-									break;
+                break;
+                
+                case RelopL:
+                  node->type = NT_LessThan;
+                break;
 							}
 
 							node->bin.left = left;
 							node->bin.right = right;
-//							node->reg = rg_allocate();
 
               left->parent = node;
               right->parent = node;
 						} 
 						break;
-					case RelopL:
-						{
-							node_t *left, *right;
-							left = tree_generate_value(expr->binary.left, scope);
-							right = tree_generate_value(expr->binary.right, scope);
-              assert(left && "Expression left was not generated");
-              assert(right && "Expression right was not generated");
-
-    					node = (node_t*) calloc(1, sizeof(node_t));
-              node->post = -1;
-
-							node->type = NT_LessThan;
-							node->bin.left = left;
-							node->bin.right = right;
-//							node->reg = rg_allocate();
-
-              left->parent = node;
-              right->parent = node;
-							break;
-						}
 					default:
 						printf("%d\n",expr->binary.op);
 						assert(0 && "Unhandled binary expression");

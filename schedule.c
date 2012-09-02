@@ -128,6 +128,7 @@ void find_node_to_schedule_tree(node_t* start){
     return;
 
   switch (start->type){
+    case NT_Lui:
     case NT_Iconst: 
     case NT_Bconst:
     case NT_Rconst:
@@ -250,6 +251,22 @@ void find_node_to_schedule_tree(node_t* start){
 				find_node_to_schedule_tree(start->branchz.condition);
 			}
 			break;
+    case NT_Addi:
+    case NT_LessThani:
+    case NT_Ori:
+    case NT_Subi:
+      if ( start->bin_semi.left->scheduled == 0 )
+        find_node_to_schedule_tree(start->bin_semi.left);
+      else if ( start->bin_semi.left->scheduled == 1 ) {
+        nodes[node_index] = start;
+        start->scheduled = 1;
+        start->time = node_index;
+        node_index++;
+      }
+    break;
+    
+    
+
     case NT_While:
     case NT_For:
     case NT_Nop:
@@ -275,7 +292,6 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 		node_list_t *c;
 		node_t *k;
 		int cur_index;
-		int i;
 		if(!start)
 			return;
 		init_life(&pending_writes);
@@ -329,8 +345,9 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 					}while(k->scheduled != 1);
 					break;
 				}
+        default:
+        break;
 			}
-			
 			
 		}
 			printf("@@@@@@\tscheduled : %d \n",node_index - cur_index);
@@ -382,6 +399,8 @@ void find_start_end(node_list_t *start ,node_list_t *end ){
 					begin = c->next;
 					break;
 				}
+        default:
+        break;
 			}
 		}
 	}

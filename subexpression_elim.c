@@ -84,7 +84,13 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         subexpressions_eliminate(cur->_for.loop);
         break;
       }
-
+      
+      case NT_Addi:
+      case NT_Ori:
+      case NT_Subi:
+      case NT_LessThani:
+        subexpr_eliminate_children(past, cur->bin_semi.left, TraverseCur);
+      break;
       case NT_Jump:
       case NT_Nop:
         break;
@@ -111,7 +117,6 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         return 0;
       break;
 
-      break;
 
       case NT_Add:
       case NT_Mult:
@@ -127,6 +132,19 @@ int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode
         return 0;
       }
       break;
+      
+      case NT_Addi:
+      case NT_Subi:
+      case NT_Ori:
+      case NT_LessThani: {
+        subexpr_eliminate_children(past->bin_semi.left, cur, TraversePast);
+
+        if ( past->type == cur->type )
+          return subexpr_eliminate(past, cur);
+        return 0;
+      }
+      break;
+
 
       case NT_String:
         assert( 0 && "Not implemented");
@@ -223,6 +241,18 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
         EXPRS_DIFFERENT(past, cur);
       break;
      }
+    
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi:
+    case NT_LessThani: {
+      if ( subexpr_eliminate(past->bin_semi.left, cur->bin_semi.left) &&
+           past->bin_semi.immediate == cur->bin_semi.immediate )
+        EXPRS_IDENTICAL(past, cur);
+      else
+        EXPRS_DIFFERENT(past, cur);
+      break;
+    }
 
     case NT_Sub:
     case NT_Div:

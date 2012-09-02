@@ -6,6 +6,7 @@
 #include "register.h"
 #include "schedule.h"
 
+typedef struct NODE_BIN_SEMI_T node_bin_semi_t;
 typedef struct NODE_BIN_T node_bin_t;
 typedef struct NODE_LOAD_STORE_T node_load_t;
 typedef struct NODE_LOAD_STORE_T node_store_t;
@@ -37,6 +38,12 @@ enum NodeType
   NT_While,   // node_while_t (_while )
   NT_For,     // node_for_t ( _for )
   NT_Nop,     // none!!
+  NT_Addi=20, // node_bin_semi_t ( bin_semi )
+  NT_Subi,    // node_bin_semi_t ( bin_semi )
+  NT_Ori,     // node_bin_semi_t ( bin_semi )
+  NT_LessThani,  // node_bin_semi_t ( bin_semi )
+  NT_Lui      // int ( iconst )
+
 };
 
 struct NODE_FOR_T
@@ -106,6 +113,12 @@ struct NODE_LOAD_STORE_T
   node_t *data;
 };
 
+struct NODE_BIN_SEMI_T
+{
+  node_t *left;
+  int immediate;
+};
+
 struct NODE_BIN_T
 {
   node_t *left, *right;
@@ -114,12 +127,13 @@ struct NODE_BIN_T
 struct NODE_T
 {
   char *label;
-  int type;
+  enum NodeType type;
   long int post;
 	int scheduled;
 	long int time;
   union
   {
+    node_bin_semi_t bin_semi;
     node_bin_t bin;
     node_load_t load;
     node_store_t store;

@@ -188,10 +188,63 @@ void graph_instruction(node_t *n, graph_t *graph)
       else
        fprintf(graph->output, "n%p [label=\"[%ld]  sw %s, %d(0)\"];\n", n,n->post, n->store.data->reg.name, n->store.offset);
     break;
+    
+    case NT_Addi:
+      graph_instruction(n->bin_semi.left, graph);
+      fprintf(graph->output, "n%p -> n%p\n", n, n->bin_semi.left);
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: addi %s, %s, %d\"];\n", n, n->post, n->label, 
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  addi %s, %s, %d\"];\n", n, n->post,
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+    break;
+
+    case NT_LessThani:
+      graph_instruction(n->bin_semi.left, graph);
+      fprintf(graph->output, "n%p -> n%p\n", n, n->bin_semi.left);
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: slti %s, %s, %d\"];\n", n, n->post, n->label, 
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  slti %s, %s, %d\"];\n", n, n->post,
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+    break;
+
+    case NT_Subi:
+      graph_instruction(n->bin_semi.left, graph);
+      fprintf(graph->output, "n%p -> n%p\n", n, n->bin_semi.left);
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: subi %s, %s, %d\"];\n", n, n->post, n->label, 
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  subi %s, %s, %d\"];\n", n, n->post,
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+    break;
+
+    case NT_Ori:
+      graph_instruction(n->bin_semi.left, graph);
+      fprintf(graph->output, "n%p -> n%p\n", n, n->bin_semi.left);
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: ori %s, %s, %d\"];\n", n, n->post, n->label, 
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  ori %s, %s, %d\"];\n", n, n->post,
+              n->reg.name, n->bin_semi.left->reg.name, n->bin_semi.immediate);
+    break;
+
+    case NT_Lui:
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: lui %s, %d\"];\n", n, n->post, n->label, 
+              n->reg.name, n->iconst);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  lui %s, %d\"];\n", n, n->post,
+              n->reg.name, n->iconst);
+    break;
 
     default: {
      printf("CANNOT HANDLE %d\n", n->type);
-     // assert(0 && "Not implemented");
+     assert(0 && "Not implemented");
     }
   }
 
