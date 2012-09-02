@@ -354,6 +354,16 @@ void update_node(node_t *update, node_t *prev, node_t *new)
 
       break;
 
+      case NT_Addi:
+      case NT_Subi:
+      case NT_Ori:
+      case NT_LessThani:
+        assert( update->bin_semi.left == prev );
+
+        update->bin_semi.left = new;
+        new->parent = update;
+      break;
+
       case NT_Add:
       case NT_Mult:
       case NT_Sub:
@@ -365,19 +375,9 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         else if ( update->bin.right == prev )
           update->bin.right = new;
         else {
-          printf("***************\n");
-
-          print_instruction(update, stdout);
-          
-          printf("***\n");
-
-          print_instruction(prev, stdout);
-
-          printf("***\n");
-
-          print_instruction(new, stdout);
           assert(0 && "Should never happen");
         }
+
         printf("REPLACING %p with %p\n\n\n", prev, new);
         new->parent = update;
       }
