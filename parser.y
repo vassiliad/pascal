@@ -25,15 +25,17 @@ extern FILE* yyin;
 int enable_constant_propagation = 0;
 int enable_dead_code_elimination = 0;
 int enable_subexpression_elimination = 0;
+int enable_scheduling = 0;
 
 static const struct option l_opts[] = {
   	{	"help",		no_argument,		NULL,	'h' },
 		{ "constant_propagation", no_argument, NULL , 'c' },
 		{ "dead_code_elimination", no_argument, NULL , 'd' },
-    { "subexpression_elimination", no_argument, NULL, 'e'}
+    { "subexpression_elimination", no_argument, NULL, 'e'},
+    { "scheduling", no_argument, NULL , 'e'}
 	};
 
-static const char s_opts[] = "hcde";
+static const char s_opts[] = "hcdes";
 
 
 int yylex(void);
@@ -153,7 +155,8 @@ program : header declarations subprograms comp_statement DOT
 		rg_init();
 		init_reg_lives();
 		
-		schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
+    if ( enable_scheduling )
+		  schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
 		
 //		assign_nodes_list(main_tree);
 //	print_nodes();
@@ -1406,6 +1409,10 @@ int main(int argc, char* argv[])
 
       case 'e':
         enable_subexpression_elimination = 1;
+      break;
+
+      case 's':
+        enable_scheduling = 1;
       break;
 		}
 	}

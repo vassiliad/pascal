@@ -6,189 +6,176 @@
 #include "printer.h"
 #include "subexpression_elim.h"
 
-#define EXPRS_IDENTICAL(past, cur) do { printf("%p \e[32mIDENTICAL \e[m%p\n", past, cur); \
-                                        printf("\033[22;34m");\
-                                        print_instruction(past, stdout);\
-                                        printf("\033[22;33m");\
-                                        print_instruction(cur, stdout);\
-                                        printf("\e[m");\
-                                        update_node(cur->parent, cur, past);\
-                                        return 1;\
-                                        } while(0)
+#define EXPRS_IDENTICAL(past, cur) \
+  do { \
+    printf("%p \e[32mIDENTICAL \e[m%p\n", past, cur); \
+    printf("\033[22;34m");\
+    print_instruction(past, stdout);\
+    printf("\033[22;33m");\
+    print_instruction(cur, stdout);\
+    printf("\e[m");\
+    if ( cur != past )\
+      update_node(cur->parent, cur, past);\
+    return 1;\
+  } while(0)
+
 #define EXPRS_DIFFERENT(past, cur) do { /*printf("%ld DIFFERENT %ld\n", past->post, cur->post);*/ return 0; } while(0)
 
 
-
-enum TraverseMode { TraversePast, TraverseCur };
-
+int subexpr_traverse_past(node_t *past, node_t *cur);
+int subexpr_traverse_cur(node_t *past, node_t *cur);
 void update_node(node_t *update, node_t *prev, node_t *new);
 int subexpr_eliminate(node_t *past, node_t *cur);
 
-int subexpr_eliminate_children(node_t *past, node_t *cur, enum TraverseMode mode)
+int subexpr_traverse_past(node_t *past, node_t *cur)
 {
-  // printf("visiting %ld - %ld [%d,%d] [dir: %d]\n", past->post, cur->post, past->type, cur->type, mode);
-  assert(past);
-  assert(cur);
-  // We need to visit every node of the @past tree for every node of @cur tree,
-  // we traverse both in post order
-  if ( mode == TraverseCur ) {
+  switch(past->type) {
+    case NT_Lui:
+    case NT_Iconst:
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:
+    break;
 
-    switch(cur->type) {
-      case NT_Lui:
-      case NT_Iconst:
-      case NT_Bconst:
-      case NT_Rconst:
-      case NT_Cconst:
-      case NT_Load:
+    case NT_Load:
+      if ( past->load.address )
+        subexpr_traverse_past(past->load.address, cur);
       break;
 
-      case NT_Store:
-        subexpr_eliminate_children(past, cur->store.data, TraverseCur);
+    case NT_Store:
+      if ( past->store.address )
+        subexpr_traverse_past(past->store.address, cur);
+      subexpr_traverse_past(past->store.data, cur);
       break;
 
-      case NT_Add:
-      case NT_Mult:
-      case NT_Sub:
-      case NT_Div:
-      case NT_LessThan:
-      case NT_Mod: {
-        subexpr_eliminate_children(past, cur->bin.left, TraverseCur);
-        subexpr_eliminate_children(past, cur->bin.right, TraverseCur);
-      }
+    case NT_Addi:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_LessThani:
+      subexpr_traverse_past(past->bin_semi.left, cur);
       break;
 
-      case NT_String:
-        assert( 0 && "Not implemented");
-        break;
-
-      case NT_Not:
-        assert( 0 && "Not implemented");
-        break;
-
-      case NT_If:{
-        subexpr_eliminate_children(past, cur->_if.branch, TraverseCur);
-        subexpressions_eliminate(cur->_if._true);
-        subexpressions_eliminate(cur->_if._false);
-        break;
-      }
-      case NT_BranchZ:{
-        subexpr_eliminate_children(past, cur->branchz.condition, TraverseCur);
-        break;
-      }
-
-      case NT_While:{
-        subexpr_eliminate_children(past, cur->_while.branch, TraverseCur);
-        subexpressions_eliminate(cur->_while.loop);
-        break;
-      }
-      case NT_For:{
-        subexpr_eliminate_children(past, cur->_for.init, TraverseCur);
-        subexpressions_eliminate(cur->_for.loop);
-        break;
-      }
-      
-      case NT_Addi:
-      case NT_Ori:
-      case NT_Subi:
-      case NT_LessThani:
-        subexpr_eliminate_children(past, cur->bin_semi.left, TraverseCur);
-      break;
-      case NT_Jump:
-      case NT_Nop:
-        break;
-      default:
-        assert(0 && "Unhandled type in tree");
-    }
-    subexpr_eliminate_children(past, cur, TraversePast);
-  } else {
-    switch(past->type) {
-      case NT_Lui:
-      case NT_Iconst:
-      case NT_Bconst:
-      case NT_Rconst:
-      case NT_Cconst:
-      case NT_Load:
-        if ( past->type == cur->type )
-          return subexpr_eliminate(past, cur);
-        return 0;
+    case NT_Add:
+    case NT_Mult:
+    case NT_Sub:
+    case NT_Div:
+    case NT_LessThan:
+    case NT_Mod:
+      subexpr_traverse_past(past->bin.left, cur);
+      subexpr_traverse_past(past->bin.right, cur);
       break;
 
-      case NT_Store:
-        subexpr_eliminate_children(past->store.data, cur, TraversePast);
-        if ( past->type == cur->type )
-          return subexpr_eliminate(past, cur);
-        return 0;
+    case NT_String:
+      assert( 0 && "Not implemented");
       break;
 
-
-      case NT_Add:
-      case NT_Mult:
-      case NT_Sub:
-      case NT_Div:
-      case NT_LessThan:
-      case NT_Mod: {
-        subexpr_eliminate_children(past->bin.left, cur, TraversePast);
-        subexpr_eliminate_children(past->bin.right, cur, TraversePast);
-
-        if ( past->type == cur->type )
-          return subexpr_eliminate(past, cur);
-        return 0;
-      }
-      break;
-      
-      case NT_Addi:
-      case NT_Subi:
-      case NT_Ori:
-      case NT_LessThani: {
-        subexpr_eliminate_children(past->bin_semi.left, cur, TraversePast);
-
-        if ( past->type == cur->type )
-          return subexpr_eliminate(past, cur);
-        return 0;
-      }
+    case NT_Not:
+      subexpr_traverse_past(past->not, cur);
       break;
 
+    case NT_If:
+      subexpr_traverse_past(past->_if.branch->branchz.condition, cur);
+      break;
+    case NT_BranchZ:
+      subexpr_traverse_past(past->branchz.condition, cur);
+      break;
 
-      case NT_String:
-        assert( 0 && "Not implemented");
-        break;
+    case NT_While:
+      subexpr_traverse_past(past->_while.branch->branchz.condition, cur);
+      break;
 
-      case NT_Not:
-        assert( 0 && "Not implemented");
-        break;
+    case NT_For:
+      return 0;
+      break;
 
-      case NT_If:{
-        subexpr_eliminate_children(past->_if.branch, cur, TraversePast);
-        break;
-      }
-      case NT_BranchZ:{
-        subexpr_eliminate_children(past->branchz.condition, cur, TraversePast);
-        break;
-      }
-
-      case NT_While:{
-        subexpr_eliminate_children(past->_while.branch, cur, TraversePast);
-        break;
-      }
-      case NT_For:{
-        subexpr_eliminate_children(past->_for.init, cur, TraversePast);
-        break;
-      }
-      
-
-      case NT_Jump:
-      case NT_Nop:
-        break;
-      default:
-        assert(0 && "Unhandled type in tree");
-    }
+    case NT_Jump:
+    case NT_Nop:
+      return 0;
+    default:
+      assert(0);
   }
 
-  return 0;
+  return subexpr_eliminate(past, cur);
+}
+
+int subexpr_traverse_cur(node_t *past, node_t *cur)
+{
+  /*
+     Reach the leaves of @cur first, then traverse @past and try to find out curs that can
+     share leaves.
+   */
+
+  switch(cur->type) {
+    case NT_Lui:
+    case NT_Iconst:
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:
+      return 0;
+
+    case NT_Load:
+      if ( cur->load.address )
+        subexpr_traverse_cur(past, cur->load.address);
+      break;
+
+    case NT_Store:
+      if ( cur->store.address )
+        subexpr_traverse_cur(past, cur->store.address);
+      subexpr_traverse_cur(past, cur->store.data);
+      break;
+
+    case NT_Addi:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_LessThani:
+      subexpr_traverse_cur(past, cur->bin_semi.left);
+      break;
+
+    case NT_Add:
+    case NT_Mult:
+    case NT_Sub:
+    case NT_Div:
+    case NT_LessThan:
+    case NT_Mod:
+      subexpr_traverse_cur(past, cur->bin.left);
+      subexpr_traverse_cur(past, cur->bin.right);
+      break;
+
+    case NT_String:
+      assert( 0 && "Not implemented");
+      break;
+
+    case NT_Not:
+      subexpr_traverse_cur(past, cur->not);
+      break;
+
+    case NT_If:
+      subexpr_traverse_cur(past, cur->_if.branch->branchz.condition);
+      break;
+    case NT_BranchZ:
+      subexpr_traverse_cur(past, cur->branchz.condition);
+      break;
+
+    case NT_While:
+      subexpr_traverse_cur(past, cur->_while.branch->branchz.condition);
+      break;
+
+    case NT_For:
+      return 0;
+      break;
+
+    case NT_Jump:
+    case NT_Nop:
+      return 0;
+    default:
+      assert(0);
+  }
+
+  return subexpr_traverse_past(past, cur);
 }
 
 int subexpr_eliminate(node_t *past, node_t *cur) {
-  
+
   if ( past->type != cur->type )
     EXPRS_DIFFERENT(past, cur);
 
@@ -221,82 +208,81 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
       else
         EXPRS_DIFFERENT(past, cur);
 
-    case NT_Load:{
+    case NT_Load:
 #warning should work on this more
-        if ( past->load.unique_id != -1  && cur->load.unique_id != -1 ) {
-          if ( past->load.unique_id == cur->load.unique_id )
-            EXPRS_IDENTICAL(past, cur);
-        }
+      if ( past->load.unique_id != -1  && cur->load.unique_id != -1 ) {
+        if ( past->load.unique_id == cur->load.unique_id )
+          EXPRS_IDENTICAL(past, cur);
+      }
 
-        EXPRS_DIFFERENT(past, cur);
-    }
+      EXPRS_DIFFERENT(past, cur);
+      break;
 
-    case NT_Store:{
+    case NT_Store:
 #warning should work on this more
       return 0;
-    }
+
     case NT_Add:
-    case NT_Mult:{
+    case NT_Mult:
       if ( (subexpr_eliminate(past->bin.left, cur->bin.left) &&
-             subexpr_eliminate(past->bin.right, cur->bin.right))
-           || (subexpr_eliminate(past->bin.left, cur->bin.right) &&
-             subexpr_eliminate(past->bin.right, cur->bin.left)))
-         EXPRS_IDENTICAL(past, cur);
-      else
-        EXPRS_DIFFERENT(past, cur);
-      break;
-     }
-    
-    case NT_Subi:
-    case NT_Ori:
-    case NT_Addi:
-    case NT_LessThani: {
-      if ( subexpr_eliminate(past->bin_semi.left, cur->bin_semi.left) &&
-           past->bin_semi.immediate == cur->bin_semi.immediate )
+            subexpr_eliminate(past->bin.right, cur->bin.right))
+          || (subexpr_eliminate(past->bin.left, cur->bin.right) &&
+            subexpr_eliminate(past->bin.right, cur->bin.left)))
         EXPRS_IDENTICAL(past, cur);
       else
         EXPRS_DIFFERENT(past, cur);
       break;
-    }
+
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi:
+    case NT_LessThani: 
+      if ( subexpr_eliminate(past->bin_semi.left, cur->bin_semi.left) &&
+          past->bin_semi.immediate == cur->bin_semi.immediate )
+        EXPRS_IDENTICAL(past, cur);
+      else
+        EXPRS_DIFFERENT(past, cur);
+      break;
+
 
     case NT_Sub:
     case NT_Div:
     case NT_LessThan:
-    case NT_Mod: {
+    case NT_Mod: 
       if (subexpr_eliminate(past->bin.left, cur->bin.left) &&
-        subexpr_eliminate(past->bin.right, cur->bin.right))
+          subexpr_eliminate(past->bin.right, cur->bin.right))
         EXPRS_IDENTICAL(past, cur);
       else
         EXPRS_DIFFERENT(past, cur);
       break;
-    }
+
 
     case NT_String:
-                 assert( 0 && "Not implemented");
-                 break;
+      assert( 0 && "Not implemented");
+      break;
 
     case NT_Not:
-                 assert( 0 && "Not implemented");
-                 break;
-
-    case NT_While:{
-      subexpr_eliminate_children(past->_while.branch, cur->_while.branch, TraverseCur);
+      assert( 0 && "Not implemented");
       break;
-    }
-    case NT_For:{
+
+    case NT_While:
+      subexpr_traverse_cur(past->_while.branch, cur->_while.branch);
+      break;
+
+    case NT_For:
       return 0;
       break;
-    }
 
-    case NT_If:{
-      subexpr_eliminate_children(past->_if.branch, cur->_if.branch, TraverseCur);
+
+    case NT_If:
+      subexpr_traverse_cur(past->_if.branch, cur->_if.branch);
       break;
-    }
 
-    case NT_BranchZ:{
+
+    case NT_BranchZ:
       assert(0 && "Should never happen");
       break;
-    }
+
 
     case NT_Jump:
     case NT_Nop:
@@ -313,7 +299,7 @@ void node_expr_eliminate(node_list_t *n)
   node_list_t *p;
 
   for ( p = n->prev; p; p=p->prev ) {
-    subexpr_eliminate_children(p->node, n->node, TraverseCur);
+    subexpr_traverse_cur(p->node, n->node);
     if ( subexpr_eliminate(p->node, n->node) )
       break;  
   }
@@ -332,12 +318,14 @@ void subexpressions_eliminate(node_list_t *t)
 
 void update_node(node_t *update, node_t *prev, node_t *new)
 { 
-  
+  if ( update == NULL )
+    return;
+
   if ( new == prev )
     return;
 
   prev->parent = NULL;
-  
+
   if ( update )
     switch(update->type) {
       case NT_Iconst:
@@ -345,7 +333,7 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       case NT_Rconst:
       case NT_Cconst:
       case NT_Load:
-        assert(0 && "Should never happen");
+        assert(0);
 
       case NT_Store:
         if ( update->store.data == prev )
@@ -355,9 +343,7 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         else
           assert(0);
         new->parent = update;
-      break;
-
-      break;
+        break;
 
       case NT_Addi:
       case NT_Subi:
@@ -367,14 +353,14 @@ void update_node(node_t *update, node_t *prev, node_t *new)
 
         update->bin_semi.left = new;
         new->parent = update;
-      break;
+        break;
 
       case NT_Add:
       case NT_Mult:
       case NT_Sub:
       case NT_Div:
       case NT_LessThan:
-      case NT_Mod: {
+      case NT_Mod: 
         if ( update->bin.left == prev )
           update->bin.left = new;
         else if ( update->bin.right == prev )
@@ -385,8 +371,8 @@ void update_node(node_t *update, node_t *prev, node_t *new)
 
         printf("REPLACING %p with %p\n\n\n", prev, new);
         new->parent = update;
-      }
-      break;
+
+        break;
 
       case NT_String:
         assert( 0 && "Not implemented");
@@ -396,23 +382,23 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         assert( 0 && "Not implemented");
         break;
 
-      case NT_If:{
+      case NT_If:
         // assert(0 && "Should never happen");
         break;
-      }
-      case NT_BranchZ:{
+
+      case NT_BranchZ:
         update->branchz.condition = new;
         break;
-      }
 
-      case NT_While:{
+
+      case NT_While:
         assert(0 && "Should never happen");
         break;
-      }
-      case NT_For:{
+
+      case NT_For:
         assert(0 && "Should never happen");
         break;
-      }
+
 
       case NT_Jump:
       case NT_Nop:
@@ -421,70 +407,6 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       default:
         assert(0 && "Unhandled type in tree");
     }
-    
-  switch(prev->type) {
-    case NT_Iconst:
-    case NT_Bconst:
-    case NT_Rconst:
-    case NT_Cconst:
-    case NT_Load:
-    break;
 
-    case NT_Store:
-      if ( prev->store.data == prev )
-        prev->store.data->parent = new;
-      else if ( prev->store.address == prev )
-        prev->store.address->parent = new;
-      else
-        assert(0);
-    break;
-
-    break;
-
-    case NT_Add:
-    case NT_Mult:
-    case NT_Sub:
-    case NT_Div:
-    case NT_LessThan:
-    case NT_Mod: {
-      prev->bin.left->parent = new;
-      prev->bin.right->parent = new;
-    }
-    break;
-
-    case NT_String:
-      assert( 0 && "Not implemented");
-      break;
-
-    case NT_Not:
-      assert( 0 && "Not implemented");
-      break;
-
-    case NT_If:{
-      // assert(0 && "Should never happen");
-      break;
-    }
-    case NT_BranchZ:{
-      prev->branchz.condition->parent = new;
-      break;
-    }
-
-    case NT_While:{
-      assert(0 && "Should never happen");
-      break;
-    }
-    case NT_For:{
-      assert(0 && "Should never happen");
-      break;
-    }
-
-    case NT_Jump:
-    case NT_Nop:
-      assert(0 && "Should never happen");
-      break;
-    default:
-      assert(0 && "Unhandled type in tree");
-  }
- 
 }
 
