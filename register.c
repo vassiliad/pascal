@@ -197,6 +197,7 @@ void givepostnumbers(node_t *start){
     case NT_Cconst:{
       //propably constant nodes do not need post number id cause are going to be converted in opi instructions
       start->post= post_number++;
+			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
@@ -206,6 +207,7 @@ void givepostnumbers(node_t *start){
         givepostnumbers(start->load.address);
     //  givepostnumbers(start->load.data); load does not have data.
       start->post = post_number++;
+			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
@@ -217,6 +219,7 @@ void givepostnumbers(node_t *start){
         givepostnumbers(start->store.address);
 
       start->post = post_number++;
+			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
@@ -229,6 +232,7 @@ void givepostnumbers(node_t *start){
       givepostnumbers(start->bin.left);
       givepostnumbers(start->bin.right);
       start->post = post_number++;
+			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
@@ -255,6 +259,7 @@ void givepostnumbers(node_t *start){
     case NT_BranchZ:{
       givepostnumbers(start->branchz.condition);
 			start->post = post_number++;
+			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
@@ -263,6 +268,7 @@ void givepostnumbers(node_t *start){
       givepostnumbers(start->bin.left);
       givepostnumbers(start->bin.right);
 			start->post = post_number++;
+			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
       break;
@@ -293,11 +299,13 @@ void givepostnumbers(node_t *start){
     case NT_Addi: {
       givepostnumbers(start->bin_semi.left);
       start->post = post_number++;
+			start->time = start->post;
       break;
     }
     
     case NT_Lui: {
       start->post = post_number++;
+			start->time = start->post;
       break;
     }
 
@@ -341,10 +349,19 @@ void assign_nodes_tree(node_t *start){
 
   
   switch (start->type){
+		case NT_LessThani:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi: {
+      assign_nodes_tree(start->bin_semi.left);
+      nodes[start->post]=start;
+      break;
+    }
     case NT_Iconst: 
     case NT_Bconst:
     case NT_Rconst:
-    case NT_Cconst:{
+    case NT_Cconst:
+		case NT_Lui:{
       nodes[start->post] = start;
       // printf("Visiting %d (post: %ld) (%p :: %p)\n", id++, start->post,
       //    nodes[start->post]->parent, start->parent);

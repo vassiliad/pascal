@@ -157,8 +157,8 @@ program : header declarations subprograms comp_statement DOT
 		
     if ( enable_scheduling )
 		  schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
-		
-//		assign_nodes_list(main_tree);
+		else
+		assign_nodes_list(main_tree);
 //	print_nodes();
 		give_regs();
 
