@@ -41,7 +41,7 @@ void graph_instruction(node_t *n, graph_t *graph)
   if ( n == NULL ) 
     return;
 
-  printf("parent: of %p (%ld--%d) %p\n", n, n->post, n->type,  n->parent);
+  printf("parent: of %p (%ld--%d) %p-(%d)\n", n, n->post, n->type,  n->parent, (n->parent?n->parent->type : -1));
 
   for ( i=0; i<graph->num; i++ )
     if ( graph->printed[i] == n )
@@ -73,20 +73,6 @@ void graph_instruction(node_t *n, graph_t *graph)
       break;
 
 
-    case NT_Add:
-      fprintf(graph->output, "n%p -> { n%p ; n%p };\n",n, n->bin.left, n->bin.right );
-
-
-      graph_instruction(n->bin.left, graph);
-      graph_instruction(n->bin.right, graph);
-
-      if ( n->label )
-        fprintf(graph->output, "n%p [label=\"[%ld]  %s: add %s, %s, %s\"];\n", n, n->post, n->label, n->reg.name,
-            n->bin.left->reg.name, n->bin.right->reg.name);
-      else
-        fprintf(graph->output, "n%p [label=\"[%ld]  add %s, %s, %s\"];\n", n, n->post, n->reg.name,
-            n->bin.left->reg.name, n->bin.right->reg.name);
-      break;
 
     case NT_Mult:
       fprintf(graph->output, "n%p -> { n%p ; n%p };\n",n, n->bin.left, n->bin.right );
@@ -100,20 +86,28 @@ void graph_instruction(node_t *n, graph_t *graph)
 
       break;
 
+    case NT_Add:
+      instr_name = "add";
+      goto print_binary;
+
     case NT_Sub:
       instr_name = "sub";
       goto print_binary;
 
     case NT_LessThan:
       instr_name = "slt";
-print_binary:
+      print_binary:
       fprintf(graph->output, "n%p -> { n%p ; n%p };\n",n, n->bin.left, n->bin.right );
 
 
       graph_instruction(n->bin.left, graph);
       graph_instruction(n->bin.right, graph);
 
-      fprintf(graph->output, "n%p [label=\"[%ld]  %s %s, %s, %s\"];\n", n, n->post, instr_name, n->reg.name,
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: %s %s, %s, %s\"];\n", n, n->post, n->label, instr_name, n->reg.name,
+          n->bin.left->reg.name, n->bin.right->reg.name);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s %s, %s, %s\"];\n", n, n->post, instr_name, n->reg.name,
           n->bin.left->reg.name, n->bin.right->reg.name);
 
       break;
