@@ -228,6 +228,15 @@ void graph_instruction(node_t *n, graph_t *graph)
         fprintf(graph->output, "n%p [label=\"[%ld]  lui %s, %d\"];\n", n, n->post,
             n->reg.name, n->iconst);
       break;
+    
+    case NT_Jump:
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: j %s\"];\n", n, n->post, n->label, 
+            n->jump_label);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  j %s\"];\n", n, n->post,
+            n->jump_label);
+    break;
 
     default: 
       printf("CANNOT HANDLE %d\n", n->type);
