@@ -8,9 +8,11 @@ begin
   c := a*f;
   a := a+b+c+d+e+f+g;
   if a < 5 then
-begin
-   a := 9*b;
-  end;
+   a := 9*b
+  else
+		begin
+		b:= a*10;
+		end;
   b := a+c;
   d := a-b+f*g;
   d := a-b+f*g+3+2*2312*c;

@@ -547,7 +547,7 @@ void print_code(){
 		for(i = 0 ; i < post_number ; i++ ){
       if ( printer[i]->parent == NULL )
         printf("without a father --- ");
-
+			
 			switch(printer[i]->type){
 				case NT_Iconst:{
 					printf("%ld addi %s, $0, %d\n",printer[i]->post,printer[i]->reg.name,printer[i]->iconst );
@@ -659,6 +659,8 @@ void print_code(){
 				default:
 					assert(0 && "Unhandled type in tree");	
 			}
+			if(printer[i] -> label )
+				printf("%s  ",printer[i]->label);
 		}
 }
 

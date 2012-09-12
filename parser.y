@@ -162,7 +162,7 @@ program : header declarations subprograms comp_statement DOT
 //	print_nodes();
 		give_regs();
 
-	  g = graph_init(fopen("plot","w"));
+    g = graph_init(fopen("plot","w"));
     graph_tree(main_tree, &g);
     graph_finalize(&g);
     fclose(g.output);
