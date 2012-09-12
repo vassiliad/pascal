@@ -319,12 +319,11 @@ void subexpressions_eliminate(node_list_t *t)
 void update_node(node_t *update, node_t *prev, node_t *new)
 { 
   if ( update == NULL )
-    return;
+    assert(0);
 
   if ( new == prev )
     return;
 
-  prev->parent = NULL;
 
   if ( update )
     switch(update->type) {
@@ -332,8 +331,17 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       case NT_Bconst:
       case NT_Rconst:
       case NT_Cconst:
-      case NT_Load:
+        printf("*update\n");  
+        printf("iconst: %d\n", update->iconst);
+
         assert(0);
+
+      case NT_Load:
+        assert(update->load.address == prev);
+
+        update->load.address = new;
+        new->parent = update;
+        break;
 
       case NT_Store:
         if ( update->store.data == prev )
@@ -383,16 +391,25 @@ void update_node(node_t *update, node_t *prev, node_t *new)
         break;
 
       case NT_If:
-        // assert(0 && "Should never happen");
+        assert(update->_if.branch->branchz.condition == prev);
+        update->_if.branch->branchz.condition = new;
+
+        new->parent = update->_if.branch;
         break;
 
       case NT_BranchZ:
+        assert(update->branchz.condition == prev);
         update->branchz.condition = new;
+
+        new->parent = update;
         break;
 
 
       case NT_While:
-        assert(0 && "Should never happen");
+        assert(update->_while.branch->branchz.condition == prev);
+        update->_while.branch->branchz.condition = new;
+
+        new->parent = update->_while.branch;
         break;
 
       case NT_For:

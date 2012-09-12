@@ -549,7 +549,6 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
                 assert( e_right->constant.type == VT_Iconst );
                 
-                node = (node_t*) calloc(1, sizeof(node_t));
                 node->post = -1;
 
                 switch ( expr->binary.op )
