@@ -137,6 +137,11 @@ int subexpr_traverse_cur(node_t *past, node_t *cur)
     case NT_Div:
     case NT_LessThan:
     case NT_Mod:
+      subexpr_traverse_cur(cur->bin.left, cur->bin.right); // attempt to find out common
+          // subexpressions in the same statement
+      if ( subexpr_eliminate(cur->bin.left, cur->bin.right) )
+        update_node(cur, cur->bin.left, cur->bin.right);
+
       subexpr_traverse_cur(past, cur->bin.left);
       subexpr_traverse_cur(past, cur->bin.right);
       break;
@@ -294,15 +299,74 @@ int subexpr_eliminate(node_t *past, node_t *cur) {
   return 0;
 }
 
+void node_intra_expr(node_t* n)
+{
+  if ( n == NULL )
+    return;
+  
+  switch ( n->type ) {
+    case NT_Add:
+    case NT_Mult:
+    case NT_Sub:
+    case NT_Div:
+    case NT_LessThan:
+    case NT_Mod:
+      subexpr_traverse_cur(n->bin.left, n->bin.right); // attempt to find out common
+          // subexpressions in the same statement
+      if ( subexpr_eliminate(n->bin.left, n->bin.right) )
+        update_node(n, n->bin.left, n->bin.right);
+      break;
+    
+    default:
+
+    break;
+  }
+
+}
+
 void node_expr_eliminate(node_list_t *n)
 {
   node_list_t *p;
+  node_t *cur = n->node;
+
+  switch(cur->type) {
+
+    case NT_If:
+      node_intra_expr(cur->_if.branch);
+
+      subexpressions_eliminate(cur->_if._true);
+      subexpressions_eliminate(cur->_if._false);
+      break;
+    case NT_BranchZ:
+      node_intra_expr(cur->branchz.condition);
+      break;
+
+    case NT_While:
+      node_intra_expr(cur->_while.branch);
+
+      subexpressions_eliminate(cur->_while.loop);
+      break;
+
+    case NT_For:
+      return;
+      break;
+
+    default:
+    break;
+  }
 
   for ( p = n->prev; p; p=p->prev ) {
-    subexpr_traverse_cur(p->node, n->node);
-    if ( subexpr_eliminate(p->node, n->node) )
-      break;  
+    subexpr_traverse_cur(p->node, cur);
+    if ( subexpr_eliminate(p->node, cur) )
+      return;  
   }
+  
+  if ( cur->type == NT_Store ) {
+    node_intra_expr(cur->store.address);
+    node_intra_expr(cur->store.data);
+  }
+
+
 }
 
 void subexpressions_eliminate(node_list_t *t)
@@ -331,9 +395,6 @@ void update_node(node_t *update, node_t *prev, node_t *new)
       case NT_Bconst:
       case NT_Rconst:
       case NT_Cconst:
-        printf("*update\n");  
-        printf("iconst: %d\n", update->iconst);
-
         assert(0);
 
       case NT_Load:
@@ -348,8 +409,11 @@ void update_node(node_t *update, node_t *prev, node_t *new)
           update->store.data = new;
         else if ( update->store.address == prev )
           update->store.address = new;
-        else
+        else {
+          printf("%p -- %p,%p (%p-%p)\n", update, update->store.address, update->store.data, prev, new);
+          print_instruction(update, stdout);
           assert(0);
+        }
         new->parent = update;
         break;
 
