@@ -147,19 +147,14 @@ program : header declarations subprograms comp_statement DOT
 
 		givepostnumbers_tree(main_tree);
 
- 		
-    printf("[+] Printing instruction tree\n");
-    //find_use_def_stmt(main_tree);
-
-		//print_use_def_stmt(main_tree);
 		rg_init();
 		init_reg_lives();
 		
     if ( enable_scheduling )
 		  schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
 		else
-		assign_nodes_list(main_tree);
-//	print_nodes();
+			assign_nodes_list(main_tree);
+//		print_nodes(); 
 		give_regs();
 
     g = graph_init(fopen("plot","w"));

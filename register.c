@@ -191,6 +191,18 @@ void givepostnumbers(node_t *start){
     return;
 
   switch (start->type){
+		case NT_LessThani:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi: {
+      givepostnumbers(start->bin_semi.left);
+      start->post= post_number++;
+			start->time = start->post;
+			start->scheduled = 0;
+      printf("\t %ld\n",start->post);
+      break;
+		}
+		case NT_Lui:
     case NT_Iconst: 
     case NT_Bconst:
     case NT_Rconst:
@@ -254,6 +266,7 @@ void givepostnumbers(node_t *start){
     }
     case NT_Jump:
 			start->post= post_number++;
+			start->time = start->post; 
 			start->scheduled = 0;
       break;
     case NT_BranchZ:{
@@ -293,22 +306,6 @@ void givepostnumbers(node_t *start){
       break;
     }
     
-    case NT_LessThani:
-    case NT_Subi:
-    case NT_Ori:
-    case NT_Addi: {
-      givepostnumbers(start->bin_semi.left);
-      start->post = post_number++;
-			start->time = start->post;
-      break;
-    }
-    
-    case NT_Lui: {
-      start->post = post_number++;
-			start->time = start->post;
-      break;
-    }
-
     case NT_Nop:
       break;
     default:
@@ -405,7 +402,8 @@ void assign_nodes_tree(node_t *start){
       assign_nodes_list(start->_if._false);
       break;
     }
-    case NT_Jump:  
+    case NT_Jump:
+			 nodes[start->post] = start;
       break;
     case NT_BranchZ:{
       assign_nodes_tree(start->branchz.condition);
@@ -473,17 +471,18 @@ void print_nodes(){
 }
 
 int find_reg(node_t *cur_node){
+	assert(cur_node);
 	long int time = cur_node->time;
 	int life  ;
 	int i,j;
 	unsigned int temp;
 	if(!(cur_node->parent))
-		life = 0;
+		life = 1;
   else {
 		life = cur_node->parent->time - cur_node->time ;
     if ( cur_node->parent->time <= 0 )  {
-      printf("WRONG post: %ld (%ld)\n", cur_node->time, cur_node->parent->time);
-      printf("parent is : %d : %p\n", cur_node->parent->type, cur_node->parent);
+      printf("WRONG post: %ld (%ld) %d\n", cur_node->time, cur_node->parent->time,life);
+      printf("parent is : %d  child is : %d: %p\n", cur_node->parent->type,cur_node->type,  cur_node->parent);
       printf("i am : %p\n", cur_node);
     }
   }
