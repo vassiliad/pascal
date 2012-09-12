@@ -78,6 +78,8 @@ node_t *tree_generate_branchz(node_t *condition, char *label)
 	ret->branchz.label = label;
 	ret->branchz.condition = condition;
 
+  condition->parent = ret;
+
 	return ret;
 }
 
@@ -532,9 +534,12 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							// slight optimization when both operands are constants
 							// compute the value in compile time
 
-							left = tree_generate_value( e_left, scope );
+							node = ( node_t * ) calloc(1, sizeof(node_t));
 
+							left = tree_generate_value( e_left, scope );
               assert(left && "Expression left was not generated");
+
+              left->parent = node;
               
               if ( ( expr->binary.op == AddopP ||
                    expr->binary.op == AddopM ||
@@ -564,16 +569,15 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
                 
                 node->bin_semi.left = left;
                 node->bin_semi.immediate = e_right->constant.iconst;
-
+                
                 node->parent = NULL;
                 return node;
               }
 
               right = tree_generate_value( e_right, scope );
-
               assert(right && "Expression right was not generated");
 
-							node = ( node_t * ) calloc(1, sizeof(node_t));
+              right->parent = node;
               node->post = -1;
 
 							switch ( expr->binary.op )
@@ -606,8 +610,6 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							node->bin.left = left;
 							node->bin.right = right;
 
-              left->parent = node;
-              right->parent = node;
 						} 
 						break;
 					default:
