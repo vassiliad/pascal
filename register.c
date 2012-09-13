@@ -460,11 +460,11 @@ int cmp_lives(const void *a, const void *b){
 void print_nodes(){
 	int i;
 	for(i = 0 ; i < post_number ; i++){
-		printf("(%d)\t: %ld::%p \t",i,nodes[i]->time, nodes[i]);
+		printf("(%d)\t: %ld \t",i,nodes[i]->time, nodes[i]);
 		if(!(nodes[i]->parent))
 			printf(" 0 \n");
 		else
-			printf(" %ld (%ld::%p)\n",nodes[i]->parent->time - nodes[i]->time, nodes[i]->parent->time,
+			printf(" %ld (%ld)\n",nodes[i]->parent->time - nodes[i]->time, nodes[i]->parent->time,
             nodes[i]->parent);
 			
 	}

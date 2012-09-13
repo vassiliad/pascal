@@ -434,10 +434,92 @@ void find_start_end(node_list_t *start ,node_list_t *end ){
 	return ;
 }
 
+
+void update_fathers(){
+	int i;
+	for( i = 0 ; i < node_index ; i++ ){
+		switch(nodes[i]->type){
+			case NT_LessThani:
+			case NT_Subi:
+			case NT_Ori:
+			case NT_Addi: {
+				if(nodes[i]->bin_semi.left->parent != nodes[i]){
+					if(nodes[i]->bin_semi.left->parent->time < i)
+						nodes[i]->bin_semi.left->parent = nodes[i];
+				}
+				break;
+			}
+			case NT_Iconst: 
+			case NT_Bconst:
+			case NT_Rconst:
+			case NT_Cconst:
+			case NT_Lui:{
+				break;
+			}
+			case NT_Load:{
+				if(nodes[i]->load.address&&nodes[i]->load.address->parent != nodes[i])
+					if(nodes[i]->load.address->parent ->time < i)
+						nodes[i]->load.address->parent = nodes[i];
+				break;
+			}
+			case NT_Store:{
+				if(nodes[i]->load.data->parent != nodes[i])
+					if(nodes[i]->load.data->parent ->time < i)
+						nodes[i]->load.data->parent = nodes[i];		
+
+				if ( nodes[i]->load.address &&  nodes[i]->load.address->parent != nodes[i])
+					if(nodes[i]->load.address->parent ->time < i)
+						nodes[i]->load.address->parent = nodes[i];		
+
+				break;
+			}
+			case NT_LessThan:
+			case NT_Add: 
+			case NT_Sub:
+			case NT_Div:
+			case NT_Mult:
+			case NT_Mod:{
+				if(nodes[i]->bin.left->parent != nodes[i])
+						if(nodes[i]->bin.left->parent ->time < i)
+							nodes[i]->bin.left->parent = nodes[i];		
+
+				if(nodes[i]->bin.right->parent != nodes[i])
+					if(nodes[i]->bin.right->parent ->time < i)
+						nodes[i]->bin.right->parent = nodes[i];		
+
+				break;
+			}
+			case NT_String:
+			case NT_Not: 
+			case NT_If:
+			case NT_Jump:
+				break;
+				
+			case NT_BranchZ:{
+				if(nodes[i]->branchz.condition->parent != nodes[i])
+					if(nodes[i]->branchz.condition->parent ->time < i)
+						nodes[i]->branchz.condition->parent = nodes[i];		
+				break;
+			}
+			case NT_While:
+				break;
+			case NT_For:
+				break;
+			case NT_Nop:
+				break;
+			default:
+				assert(0 && "Unhandled type in tree");
+			}
+	}
+}
+
+
 void schedule(node_list_t *start){
 	int i;
 	node_index = 0;
 	find_start_end(start,NULL);
+	update_fathers();
+	
 	printf("***************************quick check***************************\n");
 	for(i = 0; i < node_index ; i++){
 		if(nodes[i])
@@ -464,6 +546,7 @@ void find_use_def(node_t *start , node_list_t *cur_stmt){
   if(!start)
     return ;
   switch (start->type){
+		case NT_Lui:
     case NT_Iconst: 
     case NT_Bconst:
     case NT_Rconst:
@@ -479,6 +562,13 @@ void find_use_def(node_t *start , node_list_t *cur_stmt){
       find_use_def(start->store.data , cur_stmt); 
       find_use_def(start->store.address , cur_stmt);
       add_var(start->load.unique_id,cur_stmt->def);
+      break;
+    }
+    case NT_LessThani:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi: {
+      find_use_def(start->bin_semi.left,cur_stmt);
       break;
     }
     case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
