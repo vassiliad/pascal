@@ -291,24 +291,20 @@ void set_life(life_t* life){
 void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 		node_list_t *c;
 		node_t *k;
-		int continue_sheduling = 0;
 		int cur_index;
 		if(!start)
 			return;
 		init_life(&pending_writes);
 		init_life(&pending_reads);
 		do{
-			continue_sheduling = 0;
 			set_life(pending_reads);
 			set_life(pending_writes);
 			cur_index = node_index;
 			for(c = start;  c!=end && c!=NULL ; c= c->next){	
 				find_node_to_schedule_tree(c->node);
-				if(!c->node->scheduled)
-					continue_sheduling = 1;
 			}
 			printf("schedule number of stmt :%d %d %d\n", cur_index,node_index,cur_index - node_index);
-		}while( continue_sheduling );	
+		}while( cur_index - node_index !=0 );	
 		
 		if(end){
 			switch (end->node->type){
