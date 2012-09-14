@@ -42,7 +42,7 @@ void givepostnumbers_tree(node_list_t *start);
 void givepostnumbers(node_t *start);
 void delete_global_pointers();
 void print_code();
-
+void check_father_list(node_list_t *start);
 void print_nodes();
 void init_reg_lives();
 void give_regs();

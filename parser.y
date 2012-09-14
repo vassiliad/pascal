@@ -142,6 +142,7 @@ program : header declarations subprograms comp_statement DOT
   {
 		printf("[-] Failed to generate instruction tree\n");
   } else {
+		check_father_list(main_tree);
     if ( enable_subexpression_elimination ) 
       subexpressions_eliminate(main_tree);
 

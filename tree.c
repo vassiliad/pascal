@@ -84,16 +84,16 @@ void delete_tree(node_t *start){
       if ( start->load.address )
         delete_tree(start->load.address);
 			
-      delete_tree(start->bin_semi.left);
+ 
       free(start);
 			start = NULL;
 			break;
     }
     case NT_Store:{
-      delete_tree(start->bin_semi.left);(start->store.data); 
+      delete_tree(start->store.data); 
 
       if ( start->store.address )
-        delete_tree(start->bin_semi.left);(start->store.address);
+        delete_tree(start->store.address);
       free(start);
 			start = NULL;
 			break;

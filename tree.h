@@ -151,7 +151,7 @@ struct NODE_T
   };
 	reg_t reg;
 	int reg_id;
-
+	int num_parents;
   node_t *parent;
 };
 

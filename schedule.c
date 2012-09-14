@@ -439,6 +439,7 @@ void update_fathers(){
 			case NT_Subi:
 			case NT_Ori:
 			case NT_Addi: {
+				nodes[i]->bin_semi.left->num_parents++;
 				if(nodes[i]->bin_semi.left->parent != nodes[i]){
 					if(nodes[i]->bin_semi.left->parent->time < i)
 						nodes[i]->bin_semi.left->parent = nodes[i];
@@ -453,19 +454,25 @@ void update_fathers(){
 				break;
 			}
 			case NT_Load:{
-				if(nodes[i]->load.address&&nodes[i]->load.address->parent != nodes[i])
+				if(nodes[i]->load.address&&nodes[i]->load.address->parent != nodes[i]){
+					nodes[i]->load.address->num_parents++;
 					if(nodes[i]->load.address->parent ->time < i)
 						nodes[i]->load.address->parent = nodes[i];
+				}
 				break;
 			}
 			case NT_Store:{
-				if(nodes[i]->load.data->parent != nodes[i])
+				if(nodes[i]->load.data->parent != nodes[i]){
+					nodes[i]->load.data->num_parents++;
 					if(nodes[i]->load.data->parent ->time < i)
-						nodes[i]->load.data->parent = nodes[i];		
+						nodes[i]->load.data->parent = nodes[i];	
+				}
 
-				if ( nodes[i]->load.address &&  nodes[i]->load.address->parent != nodes[i])
+				if ( nodes[i]->load.address &&  nodes[i]->load.address->parent != nodes[i]){
+					nodes[i]->load.address->num_parents++;
 					if(nodes[i]->load.address->parent ->time < i)
 						nodes[i]->load.address->parent = nodes[i];		
+				}
 
 				break;
 			}
@@ -475,6 +482,8 @@ void update_fathers(){
 			case NT_Div:
 			case NT_Mult:
 			case NT_Mod:{
+				nodes[i]->bin.left->num_parents++;
+				nodes[i]->bin.right->num_parents++;
 				if(nodes[i]->bin.left->parent != nodes[i])
 						if(nodes[i]->bin.left->parent ->time < i)
 							nodes[i]->bin.left->parent = nodes[i];		
@@ -492,6 +501,7 @@ void update_fathers(){
 				break;
 				
 			case NT_BranchZ:{
+				nodes[i]->branchz.condition->num_parents++;
 				if(nodes[i]->branchz.condition->parent != nodes[i])
 					if(nodes[i]->branchz.condition->parent ->time < i)
 						nodes[i]->branchz.condition->parent = nodes[i];		
@@ -519,7 +529,7 @@ void schedule(node_list_t *start){
 	printf("***************************quick check***************************\n");
 	for(i = 0; i < node_index ; i++){
 		if(nodes[i])
-			printf("\t\t %d %ld \n",i,nodes[i]->post);
+			printf("\t\t %d %ld %d\n",i,nodes[i]->post,nodes[i]->num_parents);
 		else
 			printf("\t\t\%d (NUL) fix \n",i);
 	}

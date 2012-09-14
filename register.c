@@ -191,6 +191,97 @@ void givepostnumbers_tree(node_list_t *start){
 	}
   return;
 }
+void check_father(node_t *start);
+
+void check_father_list(node_list_t *start){
+	node_list_t *c;
+	for(c = start ;  c!=NULL ; c= c->next)
+		check_father(c->node);
+}
+
+void check_father(node_t *start){
+  if(!start)
+    return ;
+
+
+ switch(start->type){
+		case NT_LessThani:
+		case NT_Subi:
+		case NT_Ori:
+		case NT_Addi: {
+			if(start->bin_semi.left->parent != start){
+				printf("ARXIDIA  father\n");
+			}
+			check_father(start->bin_semi.left);
+			break;
+		}
+		case NT_Iconst: 
+		case NT_Bconst:
+		case NT_Rconst:
+		case NT_Cconst:
+		case NT_Lui:{
+			break;
+		}
+		case NT_Load:
+			if(start->load.address&&start->load.address->parent != start){
+				printf("ARXIDIA  father\n");
+			}
+			check_father(start->load.address);
+			break;
+		case NT_Store:
+			if(start->store.data->parent != start)
+				printf("ARXIDIA  father\n");
+					
+				check_father(start->store.data);
+
+			break;
+		case NT_LessThan:
+		case NT_Add: 
+		case NT_Sub:
+		case NT_Div:
+		case NT_Mult:
+		case NT_Mod:{
+			
+			if(start->bin.left->parent != start)
+				printf("ARXIDIA  father\n");
+					
+			if(start->bin.right->parent != start)
+				printf("ARXIDIA  father\n");
+					
+				check_father(start->bin.right);
+				check_father(start->bin.left);
+			break;
+		}
+		case NT_String:
+		case NT_Not: 
+		case NT_If:
+		case NT_Jump:
+			break;
+			
+		case NT_BranchZ:{
+			break;
+		}
+		case NT_While:
+			break;
+		case NT_For:
+			break;
+		case NT_Nop:
+			break;
+		default:
+			printf("type %d\n", start->type);
+			assert(0 && "Unhandled type in tree");
+		}
+
+  return;
+}
+
+
+
+
+
+
+
+
 
 void givepostnumbers(node_t *start){
   if(!start)
@@ -208,6 +299,7 @@ void givepostnumbers(node_t *start){
       start->post= post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
 		}
@@ -220,6 +312,7 @@ void givepostnumbers(node_t *start){
       start->post= post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -230,6 +323,7 @@ void givepostnumbers(node_t *start){
       start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -242,6 +336,7 @@ void givepostnumbers(node_t *start){
       start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -255,6 +350,7 @@ void givepostnumbers(node_t *start){
       start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -281,6 +377,7 @@ void givepostnumbers(node_t *start){
     case NT_BranchZ:{
       givepostnumbers(start->branchz.condition);
 			start->post = post_number++;
+			start->num_parents = 0;
 			start->time = start->post;
 			start->scheduled = 0;
       printf("\t %ld\n",start->post);
@@ -292,6 +389,7 @@ void givepostnumbers(node_t *start){
 			start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
