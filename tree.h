@@ -157,6 +157,9 @@ struct NODE_T
 
 
 node_list_t *tree_generate_tree(statement_t *root, scope_t *scope);
+void delete_tree(node_t *start);
+void delete_whole_tree(node_list_t *start);
+
 #endif
 
 

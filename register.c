@@ -11,7 +11,16 @@ long int post_number = 0;
 int stmt_id = 0;
 node_t **printer;
 
+void delete_global_pointers(){
+	int i;
+	for(i = 0 ; i < post_number ; i++ ){
+			nodes[i] = NULL;
+			printer[i] = NULL;
+	}
 
+	free(printer);
+	free(nodes);
+}
 
 void assign_nodes_tree(node_t *start);
 

@@ -162,9 +162,8 @@ program : header declarations subprograms comp_statement DOT
     graph_finalize(&g);
     fclose(g.output);
 		print_code();
-
-
-
+		delete_whole_tree(main_tree);
+		delete_global_pointers();
  }
 }
 ;

@@ -40,6 +40,135 @@ node_t *tree_generate_if(node_list_t *ntail, statement_if_t *_if,
 node_t *tree_generate_assignment(statement_assignment_t *assign, scope_t *scope, char *label);
 char *instr_label_unique(enum LabelType type);
 
+
+
+
+
+void delete_whole_tree(node_list_t *start){
+	node_list_t *c;
+	for(c = start ; c != NULL ; c= c->next){
+		delete_tree(c->node);
+		c->next->prev = NULL;
+		c->next = NULL;
+		free(c);
+	}
+}
+
+
+
+
+void delete_tree(node_t *start){
+	if(!start)
+		return ;
+	
+	switch (start->type){
+		case NT_LessThani:
+    case NT_Subi:
+    case NT_Ori:
+    case NT_Addi: {
+      delete_tree(start->bin_semi.left);
+      free(start);
+			start = NULL;
+      break;
+		}
+		case NT_Lui:
+    case NT_Iconst: 
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:{
+			free(start);
+			start = NULL;
+      break;
+    }
+    case NT_Load:{
+      if ( start->load.address )
+        delete_tree(start->load.address);
+			
+      delete_tree(start->bin_semi.left);
+      free(start);
+			start = NULL;
+			break;
+    }
+    case NT_Store:{
+      delete_tree(start->bin_semi.left);(start->store.data); 
+
+      if ( start->store.address )
+        delete_tree(start->bin_semi.left);(start->store.address);
+      free(start);
+			start = NULL;
+			break;
+    }
+    case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
+    case NT_Sub:
+    case NT_Div:
+    case NT_Mult:
+    case NT_Mod:{
+      delete_tree(start->bin.left);
+      delete_tree(start->bin.right);
+			free(start);
+			start = NULL;
+      break;
+    }
+    case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
+      break;
+    case NT_Not: //Not yes seen a valid implementation
+      break;
+    case NT_If:{
+			delete_tree(start->_if.branch);
+      delete_whole_tree(start->_if._true);
+      delete_whole_tree(start->_if._false);
+			free(start);
+			start=NULL;
+			break;
+    }
+    case NT_Jump:
+			free(start);
+			start = NULL;
+			break;
+    case NT_BranchZ:{
+      delete_tree(start->branchz.condition);
+		  free(start);
+			start = NULL;
+			break;
+    }
+    case NT_LessThan:{
+      delete_tree(start->bin.left);
+      delete_tree(start->bin.right);
+			free(start);
+			start = NULL;
+			break;
+    }
+    case NT_While:{
+			delete_tree(start->_while.branch);
+      delete_whole_tree(start->_while.loop);
+			free(start);
+			start = NULL;
+      break;
+    }
+    case NT_For:{
+			delete_tree(start->_for.init);
+      delete_tree(start->_for.branch);
+			delete_whole_tree(start->_for.loop);
+			free(start);
+			start = NULL;
+    }
+    
+    case NT_Nop:
+      break;
+    default:
+      assert(0 && "Unhandled type in tree");
+  }
+	
+	
+	
+	
+	
+	
+	
+}
+
+
+
 node_t *tree_generate_nop(char *label)
 {
 	node_t *node;

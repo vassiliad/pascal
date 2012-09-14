@@ -40,6 +40,7 @@ reg_t rg_get_zero();
 reg_t rg_allocate();
 void givepostnumbers_tree(node_list_t *start);
 void givepostnumbers(node_t *start);
+void delete_global_pointers();
 void print_code();
 
 void print_nodes();
