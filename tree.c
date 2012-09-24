@@ -531,7 +531,8 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 	ret->store = tree_generate_address(NULL, var, scope);
   
   ret->store.offset += v->offset;
-  ret->store.unique_id = v->type.dataType == VT_User ? -1  : v->unique_id ;
+  ret->store.unique_id = v->unique_id ;
+  ret->store.is_scalar = v->type.dataType != VT_User;
 	ret->store.data = data;
 	return ret;
 }
@@ -550,7 +551,8 @@ node_t *tree_generate_load(variable_t *var, scope_t *scope)
 
 	ret->load = tree_generate_address(NULL, var, scope);
   ret->load.offset += v->offset;
-  ret->load.unique_id = v->type.dataType == VT_User ? -1  : v->unique_id ;
+  ret->load.unique_id = v->unique_id ;
+  ret->load.is_scalar = v->type.dataType != VT_User;
 //	ret->reg = rg_allocate();
 	return ret;
 }

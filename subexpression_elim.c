@@ -184,7 +184,7 @@ int identical(node_t *n1, node_t *n2) {
 
     case NT_Load:
 #warning should work on this more
-      if ( n1->load.unique_id != -1 && n2->load.unique_id != -1 ) {
+      if ( n1->load.is_scalar && n2->load.is_scalar ) {
         if ( n1->load.unique_id == n2->load.unique_id )
           EXPRS_IDENTICAL(n1, n2);
       }

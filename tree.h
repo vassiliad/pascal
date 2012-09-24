@@ -103,6 +103,7 @@ struct NODE_STRING_T
 struct NODE_LOAD_STORE_T
 {
   int unique_id;
+  int is_scalar;
 	node_t *address; // this will be used to generate the address for       //
 									// the memory access at runtime, its result will       //
 								 // be stored in @reg.                                  //
