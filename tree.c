@@ -173,6 +173,9 @@ node_t *tree_generate_nop(char *label)
 {
 	node_t *node;
 	node = (node_t*) calloc(1, sizeof(node_t));
+	node->num_parents = 1;
+	node->parent = (node_t**) malloc (sizeof(node_t*));
+  
   node->post = -1;
 	node->type = NT_Nop;
 	node->label = label;
@@ -188,7 +191,9 @@ node_t *tree_generate_jump(char *label)
 	node_t *ret;
 
 	ret = ( node_t* ) calloc(1, sizeof(node_t));
-  ret->post = -1;
+  ret->num_parents = 1;
+	ret->parent = (node_t**) malloc (sizeof(node_t*));
+	ret->post = -1;
 
 	ret->type = NT_Jump;
 	ret->jump_label = label;
@@ -201,13 +206,15 @@ node_t *tree_generate_branchz(node_t *condition, char *label)
 	node_t *ret;
 
 	ret = ( node_t * ) calloc(1, sizeof(node_t));
+	ret->num_parents = 1;
+	ret->parent = (node_t**) malloc (sizeof(node_t*));
   ret->post = -1;
 
 	ret->type = NT_BranchZ;
 	ret->branchz.label = label;
 	ret->branchz.condition = condition;
 
-  condition->parent = ret;
+  condition->parent[0] = ret;
 
 	return ret;
 }
@@ -395,6 +402,8 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 						accumulate = dim;
 					else {
 						node_t *add = (node_t*) calloc(1, sizeof(node_t));
+						add->num_parents = 1;
+						add->parent = (node_t**) malloc (sizeof(node_t*));
             add->post = -1;
 						add->type = NT_Add;
 						add->bin.left  = accumulate;
@@ -434,6 +443,9 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 			node_t *val = tree_generate_value(constant, NULL);
 
 			ret.address = (node_t*) calloc(1, sizeof(node_t));
+			ret.address->num_parents = 1;
+			ret.address->parent = (node_t**) malloc (sizeof(node_t*));
+    
       ret.address->post = -1;
 			ret.address->type = NT_Mult;
 			ret.address->bin.left = val;
@@ -491,6 +503,9 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 			// accumulate the dynamic parts of the memory address
 			node_t *address;
 			address = (node_t*) calloc(1, sizeof(node_t));
+			address->num_parents = 1;
+			address->parent = (node_t**) malloc (sizeof(node_t*));
+    
       address->post = -1;
 			address->type = NT_Add;
 			address->bin.left  = ret.address;
@@ -510,6 +525,9 @@ struct NODE_LOAD_STORE_T tree_generate_address(variable_t *parent,
 node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 {
 	node_t *ret = calloc(1, sizeof(node_t));
+	ret->num_parents = 1;
+	ret->parent = (node_t**) malloc (sizeof(node_t*));
+    
   ret->post = -1;
 
 	ret->type = NT_Store;
@@ -519,6 +537,9 @@ node_t *tree_generate_store_str(variable_t *var, char *string, scope_t *scope)
 node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 {
 	node_t *ret = calloc(1, sizeof(node_t));
+	ret->num_parents = 1;
+	ret->parent = (node_t**) malloc (sizeof(node_t*));
+    
   var_t *v;
   
   ret->post = -1;
@@ -540,6 +561,9 @@ node_t *tree_generate_store(variable_t *var, node_t *data, scope_t *scope)
 node_t *tree_generate_load(variable_t *var, scope_t *scope)
 {
 	node_t *ret = calloc(1, sizeof(node_t));
+	ret->num_parents = 1;
+	ret->parent = (node_t**) malloc (sizeof(node_t*));
+    
   var_t *v;
   
   ret->post = -1;
@@ -570,7 +594,12 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 	{
 		case ET_Constant:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
+			node->num_parents = 1;
+			node->parent = (node_t**) malloc (sizeof(node_t*));
+    
       node->post = -1;
+			node->num_parents = 1;
+			node->parent = (node_t **) malloc (sizeof(node_t*)); 
 //			node->reg = rg_allocate();
 
 			switch ( expr->constant.type )
@@ -588,6 +617,8 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
             node_t *lui;
             
             lui = (node_t*) calloc(1, sizeof(node_t));
+						lui->num_parents = 1;
+						lui->parent = (node_t**) malloc (sizeof(node_t*));
             lui->post = -1;
             lui->type = NT_Lui;
             lui->iconst = ((1<<16) -1 ) << 16;
@@ -595,14 +626,16 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
             (lui->iconst)>>= 16;
             
 
-            node = (node_t*) calloc(1, sizeof(node_t));
-            node->post = -1;
-            node->type = NT_Ori;
-            node->bin_semi.left = lui;
-            node->bin_semi.immediate = ((1<<16) -1 );
-            node->bin_semi.immediate &= expr->constant.iconst;
+						node = (node_t*) calloc(1, sizeof(node_t));
+						node->num_parents = 1;
+						node->parent = (node_t**) malloc (sizeof(node_t*));
+						node->post = -1;
+						node->type = NT_Ori;
+						node->bin_semi.left = lui;
+						node->bin_semi.immediate = ((1<<16) -1 );
+						node->bin_semi.immediate &= expr->constant.iconst;
 
-            node->parent = NULL;
+            node->parent[0] = NULL;
             return node;
           }
 					break;
@@ -628,13 +661,15 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 
 		case ET_Not:
 			node = ( node_t* ) calloc(1, sizeof(node_t));
+			node->num_parents = 1;
+			node->parent = (node_t**) malloc (sizeof(node_t*));
       node->post = -1;
 			node->type = NT_Not;
 			node->not = tree_generate_value( expr->notExpr, scope );
       
       assert(node->not && "Not expression was not generated");
 
-      node->not->parent = node;
+      node->not->parent[0] = node;
 			break;
 
 		case ET_Variable:
@@ -666,11 +701,12 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 							// compute the value in compile time
 
 							node = ( node_t * ) calloc(1, sizeof(node_t));
-
+							node->num_parents = 1;
+							node->parent = (node_t**) malloc (sizeof(node_t*));
 							left = tree_generate_value( e_left, scope );
               assert(left && "Expression left was not generated");
 
-              left->parent = node;
+              left->parent[0] = node;
               
               if ( ( expr->binary.op == AddopP ||
                    expr->binary.op == AddopM ||
@@ -700,14 +736,14 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
                 node->bin_semi.left = left;
                 node->bin_semi.immediate = e_right->constant.iconst;
                 
-                node->parent = NULL;
+                node->parent[0] = NULL;
                 return node;
               }
 
               right = tree_generate_value( e_right, scope );
               assert(right && "Expression right was not generated");
 
-              right->parent = node;
+              right->parent[0] = node;
               node->post = -1;
 
 							switch ( expr->binary.op )
@@ -750,7 +786,7 @@ node_t *tree_generate_value( expression_t *expr, scope_t *scope)
 			}
 	}
 
-  node->parent = NULL;
+  node->parent[0] = NULL;
 	return node;
 }
 
@@ -766,7 +802,7 @@ node_t *tree_generate_assignment(statement_assignment_t *assign, scope_t *scope,
 
 		result = tree_generate_store(assign->var, nVal, scope);
     
-    nVal->parent = result;
+    nVal->parent[0] = result;
 	} else if ( assign->type == AT_String ) {
 		assert( 0 && "Unimplemented string assignment");
 	} else
@@ -797,6 +833,8 @@ node_t *tree_generate_for(node_list_t *ntail, statement_for_t * _for,
   
 
 	node = (node_t*) calloc(1, sizeof(node_t));
+	node->num_parents = 1;
+	node->parent = (node_t**) malloc (sizeof(node_t*));
   node->post = -1;
 	node->type = NT_For;
 	node->_for.loop = loop;
@@ -841,6 +879,8 @@ node_t *tree_generate_while(node_list_t *ntail, statement_while_t *_while,
 
 
 	node = (node_t*) calloc(1, sizeof(node_t));
+	node->num_parents = 1;
+	node->parent = (node_t**) malloc (sizeof(node_t*));
   node->post = -1;
 	node->type = NT_While;
 	node->_while.loop = loop;
@@ -910,6 +950,8 @@ node_t *tree_generate_if(node_list_t *ntail,
 
 	node = (node_t*) calloc(1, sizeof(node_t));
   node->post = -1;
+	node->num_parents = 1;
+	node->parent = (node_t**) malloc (sizeof(node_t*));
   node->type  = NT_If;
 	node->_if._true = btrue;
 	node->_if._false = bfalse;
@@ -940,7 +982,7 @@ node_t *tree_generate_node(node_list_t *ntail, statement_t *stmt, scope_t *scope
 					scope, label);
 			assert(result!=NULL && "Failed to generate Assignment");
 
-      result->parent = NULL;
+      result->parent[0] = NULL;
 			return result;
 		}
 		break;
@@ -950,7 +992,7 @@ node_t *tree_generate_node(node_list_t *ntail, statement_t *stmt, scope_t *scope
 			result = tree_generate_if(ntail, &stmt->_if,	scope, label);
 			assert( result!=NULL && "Failed to generate if statement");
 
-      result->parent = NULL;
+      result->parent[0] = NULL;
 			return result;
 		}
 		break;
@@ -960,7 +1002,7 @@ node_t *tree_generate_node(node_list_t *ntail, statement_t *stmt, scope_t *scope
 			result = tree_generate_while(ntail, &stmt->_while, scope, label);
 			assert( result != NULL && "Failed to generate while statement");
 
-      result->parent = NULL;
+      result->parent[0] = NULL;
 			return result;
 		}
 		break;
@@ -969,7 +1011,7 @@ node_t *tree_generate_node(node_list_t *ntail, statement_t *stmt, scope_t *scope
 			result  = tree_generate_for(ntail, &stmt->_for, scope, label);
 			assert ( (result != NULL ) && "Failed to generate for statement");
 
-      result->parent = NULL;
+      result->parent[0] = NULL;
 
       return result;
 			break;

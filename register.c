@@ -9,7 +9,11 @@
 reg_file_t rf_saved, rf_temp, rf_fsaved, rf_ftemp;
 long int post_number = 0;
 int stmt_id = 0;
+extern int unique_id;
 node_t **printer;
+
+void start_reg_mem(node_list_t *start);
+void assign_mem_to_reg(node_list_t *start);
 
 void delete_global_pointers(){
 	int i;
@@ -31,13 +35,13 @@ void rg_add(reg_file_t* rf, reg_t *reg)
 	rf->regs[ rf->size++ ] = *reg;
 }
 
-reg_t give_reg_id(reg_file_t *rf, int id){
+reg_t* give_reg_id(reg_file_t *rf, int id){
 	if(id>=rf->size){
 		printf("fatal error\n line 24");
 		exit(0);
 	}
 	else{
-		return((rf->regs[id]));
+		return(&(rf->regs[id]));
 	}
 }
 
@@ -209,7 +213,7 @@ void check_father(node_t *start){
 		case NT_Subi:
 		case NT_Ori:
 		case NT_Addi: {
-			if(start->bin_semi.left->parent != start){
+			if(start->bin_semi.left->parent[0] != start){
 				printf("ARXIDIA  father\n");
 			}
 			check_father(start->bin_semi.left);
@@ -223,13 +227,13 @@ void check_father(node_t *start){
 			break;
 		}
 		case NT_Load:
-			if(start->load.address&&start->load.address->parent != start){
+			if(start->load.address&&start->load.address->parent[0] != start){
 				printf("ARXIDIA  father\n");
 			}
 			check_father(start->load.address);
 			break;
 		case NT_Store:
-			if(start->store.data->parent != start)
+			if(start->store.data->parent[0] != start)
 				printf("ARXIDIA  father\n");
 					
 				check_father(start->store.data);
@@ -242,10 +246,10 @@ void check_father(node_t *start){
 		case NT_Mult:
 		case NT_Mod:{
 			
-			if(start->bin.left->parent != start)
+			if(start->bin.left->parent[0] != start)
 				printf("ARXIDIA  father\n");
 					
-			if(start->bin.right->parent != start)
+			if(start->bin.right->parent[0] != start)
 				printf("ARXIDIA  father\n");
 					
 				check_father(start->bin.right);
@@ -299,7 +303,8 @@ void givepostnumbers(node_t *start){
       start->post= post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
-			start->num_parents = 0;
+			start->reg = NULL;
+//			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
 		}
@@ -312,7 +317,8 @@ void givepostnumbers(node_t *start){
       start->post= post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
-			start->num_parents = 0;
+			start->reg = NULL;
+//			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -323,7 +329,8 @@ void givepostnumbers(node_t *start){
       start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
-			start->num_parents = 0;
+			start->reg = NULL;
+// 			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -336,7 +343,8 @@ void givepostnumbers(node_t *start){
       start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
-			start->num_parents = 0;
+			start->reg = NULL;
+// 			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -350,7 +358,8 @@ void givepostnumbers(node_t *start){
       start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
-			start->num_parents = 0;
+			start->reg = NULL;
+// 			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -373,13 +382,15 @@ void givepostnumbers(node_t *start){
 			start->post= post_number++;
 			start->time = start->post; 
 			start->scheduled = 0;
+			start->reg = NULL;
       break;
     case NT_BranchZ:{
       givepostnumbers(start->branchz.condition);
 			start->post = post_number++;
-			start->num_parents = 0;
+// 			start->num_parents = 0;
 			start->time = start->post;
 			start->scheduled = 0;
+			start->reg = NULL;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -389,7 +400,8 @@ void givepostnumbers(node_t *start){
 			start->post = post_number++;
 			start->time = start->post;
 			start->scheduled = 0;
-			start->num_parents = 0;
+			start->reg = NULL;
+// 			start->num_parents = 0;
       printf("\t %ld\n",start->post);
       break;
     }
@@ -554,47 +566,56 @@ void assign_nodes_tree(node_t *start){
 int cmp_lives(const void *a, const void *b){
 	const node_t **_a = (const node_t**)a;
 	const node_t **_b = (const node_t**)b;
-
-
-	if(!*_a || !((*_a)->parent))
+	int i;
+	int max1,max2;
+	if(!*_a || !((*_a)->parent[0]))
 		return 1;
-	if(!*_b || !((*_b)->parent))
+	if(!*_b || !((*_b)->parent[0]))
 		return -1;
 
-	return ((*_b)->parent->time - (*_b)->time) - ((*_a)->parent->time - (*_a)->time) ;
+	max1=0;
+	max2=0;
+	for(i = 0 ; i < (*_a)->num_parents; i++){
+		if( (*_a)->parent[i] &&   (*_a)->parent[i]->time > max1);
+			max1 = (*_a)->parent[i]->time ;
+	}
+	for (i = 0; i < (*_b)->num_parents ; i++){
+	if( (*_b)->parent[i] &&   (*_b)->parent[i]->time > max2);
+			max2 = (*_b)->parent[i]->time ;	
+	}
+	
+	return max2-max1 ;
 }
 
 void print_nodes(){
 	int i;
 	for(i = 0 ; i < post_number ; i++){
-		printf("(%d)\t: %ld \t",i,nodes[i]->time, nodes[i]);
-		if(!(nodes[i]->parent))
+		printf("(%d)\t: %ld \t",i,nodes[i]->time);
+		if(!(nodes[i]->parent[0]))
 			printf(" 0 \n");
 		else
-			printf(" %ld (%ld)\n",nodes[i]->parent->time - nodes[i]->time, nodes[i]->parent->time,
-            nodes[i]->parent);
+			printf(" %ld (%ld)\n",nodes[i]->parent[0]->time - nodes[i]->time, nodes[i]->parent[0]->time);
 			
 	}
 }
 
-int find_reg(node_t *cur_node){
-	assert(cur_node);
-	long int time = cur_node->time;
-	int life  ;
-	int i,j;
+int compute_life(node_t *node){
+	int i;
+	int max ;
+	assert(node);
+	max = node->parent[0]->time;
+	for(i = 1 ; i < node->num_parents ; i++){
+		if(node->parent[i] &&max < node->parent[i]->time){
+			max = node->parent[i]->time;
+		}
+	}
+	return max - node->time;
+}
+
+int give_reg(long int time, long int life){
+	int i;
+	int j;
 	unsigned int temp;
-	if(!(cur_node->parent))
-		life = 1;
-  else {
-		life = cur_node->parent->time - cur_node->time ;
-    if ( cur_node->parent->time <= 0 )  {
-      printf("WRONG post: %ld (%ld) %d\n", cur_node->time, cur_node->parent->time,life);
-      printf("parent is : %d  child is : %d: %p\n", cur_node->parent->type,cur_node->type,  cur_node->parent);
-      printf("i am : %p\n", cur_node);
-    }
-  }
-
-
 	for(i =  0 ; i < 32 ; i++){
 		temp = 1;
 		temp = temp & (reg_nodes_rep[time] >> i);
@@ -612,8 +633,31 @@ int find_reg(node_t *cur_node){
 			}
 		}
 	}
-
 	return -1;
+}
+
+
+int find_reg(node_t *cur_node){
+	assert(cur_node);
+	long int time = cur_node->time;
+	long int life  ;
+	if(!(cur_node->parent[0])){
+		life = 1;
+		printf("%ld\n",life);
+	}
+  else {
+		life = compute_life (cur_node) ;
+    if ( life<= 0 )  {
+      printf("WRONG post: %ld %ld\n", cur_node->time,life);
+      printf("  child is : %d: \n", cur_node->type);
+      printf("i am : %p\n", cur_node);
+    }
+  }
+
+
+
+
+	return give_reg(time,life);
 	
 }
 
@@ -626,18 +670,20 @@ void give_regs(){
   printf("****\n");
 	memcpy(printer,nodes,post_number*sizeof(node_t*));
 	qsort(nodes,post_number,sizeof(node_t*),cmp_lives);
-
+/*
 	for(i = 0 ; i < post_number ; i++)
     printf("i: %d %p\n", i, nodes[i]);
-
+*/
 
 	for(i = 0 ; i < post_number ; i++){
-		k = find_reg(nodes[i]);
-		if(k == -1){
-			printf("split occasion not yet implemented\n");
-		}
-		else{
-			nodes[i]->reg = give_reg_id(&rf_saved, k);
+		if(nodes[i]->reg == NULL){
+			k = find_reg(nodes[i]);
+			if(k == -1){
+				printf("split occasion not yet implemented\n");
+			}
+			else{
+				nodes[i]->reg = give_reg_id(&rf_saved, k);
+			}
 		}
 	}
 	print_nodes();
@@ -651,12 +697,12 @@ void give_regs(){
 void print_code(){
 		int i;
 		for(i = 0 ; i < post_number ; i++ ){
-      if ( printer[i]->parent == NULL )
+      if ( printer[i]->parent[0] == NULL )
         printf("without a father --- ");
 			
 			switch(printer[i]->type){
 				case NT_Iconst:{
-					printf("%ld addi %s, $0, %d\n",printer[i]->post,printer[i]->reg.name,printer[i]->iconst );
+					printf("%ld addi %s, $0, %d\n",printer[i]->post,printer[i]->reg->name,printer[i]->iconst );
 					break;
 				} 
 				case NT_Bconst:
@@ -666,45 +712,45 @@ void print_code(){
 				}
 				case NT_Load:{
 						if(printer[i]->load.address){
-							printf( "%ld lw   %s, %d(%s)\n",printer[i]->post, printer[i]->reg.name, printer[i]->load.offset, 
-								printer[i]->load.address->reg.name);
+							printf( "%ld lw   %s, %d(%s)\n",printer[i]->post, printer[i]->reg->name, printer[i]->load.offset, 
+								printer[i]->load.address->reg->name);
 						}
 						else{
-							printf("%ld lw   %s, %d($0)\n",printer[i]->post,  printer[i]->reg.name, printer[i]->load.offset);
+							printf("%ld lw   %s, %d($0)\n",printer[i]->post,  printer[i]->reg->name, printer[i]->load.offset);
 						}
 					break;
 				}
 				case NT_Store:{
 						if(printer[i]->store.address){
-							printf("%ld sw   %s, %d(%s)\n",printer[i]->post, printer[i]->store.data->reg.name, printer[i]->store.offset, 
-								printer[i]->store.address->reg.name);
+							printf("%ld sw   %s, %d(%s)\n",printer[i]->post, printer[i]->store.data->reg->name, printer[i]->store.offset, 
+								printer[i]->store.address->reg->name);
 						}
 						else{
-							printf("%ld sw   %s, %d($0)\n",printer[i]->post,  printer[i]->store.data->reg.name, printer[i]->store.offset);
+							printf("%ld sw   %s, %d($0)\n",printer[i]->post,  printer[i]->store.data->reg->name, printer[i]->store.offset);
 						}
 					break;
 				}
 				case NT_Add:{
 					if(printer[i]->bin.right->type == NT_Iconst){
-						printf("%ld addi %s, %s, %d\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->iconst);
+						printf("%ld addi %s, %s, %d\n",printer[i]->post, printer[i]->reg->name,	printer[i]->bin.left->reg->name, printer[i]->bin.right->iconst);
 					}
 					else if(printer[i]->bin.left->type == NT_Iconst){
-						printf("%ld addi %s, %s, %d\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.right->reg.name, printer[i]->bin.left->iconst);
+						printf("%ld addi %s, %s, %d\n",printer[i]->post, printer[i]->reg->name,	printer[i]->bin.right->reg->name, printer[i]->bin.left->iconst);
 					}
 					else{
-						printf("%ld add %s, %s, %s\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+						printf("%ld add %s, %s, %s\n",printer[i]->post, printer[i]->reg->name,	printer[i]->bin.left->reg->name, printer[i]->bin.right->reg->name);
 					}
 					break;
 				} 
 				case NT_Sub:{
-					printf("%ld sub %s, %s, %s\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+					printf("%ld sub %s, %s, %s\n",printer[i]->post, printer[i]->reg->name,	printer[i]->bin.left->reg->name, printer[i]->bin.right->reg->name);
 					break;
 				}
 				case NT_Div:
 					break;
 				case NT_Mult:{
-					printf( "%ld mult %s, %s\n",printer[i]->post, printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
-					printf( "mflo %s\n", printer[i]->reg.name);
+					printf( "%ld mult %s, %s\n",printer[i]->post, printer[i]->bin.left->reg->name, printer[i]->bin.right->reg->name);
+					printf( "mflo %s\n", printer[i]->reg->name);
 					break;
 				}
 				case NT_Mod:{
@@ -721,11 +767,11 @@ void print_code(){
 						printf("%ld j    %s\n",printer[i]->post, printer[i]->jump_label);
 					break;
 				case NT_BranchZ:{
-						printf("%ld bne  $0, %s, %s\n",printer[i]->post,printer[i]->branchz.condition->reg.name, printer[i]->branchz.label);
+						printf("%ld bne  $0, %s, %s\n",printer[i]->post,printer[i]->branchz.condition->reg->name, printer[i]->branchz.label);
 					break;
 				}
 				case NT_LessThan:{
-					printf( "%ld slt  %s, %s, %s\n",printer[i]->post, printer[i]->reg.name,	printer[i]->bin.left->reg.name, printer[i]->bin.right->reg.name);
+					printf( "%ld slt  %s, %s, %s\n",printer[i]->post, printer[i]->reg->name,	printer[i]->bin.left->reg->name, printer[i]->bin.right->reg->name);
 					break;
 				}
 				case NT_While:{
@@ -735,27 +781,27 @@ void print_code(){
 					break;
 				}
         case NT_Subi:{
-          printf("%ld subi %s, %s, %d\n", printer[i]->post, printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          printf("%ld subi %s, %s, %d\n", printer[i]->post, printer[i]->reg->name, printer[i]->bin_semi.left->reg->name, printer[i]->bin_semi.immediate);
           break;
         }
 
 
         case NT_Ori:{
-          printf("%ld ori %s, %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          printf("%ld ori %s, %s, %d\n", printer[i]->post,  printer[i]->reg->name, printer[i]->bin_semi.left->reg->name, printer[i]->bin_semi.immediate);
           break;
         }
         case NT_LessThani:{
-          printf("%ld slti %s, %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          printf("%ld slti %s, %s, %d\n", printer[i]->post,  printer[i]->reg->name, printer[i]->bin_semi.left->reg->name, printer[i]->bin_semi.immediate);
           break;
         }
         
         case NT_Addi:{
-          printf("%ld addi %s, %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->bin_semi.left->reg.name, printer[i]->bin_semi.immediate);
+          printf("%ld addi %s, %s, %d\n", printer[i]->post,  printer[i]->reg->name, printer[i]->bin_semi.left->reg->name, printer[i]->bin_semi.immediate);
           break;
         }
           
         case NT_Lui: {
-          printf("%ld lui %s, %d\n", printer[i]->post,  printer[i]->reg.name, printer[i]->iconst);
+          printf("%ld lui %s, %d\n", printer[i]->post,  printer[i]->reg->name, printer[i]->iconst);
           break;
         }
 
@@ -770,13 +816,217 @@ void print_code(){
 		}
 }
 
+void find_last_parent(node_t *node){
+	int i;
+	int max_time = 0; 
+	if(node->load.is_scalar)
+		return;
+	
+	for( i = 0 ; i < node->num_parents ; i++){
+		if(max_time<node->parent[i]->time){
+			max_time = node->parent[i]->time; 
+		}
+	}
+	if(max_time > mem_reg[node->load.unique_id].start)
+		mem_reg[node->load.unique_id].finish = max_time;
+	if(mem_reg[node->load.unique_id].start == -1)
+		mem_reg[node->load.unique_id].start  = node->time;
+}
+
+
+void update_mem_info(node_t *node){
+	if(!node->store.is_scalar){
+		if(node->time>mem_reg[node->store.unique_id].finish)
+			mem_reg[node->store.unique_id].finish = node->time ;
+		if((mem_reg[node->store.unique_id].start == -1) ||( mem_reg[node->store.unique_id].start > node->store.data->time))
+			mem_reg[node->store.unique_id].start = node->store.data->time;
+	}
+}
+
+void reg_mem_node(node_t *node){
+		if(!node)
+			return;
+	  switch (node->type){
+			case NT_LessThani:
+			case NT_Subi:
+			case NT_Ori:
+			case NT_Addi: 
+				reg_mem_node(node->bin_semi.left);
+				break;
+			case NT_Lui:
+			case NT_Iconst: 
+			case NT_Bconst:
+			case NT_Rconst:
+			case NT_Cconst:
+				break;
+			case NT_Load:
+					reg_mem_node(node->load.address);
+					find_last_parent(node);
+				break;
+			case NT_Store:
+					reg_mem_node(node->store.address);
+					reg_mem_node(node->store.data);
+					update_mem_info(node);
+				break;
+			case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
+			case NT_Sub:
+			case NT_Div:
+			case NT_LessThan:
+			case NT_Mult:
+			case NT_Mod:
+				reg_mem_node(node->bin.left);
+				reg_mem_node(node->bin.right);
+				break;
+			case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
+				break;
+			case NT_Not: //Not yes seen a valid implementation
+				break;
+			case NT_If:
+					reg_mem_node(node->_if.branch);
+					start_reg_mem(node->_if._true);
+					start_reg_mem(node->_if._false);
+				break;
+			case NT_Jump:
+				break;
+			case NT_BranchZ:
+				reg_mem_node(node->branchz.condition);
+				break;
+			case NT_While:
+				reg_mem_node(node->_while.branch);
+				start_reg_mem(node->_while.loop);
+				break;
+			case NT_For:
+				reg_mem_node(node->_for.init);
+				reg_mem_node(node->_for.branch);
+				start_reg_mem(node->_for.loop);
+				break;
+			case NT_Nop:
+				break;
+			default:
+				assert(0 && "Unhandled type in tree");
+  }
+  return;
+}
+
+
+void start_reg_mem(node_list_t *start){
+	node_list_t *c;
+	for(c = start; c!=NULL ; c= c->next){
+		reg_mem_node(c->node);
+	}
+	
+}
+
+void give_reg_to_mem(){
+	int i;
+	long int life;
+	int reg;
+	long int time;
+	for( i = 0 ; i < unique_id ; i++ ){
+		time = mem_reg[i].start;
+		life = mem_reg[i].finish - time;
+		if(time!=-1 && life!=-1){
+			reg = give_reg(time,life);
+			mem_reg[i].reg = give_reg_id(&rf_saved,reg); 
+		}
+		else
+			mem_reg[i].reg = NULL;
+		}
+}
+
+void assign_mem_to_reg_node(node_t *node){
+		if(!node)
+			return;
+	  switch (node->type){
+			case NT_LessThani:
+			case NT_Subi:
+			case NT_Ori:
+			case NT_Addi: 
+				assign_mem_to_reg_node(node->bin_semi.left);
+				break;
+			case NT_Lui:
+			case NT_Iconst: 
+			case NT_Bconst:
+			case NT_Rconst:
+			case NT_Cconst:
+				break;
+			case NT_Load:
+					if(!node->load.is_scalar)
+						node->reg = mem_reg[node->load.unique_id].reg;
+					assign_mem_to_reg_node(node->load.address);
+				break;
+			case NT_Store:
+					assign_mem_to_reg_node(node->store.address);
+					if(!node->store.is_scalar && node->store.data->type != NT_Load )
+						node->store.data->reg = mem_reg[node->store.unique_id].reg;
+					assign_mem_to_reg_node(node->store.data);
+				break;
+			case NT_Add: //assuming that all cases of bin operations have left and tight childs with the same priority
+			case NT_Sub:
+			case NT_Div:
+			case NT_LessThan:
+			case NT_Mult:
+			case NT_Mod:
+				assign_mem_to_reg_node(node->bin.left);
+				assign_mem_to_reg_node(node->bin.right);
+				break;
+			case NT_String:// NT_string not implemented yet propably is going to be converted in a load of .data
+				break;
+			case NT_Not: //Not yes seen a valid implementation
+				break;
+			case NT_If:
+					assign_mem_to_reg_node(node->_if.branch);
+					assign_mem_to_reg(node->_if._true);
+					assign_mem_to_reg(node->_if._false);
+				break;
+			case NT_Jump:
+				break;
+			case NT_BranchZ:
+				assign_mem_to_reg_node(node->branchz.condition);
+				break;
+			case NT_While:
+				assign_mem_to_reg_node(node->_while.branch);
+				assign_mem_to_reg(node->_while.loop);
+				break;
+			case NT_For:
+				assign_mem_to_reg_node(node->_for.init);
+				assign_mem_to_reg_node(node->_for.branch);
+				assign_mem_to_reg(node->_for.loop);
+				break;
+			case NT_Nop:
+				break;
+			default:
+				assert(0 && "Unhandled type in tree");
+  }
+  return;
+}
 
 
 
 
 
+void assign_mem_to_reg(node_list_t *start){
+	node_list_t *c;
+	for(c = start; c!= NULL ; c= c->next){
+		assign_mem_to_reg_node(c->node);
+	}
+	
+}
 
-
+void scan_mem(node_list_t *start){
+	mem_reg = (mem_t*) malloc (sizeof(mem_t)*unique_id);
+	assert(mem_reg);
+	int i;
+	for(i = 0; i< unique_id ; i++){
+		mem_reg[i].start= -1;
+		mem_reg[i].finish = -1;
+	}
+	start_reg_mem(start);
+	give_reg_to_mem();
+	assign_mem_to_reg(start);
+	give_regs();
+	
+}
 
 
 

@@ -21,13 +21,13 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
 		switch(left->type) {
 			case NT_Iconst:
 				if ( left->iconst != 0 )
-					fprintf(output, "addi %s, $0, %d\n", left->reg.name, 
+					fprintf(output, "addi %s, $0, %d\n", left->reg->name, 
 							left->iconst);
 					
 			break;
 
       case NT_Bconst:
-        fprintf(output, "addi %s, $0, %d\n", left->reg.name, 
+        fprintf(output, "addi %s, $0, %d\n", left->reg->name, 
 							left->bconst);
       break;
 
@@ -40,11 +40,11 @@ void print_instruction_add(node_t *left, node_t *right, reg_t *reg,
     
     if ( right->type == NT_Iconst ) {
       fprintf(output, "addi %s, %s, %d\n", reg->name, 
-						left->reg.name, right->iconst);
+						left->reg->name, right->iconst);
     } else {
       print_instruction(right, output);
       fprintf(output, "add  %s, %s, %s\n", reg->name, 
-						left->reg.name, right->reg.name);
+						left->reg->name, right->reg->name);
     }
   }
 }
@@ -57,7 +57,7 @@ void print_instruction_sub(node_t *left, node_t *right, reg_t *reg,
   print_instruction(right, output);
 
   fprintf(output, "sub %s, %s, %s\n", reg->name, 
-        left->reg.name, right->reg.name);
+        left->reg->name, right->reg->name);
 }
 
 void print_instruction_store(int offset, node_t *data,
@@ -68,10 +68,10 @@ void print_instruction_store(int offset, node_t *data,
 	if ( address ) {
 		print_instruction(address, output);
 	
-  	fprintf(output, "sw   %s, %d(%s)\n", data->reg.name, offset, 
-			address->reg.name);
+  	fprintf(output, "sw   %s, %d(%s)\n", data->reg->name, offset, 
+			address->reg->name);
 	} else
-		fprintf(output, "sw   %s, %d($0)\n", data->reg.name, offset);
+		fprintf(output, "sw   %s, %d($0)\n", data->reg->name, offset);
 
 }
 
@@ -88,8 +88,8 @@ void print_instruction_less_than(node_t *left, node_t *right,
 {
   print_instruction(left, output);
   print_instruction(right, output);
-  fprintf(output, "slt  %s, %s, %s\n", reg->name, left->reg.name,
-				right->reg.name);
+  fprintf(output, "slt  %s, %s, %s\n", reg->name, left->reg->name,
+				right->reg->name);
 }
 
 void print_instruction_load(int offset, reg_t *dest,
@@ -97,7 +97,7 @@ void print_instruction_load(int offset, reg_t *dest,
 {
 	if ( address ) {
 		print_instruction(address, output);
-		fprintf(output, "lw   %s, %d(%s)\n", dest->name, offset, address->reg.name);
+		fprintf(output, "lw   %s, %d(%s)\n", dest->name, offset, address->reg->name);
 	} else
 		fprintf(output, "lw   %s, %d($0)\n", dest->name, offset);
 }
@@ -106,7 +106,7 @@ void print_instruction_mult(node_t *left, node_t *right, reg_t *reg,
 {
 	print_instruction(left, output);
 	print_instruction(right, output);
-	fprintf(output, "mult %s, %s\n", left->reg.name, right->reg.name);
+	fprintf(output, "mult %s, %s\n", left->reg->name, right->reg->name);
 	fprintf(output, "mflo %s\n", reg->name);
 }
 
@@ -160,7 +160,7 @@ void print_instruction(node_t *node, FILE* output)
     case NT_BranchZ:
       print_instruction(node->branchz.condition, output);
       fprintf(output, "bne  $0, %s, %s\n", 
-					node->branchz.condition->reg.name, node->branchz.label);
+					node->branchz.condition->reg->name, node->branchz.label);
     break;
     
 		case NT_Mult:

@@ -19,6 +19,13 @@ struct REG_FILE_T
 };
 
 
+typedef struct memToreg{
+	long int start;
+	long int finish;
+	reg_t *reg;
+}mem_t;
+
+
 
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
 #define BYTETOBINARY(byte)  \
@@ -46,7 +53,12 @@ void check_father_list(node_list_t *start);
 void print_nodes();
 void init_reg_lives();
 void give_regs();
+void scan_mem(node_list_t *start);
+
+
+
 node_t **nodes;
+mem_t *mem_reg;
 int *reg_nodes_rep;
 
 #endif //__REGISTER_H

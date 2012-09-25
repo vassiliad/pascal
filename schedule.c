@@ -430,7 +430,7 @@ void find_start_end(node_list_t *start ,node_list_t *end ){
 	return ;
 }
 
-
+/*
 void update_fathers(){
 	int i;
 	for( i = 0 ; i < node_index ; i++ ){
@@ -518,13 +518,13 @@ void update_fathers(){
 			}
 	}
 }
-
+*/
 
 void schedule(node_list_t *start){
 	int i;
 	node_index = 0;
 	find_start_end(start,NULL);
-	update_fathers();
+//	update_fathers();
 	
 	printf("***************************quick check***************************\n");
 	for(i = 0; i < node_index ; i++){

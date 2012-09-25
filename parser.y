@@ -26,16 +26,20 @@ int enable_constant_propagation = 0;
 int enable_dead_code_elimination = 0;
 int enable_subexpression_elimination = 0;
 int enable_scheduling = 0;
+int enable_promote_reg = 0;
+int enable_graph;
 
 static const struct option l_opts[] = {
   	{	"help",		no_argument,		NULL,	'h' },
 		{ "constant_propagation", no_argument, NULL , 'c' },
 		{ "dead_code_elimination", no_argument, NULL , 'd' },
     { "subexpression_elimination", no_argument, NULL, 'e'},
-    { "scheduling", no_argument, NULL , 'e'}
+    { "scheduling", no_argument, NULL , 'e'},
+    { "promote_mem_to_reg",no_argument,NULL,'p'},
+    {"Enable_graph",no_argument,'g'}
 	};
 
-static const char s_opts[] = "hcdes";
+static const char s_opts[] = "ghpcdes";
 
 
 int yylex(void);
@@ -144,7 +148,7 @@ program : header declarations subprograms comp_statement DOT
   } else {
 		check_father_list(main_tree);
     if ( enable_subexpression_elimination ) 
-      subexpressions_eliminate(main_tree);
+      subexpressions_eliminate(main_tree,NULL);
 
 		givepostnumbers_tree(main_tree);
 
@@ -155,16 +159,22 @@ program : header declarations subprograms comp_statement DOT
 		  schedule(main_tree);// CAUSES SEG FAULT AT THE MOMENT!
 		else
 			assign_nodes_list(main_tree);
-//		print_nodes(); 
-		give_regs();
 
-    g = graph_init(fopen("plot","w"));
-    graph_tree(main_tree, &g);
-    graph_finalize(&g);
-    fclose(g.output);
+		if(enable_promote_reg ){
+			scan_mem(main_tree);
+			printf("mem_reg_promote enabled\n");
+		}
+		else
+			give_regs();
+		if(enable_graph){
+			g = graph_init(fopen("plot","w"));
+			graph_tree(main_tree, &g);
+			graph_finalize(&g);
+			fclose(g.output);
+		}
 		print_code();
-		delete_whole_tree(main_tree);
-		delete_global_pointers();
+	//	delete_whole_tree(main_tree);
+	//	delete_global_pointers();
  }
 }
 ;
@@ -1405,9 +1415,14 @@ int main(int argc, char* argv[])
       case 'e':
         enable_subexpression_elimination = 1;
       break;
-
       case 's':
         enable_scheduling = 1;
+        break;
+      case 'p':
+				enable_promote_reg = 1;
+			break;
+			case 'g':
+				enable_graph = 1;
       break;
 		}
 	}

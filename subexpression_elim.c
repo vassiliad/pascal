@@ -24,6 +24,17 @@
 
 #define EXPRS_DIFFERENT(n1, n2) do { printf("%ld DIFFERENT %ld\n", n1->post, n2->post); return 0; } while(0)
 */
+void set_parents(node_t *node){
+	node_t **new_parents = (node_t**) malloc( (node->num_parents+1)*sizeof(node_t*));
+	int i;
+	for( i = 0 ; i < node->num_parents ; i++){
+		new_parents[i] = node->parent[i];
+	}
+	free(node->parent);
+	node->parent = new_parents;
+}
+
+
 void update_node(node_t *cur, node_t *old)
 {
 	static int me = 0;
@@ -34,7 +45,7 @@ void update_node(node_t *cur, node_t *old)
 	assert(cur);
 	
 	
-  parent = cur->parent;
+  parent = cur->parent[0];
 	
 	assert(parent);
 	
@@ -50,8 +61,9 @@ void update_node(node_t *cur, node_t *old)
 			assert(parent->load.address == cur);
 
 			parent->load.address = old;
-			old->parent = parent;
-			
+			set_parents(old);
+			old->parent[old->num_parents] = parent;
+			old->num_parents++;
 			break;
 
 		case NT_Store:
@@ -69,7 +81,9 @@ void update_node(node_t *cur, node_t *old)
 				print_instruction(parent, stdout);
 				assert(0);
 			}
-			old->parent = parent;
+			set_parents(old);
+			old->parent[old->num_parents] = parent;
+			old->num_parents++;
 			break;
 
 		case NT_Addi:
@@ -79,7 +93,9 @@ void update_node(node_t *cur, node_t *old)
 			assert( parent->bin_semi.left == cur );
 
 			parent->bin_semi.left = old;
-			old->parent = parent;
+			set_parents(old);
+			old->parent[old->num_parents] = parent;
+			old->num_parents++;
 			break;
 
 		case NT_Add:
@@ -97,7 +113,9 @@ void update_node(node_t *cur, node_t *old)
 			}
 
 			printf("REPLACING %p with %p\n\n\n", cur, old);
-			old->parent = parent;
+			set_parents(old);
+			old->parent[old->num_parents] = parent;
+			old->num_parents++;
 
 			break;
 
@@ -112,15 +130,19 @@ void update_node(node_t *cur, node_t *old)
 		case NT_If:
 			assert(parent->_if.branch->branchz.condition == cur);
 			parent->_if.branch->branchz.condition = old;
-
-			old->parent = parent->_if.branch;
+			
+			set_parents(old);
+			old->parent[old->num_parents] = parent->_if.branch;
+			old->num_parents++;
 			break;
 
 		case NT_BranchZ:
 			assert(parent->branchz.condition == cur);
 			parent->branchz.condition = old;
+			set_parents(old);
+			old->parent[old->num_parents] = parent;
+			old->num_parents++;
 
-			old->parent = parent;
 			break;
 
 
@@ -128,7 +150,9 @@ void update_node(node_t *cur, node_t *old)
 			assert(parent->_while.branch->branchz.condition == cur);
 			parent->_while.branch->branchz.condition = old;
 
-			old->parent = parent->_while.branch;
+			set_parents(old);
+			old->parent[old->num_parents] = parent->_while.branch;
+			old->num_parents++;
 			break;
 
 		case NT_For:
@@ -344,6 +368,10 @@ int check_tree(node_t *old, node_t *cur) {
       break;
 
     case NT_For:
+			if (check_tree(old->_for.init,cur))
+				return 1;
+			if(check_tree(old->_for.branch, cur))
+				return 1;
       return 0;
       break;
 
@@ -386,28 +414,50 @@ int eliminate_stmt(node_list_t *start, node_t *cur){
 	
 	// edw exw checkarei ta panta gia emena
 	switch( cur->type ) {
+		case NT_Iconst: 
+    case NT_Bconst:
+    case NT_Rconst:
+    case NT_Cconst:
+		case NT_Lui:
+			return 0;
+			break;
+		case NT_BranchZ:
+			eliminate_stmt(start,cur->branchz.condition);
+			break;
+		case NT_For:
+				eliminate_stmt(start,cur->_for.init);
+				eliminate_stmt(start,cur->_for.branch);
+			break;
+		case NT_While:
+			eliminate_stmt(start,cur->_while.branch);
+			break;
+		case NT_If:
+			eliminate_stmt(start,cur->_if.branch);
+			break;
 		case NT_Addi:
 		case NT_Subi:
 		case NT_Ori:
 		case NT_LessThani:
 			eliminate_stmt(start, cur->bin_semi.left);
 			break;
-		
 		case NT_Sub:
     case NT_Div:
     case NT_LessThan:
     case NT_Mod:
 		case NT_Add:
     case NT_Mult:
-			if ( eliminate_stmt(start, cur->bin.right) == 0 )
+				eliminate_stmt(start, cur->bin.right);
 				eliminate_stmt(start, cur->bin.left);
 			break;
 		case NT_Load:
 				eliminate_stmt(start, cur->load.address);
 			break;
 		case NT_Store:
-			if ( eliminate_stmt(start, cur->store.data) == 0 )
+				eliminate_stmt(start, cur->store.data);
 				eliminate_stmt(start, cur->store.address);
+			break;
+		default:
+			printf("ELIMINATION :unhandled occasion\n");
 			break;
 	}
 	
@@ -415,9 +465,24 @@ int eliminate_stmt(node_list_t *start, node_t *cur){
 }
 
 
-void subexpressions_eliminate(node_list_t *start){
+void subexpressions_eliminate(node_list_t *start,node_list_t *end){
 	node_list_t *c;
-	for(c = start->next ; c!=NULL ; c= c->next ){
+	for(c = start->next ; c!=NULL && c!=end ; c= c->next ){
 		eliminate_stmt(c,c->node);
+		switch (c->node->type){
+			case NT_For:
+				subexpressions_eliminate(c->node->_for.loop,c->next);
+				break;
+			case NT_While:
+				subexpressions_eliminate(c->node->_while.loop,c->next);
+				break;
+			case NT_If:
+				subexpressions_eliminate(c->node->_if._true,c->next);
+				subexpressions_eliminate(c->node->_if._false,c->next);
+				break;
+			default:
+				
+				break;
+		}
 	}
 }

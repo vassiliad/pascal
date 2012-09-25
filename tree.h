@@ -150,10 +150,10 @@ struct NODE_T
 		node_while_t _while;
 		node_for_t _for;
   };
-	reg_t reg;
+	reg_t *reg;
 	int reg_id;
 	int num_parents;
-  node_t *parent;
+  node_t **parent;
 };
 
 

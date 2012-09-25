@@ -3,7 +3,7 @@
 
 #include "tree.h"
 
-void subexpressions_eliminate(node_list_t *t);
+void subexpressions_eliminate(node_list_t *start,node_list_t *end);
 
 
 #endif // _SUBEXPRESSION_ELIM_H
