@@ -24,10 +24,26 @@ void graph_finalize(graph_t *graph) {
 
 void graph_tree(node_list_t *n, graph_t *graph) {
   node_list_t *p;
+  node_t *prev, *cur;
 
   for (p=n; p; p=p->next ) {
-    if ( p->prev )
-      fprintf(graph->output, "n%p -> n%p [style=dotted];\n",p->node, p->prev->node); 
+    if ( p->node->type == NT_For )
+      cur = p->node->_for.init;
+    else if ( p->node->type == NT_While )
+      cur = p->node->_while.branch;
+    else
+      cur = p->node;
+
+    if ( p->prev ) {
+      if ( p->prev->node->type == NT_For )
+        prev = p->prev->node->_for.init;
+      else if ( p->prev->node->type == NT_While )
+        prev = p->prev->node->_while.branch;
+      else
+        prev = p->prev->node;
+
+      fprintf(graph->output, "n%p -> n%p [style=dotted];\n",cur, prev); 
+    }
 
     graph_instruction(p->node, graph);
   }
@@ -96,7 +112,7 @@ void graph_instruction(node_t *n, graph_t *graph)
 
     case NT_LessThan:
       instr_name = "slt";
-      print_binary:
+print_binary:
       fprintf(graph->output, "n%p -> { n%p ; n%p };\n",n, n->bin.left, n->bin.right );
 
 
@@ -105,12 +121,72 @@ void graph_instruction(node_t *n, graph_t *graph)
 
       if ( n->label )
         fprintf(graph->output, "n%p [label=\"[%ld]  %s: %s %s, %s, %s\"];\n", n, n->post, n->label, instr_name, n->reg->name,
-          n->bin.left->reg->name, n->bin.right->reg->name);
+            n->bin.left->reg->name, n->bin.right->reg->name);
       else
         fprintf(graph->output, "n%p [label=\"[%ld]  %s %s, %s, %s\"];\n", n, n->post, instr_name, n->reg->name,
-          n->bin.left->reg->name, n->bin.right->reg->name);
+            n->bin.left->reg->name, n->bin.right->reg->name);
 
       break;
+
+
+    case NT_While:
+      {
+        node_t *p = n->_while.branch;
+        assert(n->_while.branch->type == NT_BranchZ);
+
+        graph_instruction(p->branchz.condition, graph);
+
+        fprintf(graph->output, "n%p -> n%p\n", p, p->branchz.condition);
+
+        if ( n->label )
+          fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", p, p->post, n->label, 
+              p->branchz.condition->reg->name, p->branchz.label);
+        else
+          fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", p,  p->post,
+              p->branchz.condition->reg->name, p->branchz.label);
+
+        node_list_t hack, *temp = n->_while.loop->prev;
+        hack.prev = hack.next = NULL;
+
+        hack.node = p;
+
+        n->_while.loop->prev = &hack;
+        graph_tree(n->_while.loop, graph);
+        n->_while.loop->prev = temp;
+
+      }
+      break;
+
+    case NT_For:
+      {
+        node_t *branch, *init;
+
+        init  =n->_for.init;
+        branch=n->_for.branch;
+
+        graph_instruction(init, graph);
+        graph_instruction(branch, graph);
+#warning THIS IS A BUG, if a for has a label it will NOT be displayed
+        fprintf(graph->output, "n%p -> n%p [style=dotted];\n", init, branch);
+
+        node_list_t hack, *temp = n->_for.loop->prev;
+        hack.prev = hack.next = NULL;
+
+        hack.node = branch;
+
+        n->_for.loop->prev = &hack;
+        graph_tree(n->_for.loop, graph);
+        n->_for.loop->prev = temp;
+      } 
+      break;
+
+    case NT_Nop:
+      if ( n->label )
+        fprintf(graph->output, "n%p [label=\"[%ld]  %s: nop\"];\n", n, n->post, n->label);
+      else
+        fprintf(graph->output, "n%p [label=\"[%ld]  nop\"];\n", n, n->post);
+      break;
+
 
     case NT_If: 
       {
@@ -123,7 +199,7 @@ void graph_instruction(node_t *n, graph_t *graph)
 
         fprintf(graph->output, "n%p -> n%p\n", n, p->branchz.condition);
         if ( n->label )
-          fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, p->post, p->label, 
+          fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, p->post, n->label, 
               p->branchz.condition->reg->name, p->branchz.label);
         else
           fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", n,  p->post,
@@ -152,7 +228,7 @@ void graph_instruction(node_t *n, graph_t *graph)
       fprintf(graph->output, "n%p -> n%p\n", n, n->branchz.condition);
       if ( n->label )
         fprintf(graph->output, "n%p [label=\"[%ld]  %s: bne %s, %s\"];\n", n, n->post, n->label, 
-            n->branchz.condition->reg->name, n->branchz.condition->label);
+            n->branchz.condition->reg->name, n->branchz.label);
       else
         fprintf(graph->output, "n%p [label=\"[%ld]  bne %s, %s\"];\n", n,  n->post,
             n->branchz.condition->reg->name, n->branchz.label);
@@ -228,7 +304,7 @@ void graph_instruction(node_t *n, graph_t *graph)
         fprintf(graph->output, "n%p [label=\"[%ld]  lui %s, %d\"];\n", n, n->post,
             n->reg->name, n->iconst);
       break;
-    
+
     case NT_Jump:
       if ( n->label )
         fprintf(graph->output, "n%p [label=\"[%ld]  %s: j %s\"];\n", n, n->post, n->label, 
@@ -236,7 +312,7 @@ void graph_instruction(node_t *n, graph_t *graph)
       else
         fprintf(graph->output, "n%p [label=\"[%ld]  j %s\"];\n", n, n->post,
             n->jump_label);
-    break;
+      break;
 
     default: 
       printf("CANNOT HANDLE %d\n", n->type);
