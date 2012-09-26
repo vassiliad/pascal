@@ -35,11 +35,10 @@ static const struct option l_opts[] = {
 		{ "dead_code_elimination", no_argument, NULL , 'd' },
     { "subexpression_elimination", no_argument, NULL, 'e'},
     { "scheduling", no_argument, NULL , 'e'},
-    { "promote_mem_to_reg",no_argument,NULL,'p'},
     {"Enable_graph",no_argument,'g'}
 	};
 
-static const char s_opts[] = "ghpcdes";
+static const char s_opts[] = "ghcdes";
 
 
 int yylex(void);
@@ -160,9 +159,8 @@ program : header declarations subprograms comp_statement DOT
 		else
 			assign_nodes_list(main_tree);
 
-		if(enable_promote_reg ){
+		if(enable_subexpression_elimination ){
 			scan_mem(main_tree);
-			printf("mem_reg_promote enabled\n");
 		}
 		else
 			give_regs();
@@ -1418,9 +1416,6 @@ int main(int argc, char* argv[])
       case 's':
         enable_scheduling = 1;
         break;
-      case 'p':
-				enable_promote_reg = 1;
-			break;
 			case 'g':
 				enable_graph = 1;
       break;

@@ -612,7 +612,7 @@ int compute_life(node_t *node){
 	return max - node->time;
 }
 
-int give_reg(long int time, long int life){
+int give_reg(unsigned long int time, unsigned long int life){
 	int i;
 	int j;
 	unsigned int temp;
@@ -639,8 +639,8 @@ int give_reg(long int time, long int life){
 
 int find_reg(node_t *cur_node){
 	assert(cur_node);
-	long int time = cur_node->time;
-	long int life  ;
+	unsigned long int time = cur_node->time;
+	unsigned long int life  ;
 	if(!(cur_node->parent[0])){
 		life = 1;
 		printf("%ld\n",life);
@@ -670,6 +670,13 @@ void give_regs(){
   printf("****\n");
 	memcpy(printer,nodes,post_number*sizeof(node_t*));
 	qsort(nodes,post_number,sizeof(node_t*),cmp_lives);
+	
+	
+	for(i = 0; i < post_number ; i++){
+		printf(""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN""BYTETOBINARYPATTERN"\n",
+			BYTETOBINARY(reg_nodes_rep[i]>>24),BYTETOBINARY(reg_nodes_rep[i]>>16) , BYTETOBINARY(reg_nodes_rep[i]>>8) , BYTETOBINARY(reg_nodes_rep[i]));
+	}
+	
 /*
 	for(i = 0 ; i < post_number ; i++)
     printf("i: %d %p\n", i, nodes[i]);
@@ -684,6 +691,9 @@ void give_regs(){
 			else{
 				nodes[i]->reg = give_reg_id(&rf_saved, k);
 			}
+		}
+		else{
+			printf("AHHAHAHHAHA \t%d %s\n",nodes[i]->time,nodes[i]->reg->name);
 		}
 	}
 	print_nodes();
@@ -819,8 +829,9 @@ void print_code(){
 void find_last_parent(node_t *node){
 	int i;
 	int max_time = 0; 
-	if(node->load.is_scalar)
+	if(node->load.is_scalar == 0){
 		return;
+	}
 	
 	for( i = 0 ; i < node->num_parents ; i++){
 		if(max_time<node->parent[i]->time){
@@ -835,7 +846,7 @@ void find_last_parent(node_t *node){
 
 
 void update_mem_info(node_t *node){
-	if(!node->store.is_scalar){
+	if(node->store.is_scalar == 1){
 		if(node->time>mem_reg[node->store.unique_id].finish)
 			mem_reg[node->store.unique_id].finish = node->time ;
 		if((mem_reg[node->store.unique_id].start == -1) ||( mem_reg[node->store.unique_id].start > node->store.data->time))
@@ -951,13 +962,13 @@ void assign_mem_to_reg_node(node_t *node){
 			case NT_Cconst:
 				break;
 			case NT_Load:
-					if(!node->load.is_scalar)
+					if(node->load.is_scalar == 1)
 						node->reg = mem_reg[node->load.unique_id].reg;
 					assign_mem_to_reg_node(node->load.address);
 				break;
 			case NT_Store:
 					assign_mem_to_reg_node(node->store.address);
-					if(!node->store.is_scalar && node->store.data->type != NT_Load )
+					if(node->store.is_scalar == 1 && node->store.data->type != NT_Load )
 						node->store.data->reg = mem_reg[node->store.unique_id].reg;
 					assign_mem_to_reg_node(node->store.data);
 				break;
@@ -1024,6 +1035,10 @@ void scan_mem(node_list_t *start){
 	start_reg_mem(start);
 	give_reg_to_mem();
 	assign_mem_to_reg(start);
+	for(i = 0 ; i < unique_id ; i++){
+		printf("mem_reg : %d %d\n",mem_reg[i].start,mem_reg[i].finish);
+	}
+
 	give_regs();
 	
 }
