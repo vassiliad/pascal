@@ -35,7 +35,7 @@ static const struct option l_opts[] = {
 		{ "dead_code_elimination", no_argument, NULL , 'd' },
     { "subexpression_elimination", no_argument, NULL, 'e'},
     { "scheduling", no_argument, NULL , 'e'},
-    {"Enable_graph",no_argument,'g'}
+    {"Enable_graph",no_argument, NULL, 'g'}
 	};
 
 static const char s_opts[] = "ghcdes";

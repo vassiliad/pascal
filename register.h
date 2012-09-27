@@ -54,7 +54,7 @@ void print_nodes();
 void init_reg_lives();
 void give_regs();
 void scan_mem(node_list_t *start);
-
+void assign_nodes_list(node_list_t *start);
 
 
 node_t **nodes;
