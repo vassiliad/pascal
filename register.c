@@ -694,7 +694,7 @@ void give_regs(){
 			}
 		}
 		else{
-			printf("AHHAHAHHAHA \t%d %s\n",nodes[i]->time,nodes[i]->reg->name);
+			printf("AHHAHAHHAHA \t%ld %s\n",nodes[i]->time,nodes[i]->reg->name);
 		}
 	}
 	print_nodes();
@@ -1037,7 +1037,7 @@ void scan_mem(node_list_t *start){
 	give_reg_to_mem();
 	assign_mem_to_reg(start);
 	for(i = 0 ; i < unique_id ; i++){
-		printf("mem_reg : %d %d\n",mem_reg[i].start,mem_reg[i].finish);
+		printf("mem_reg : %ld %ld\n",mem_reg[i].start,mem_reg[i].finish);
 	}
 
 	give_regs();
