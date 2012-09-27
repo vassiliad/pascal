@@ -124,7 +124,7 @@ void find_node_to_schedule_tree(node_t* start){
   if(!start)
     return ;
 
- if ( start->scheduled == 1 )
+ if ( start->scheduled != 0 )
     return;
 	//start->label = NULL;
   switch (start->type){
@@ -171,15 +171,15 @@ void find_node_to_schedule_tree(node_t* start){
 						find_node_to_schedule_tree(start->store.address);
 						add_var(start->store.unique_id,pending_writes) ;
 					}
-					else if(start->store.data->scheduled == 1 && start->store.address->scheduled == 0){
+					else if(start->store.data->scheduled == 2 && start->store.address->scheduled == 0){
 						find_node_to_schedule_tree(start->store.address);
 						add_var(start->store.unique_id,pending_writes) ;	
 					}
-					else if(start->store.data->scheduled == 0 && start->store.address->scheduled == 1){
+					else if(start->store.data->scheduled == 0 && start->store.address->scheduled == 2){
 						find_node_to_schedule_tree(start->store.data);
 						add_var(start->store.unique_id,pending_writes);
 					}
-					else if(start->store.data->scheduled == 1 && start->store.address->scheduled == 1){
+					else if(start->store.data->scheduled == 2 && start->store.address->scheduled == 2){
 						if(able_to_write(start->store.unique_id)){
 							nodes[node_index] = start;
 							start->scheduled = 1;
@@ -193,7 +193,7 @@ void find_node_to_schedule_tree(node_t* start){
 						find_node_to_schedule_tree(start->store.data);
 						add_var(start->store.unique_id,pending_writes) ;
 					}
-					else if(start->store.data->scheduled == 1 ){
+					else if(start->store.data->scheduled == 2 ){
 						if(able_to_write(start->store.unique_id)){
 							nodes[node_index] = start;
 							start->scheduled = 1;
@@ -215,13 +215,13 @@ void find_node_to_schedule_tree(node_t* start){
 				find_node_to_schedule_tree(start->bin.left);
 				find_node_to_schedule_tree(start->bin.right);
 			}
-			else if(start->bin.left->scheduled == 0 && start->bin.right->scheduled == 1){
+			else if(start->bin.left->scheduled == 0 && start->bin.right->scheduled == 2){
 				find_node_to_schedule_tree(start->bin.left);
 			}
-			else if(start->bin.left->scheduled == 1 && start->bin.right->scheduled == 0){
+			else if(start->bin.left->scheduled == 2 && start->bin.right->scheduled == 0){
 				find_node_to_schedule_tree(start->bin.right);
 			}
-			else if(start->bin.left->scheduled == 1 && start->bin.right->scheduled == 1){
+			else if(start->bin.left->scheduled == 2 && start->bin.right->scheduled == 2){
 				nodes[node_index] = start;
 				start->scheduled = 1;
 				start->time = node_index;
@@ -241,7 +241,7 @@ void find_node_to_schedule_tree(node_t* start){
 			}
 			break;
     case NT_BranchZ:
-			if(start->branchz.condition->scheduled == 1){
+			if(start->branchz.condition->scheduled == 2){
 				nodes[node_index] = start;
 				start->scheduled = 1;
 				start->time = node_index;
@@ -257,7 +257,7 @@ void find_node_to_schedule_tree(node_t* start){
     case NT_Subi:
       if ( start->bin_semi.left->scheduled == 0 )
         find_node_to_schedule_tree(start->bin_semi.left);
-      else if ( start->bin_semi.left->scheduled == 1 ) {
+      else if ( start->bin_semi.left->scheduled == 2 ) {
         nodes[node_index] = start;
         start->scheduled = 1;
         start->time = node_index;
@@ -287,6 +287,48 @@ void set_life(life_t* life){
 	}
 }
 
+void final_schedule(int scheduled, int new){
+	node_t **temp = (node_t**) malloc (sizeof(node_t*)*(new-scheduled  ));
+//	if(temp)
+//		exit(0);
+	int size = new-scheduled;
+	int counter = 0;
+	int i;
+	printf( "%d %d %d\n",scheduled, new , size );
+	for( i = scheduled ; i < new; i++)
+		if(nodes[i]->type == NT_Load){
+			temp[counter] = nodes[i];
+			temp[counter]->scheduled = 2;
+			counter++;
+		}
+	
+	for( i = scheduled ; i < new; i++)
+		if(nodes[i]->type == NT_Mult || nodes[i]->type == NT_Div){
+			temp[counter] = nodes[i];
+			temp[counter]->scheduled = 2;
+			counter++;
+		}
+	
+	for( i = scheduled ; i < new; i++)
+		if(nodes[i]->type != NT_Mult && nodes[i]->type != NT_Div && nodes[i]->type != NT_Load){
+			temp[counter] = nodes[i];
+			temp[counter]->scheduled = 2;
+			counter++;
+		}
+		
+		assert(counter-size == 0);
+		
+		for(i = 0 ; i < size ; i++){
+			nodes[scheduled+i] = temp[i];
+			nodes[scheduled+i]->time = scheduled+i;
+		}
+		
+//	if(counter != size  ){
+//		printf("major problem in scheduling : %d %d \n",size,counter);
+//		exit(0);
+//	}
+	free(temp);
+}
 
 void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 		node_list_t *c;
@@ -303,6 +345,7 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 			for(c = start;  c!=end && c!=NULL ; c= c->next){	
 				find_node_to_schedule_tree(c->node);
 			}
+			final_schedule(cur_index,node_index);
 			printf("schedule number of stmt :%d %d %d\n", cur_index,node_index,cur_index - node_index);
 		}while( cur_index - node_index !=0 );	
 		
@@ -316,8 +359,10 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 					do{
 						set_life(pending_reads);
 						set_life(pending_writes);
+						cur_index = node_index;
 						find_node_to_schedule_tree(k);
-					}while(k->scheduled != 1);
+						final_schedule(cur_index,node_index);
+					}while(k->scheduled != 2);
 					printf("DONE scheduling condition\n");
 					break;	
 				}
@@ -326,15 +371,19 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 					do{
 						set_life(pending_reads);
 						set_life(pending_writes);
+						cur_index = node_index;
 						find_node_to_schedule_tree(k);
+						final_schedule(cur_index,node_index);
 						printf("stacked here %d\n",k->type);
-					}while(k->scheduled != 1);
+					}while(k->scheduled != 2);
 					k = end->node->_for.branch;
 					do{
 						set_life(pending_reads);
 						set_life(pending_writes);
+						cur_index = node_index;
 						find_node_to_schedule_tree(k);
-					}while(k->scheduled != 1);
+						final_schedule(cur_index,node_index);
+					}while(k->scheduled != 2);
 					break;
 				}
 				case NT_While:{
@@ -342,8 +391,10 @@ void find_node_to_schedule(node_list_t* start,node_list_t* end ){
 					do{
 						set_life(pending_reads);
 						set_life(pending_writes);
+						cur_index = node_index;
 						find_node_to_schedule_tree(k);
-					}while(k->scheduled != 1);
+						final_schedule(cur_index,node_index);
+					}while(k->scheduled != 2);
 					break;
 				}
         default:

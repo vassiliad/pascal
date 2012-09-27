@@ -317,6 +317,12 @@ int check_tree(node_t *old, node_t *cur) {
       break;
 
     case NT_Store:
+			if(cur->type == NT_Load){
+				if(cur->load.is_scalar !=0 && cur->load.unique_id == old->store.unique_id){
+					update_node(cur,old->store.data);
+					return 1;
+				}
+			}
 			if ( check_tree(old->store.address, cur) ) {
 			//	update_node(cur, old->store.address);
 				return 1;
