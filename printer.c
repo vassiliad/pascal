@@ -1,3 +1,4 @@
+#if 0
 #include <assert.h>
 #include "printer.h"
 
@@ -101,6 +102,7 @@ void print_instruction_load(int offset, reg_t *dest,
 	} else
 		fprintf(output, "lw   %s, %d($0)\n", dest->name, offset);
 }
+
 void print_instruction_mult(node_t *left, node_t *right, reg_t *reg, 
 			FILE* output)
 {
@@ -124,13 +126,13 @@ void print_instruction(node_t *node, FILE* output)
 
     case NT_Sub:
 			print_instruction_sub(node->bin.left, node->bin.right,
-					&node->reg, output);
+					node->reg, output);
 		break;
 
 
 		case NT_Add:
 			print_instruction_add(node->bin.left, node->bin.right,
-					&node->reg, output);
+					node->reg, output);
 		break;
 
     case NT_Bconst:
@@ -144,7 +146,7 @@ void print_instruction(node_t *node, FILE* output)
 
     case NT_Load:
       print_instruction_load(node->load.offset, 
-					&node->reg, node->load.address, output);
+					node->reg, node->load.address, output);
     break;
 
 		case NT_Store:
@@ -154,7 +156,7 @@ void print_instruction(node_t *node, FILE* output)
 
     case NT_LessThan:
       print_instruction_less_than(node->bin.left, node->bin.right,
-					&node->reg, output);
+					node->reg, output);
     break;
     
     case NT_BranchZ:
@@ -165,7 +167,7 @@ void print_instruction(node_t *node, FILE* output)
     
 		case NT_Mult:
 			print_instruction_mult(node->bin.left, node->bin.right, 
-					&node->reg, output);
+					node->reg, output);
 		break;
     
     case NT_Jump:
@@ -199,3 +201,5 @@ void print_instruction(node_t *node, FILE* output)
 
 
 
+// deprecated
+#endif

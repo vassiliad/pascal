@@ -1,3 +1,5 @@
+#if 0
+
 #ifndef __PRINTER_H
 #define __PRINTER_H
 #include <stdio.h>
@@ -8,3 +10,7 @@ void print_instruction(node_t *node, FILE* output);
 
 
 #endif // __PRINTER_H
+
+// deprecated
+
+#endif

@@ -78,7 +78,7 @@ void update_node(node_t *cur, node_t *old)
 			}
 			else {
 				printf("%p -- %p,%p (%p-%p)\n", parent, parent->store.address, parent->store.data, cur, old);
-				print_instruction(parent, stdout);
+				//print_instruction(parent, stdout);
 				assert(0);
 			}
 			set_parents(old);
