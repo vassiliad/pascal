@@ -553,6 +553,7 @@ void assign_nodes_tree(node_t *start){
       break;
     }
     case NT_Nop:
+ #warning NT_Nops are not stored into nodes[]
       break;
     default:
       assert(0 && "Unhandled type in tree");
@@ -697,8 +698,10 @@ void give_regs(){
 void print_code(){
 		int i;
 		for(i = 0 ; i < post_number ; i++ ){
-      if ( printer[i]->parent[0] == NULL )
-        printf("without a father --- ");
+
+			if(printer[i] -> label )
+				printf("%s:  ",printer[i]->label);
+
 			
 			switch(printer[i]->type){
 				case NT_Iconst:{
@@ -811,8 +814,6 @@ void print_code(){
 				default:
 					assert(0 && "Unhandled type in tree");	
 			}
-			if(printer[i] -> label )
-				printf("%s  ",printer[i]->label);
 		}
 }
 

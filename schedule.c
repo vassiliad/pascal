@@ -126,7 +126,7 @@ void find_node_to_schedule_tree(node_t* start){
 
  if ( start->scheduled == 1 )
     return;
-	start->label = NULL;
+	//start->label = NULL;
   switch (start->type){
     case NT_Lui:
     case NT_Iconst: 
@@ -376,48 +376,48 @@ void find_start_end(node_list_t *start ,node_list_t *end ){
 		if(c->node){
 			switch ( c->node->type){
 				case NT_If:{
-						if(c->node->_if.branch->type == NT_BranchZ){
+/*						if(c->node->_if.branch->type == NT_BranchZ){
 							dummy = c->node->_if.branch;
 							label = dummy->branchz.label;
-						}
+						}*/
 						printf("NT IF ENCOUNTERED label %s\n",label);
 						find_node_to_schedule(begin,c);						
 						printf("NT IF ENCOUNTERED TRUE\n");
 						find_start_end(c->node->_if._true,c->next);
-						nodes[node_index-1]->label = label;
+	//				nodes[node_index-1]->label = label;
 						printf("NT IF ENCOUNTERED FALSE\n");
 						if(nodes[node_index-1]->type == NT_Jump)
 							label = nodes[node_index-1]->jump_label;
 						if(c->node->_if._false){
 							find_start_end(c->node->_if._false,c->next);
-							nodes[node_index-1]->label = label;
+	//						nodes[node_index-1]->label = label;
 						}
 						begin = c->next;
 					break;	
 				}
 				case NT_For:{
-					if(c->node->_for.branch->type == NT_BranchZ){
+	/*				if(c->node->_for.branch->type == NT_BranchZ){
 							dummy = c->node->_for.branch;
 							label = dummy->branchz.label;
-						}
+						} */
 						printf("NT _FOR ENCOUNTERED label: %s\n",label);
 						find_node_to_schedule(begin,c);
 						printf("NT WHILE ENCOUNTERED LOOP\n");
-						nodes[node_index-1]->label = label;
+//						nodes[node_index-1]->label = label;
 						find_start_end(c->node->_for.loop,c->next);
 						begin = c->next;
 					break;
 				}
 				case NT_While:{
-					if(c->node->_while.branch->type == NT_BranchZ){
+	/*				if(c->node->_while.branch->type == NT_BranchZ){
 							dummy = c->node->_while.branch;
 							label = dummy->branchz.label;
-					}
+					}*/
 					printf("NT WHILE ENCOUNTERED label : %s\n",label);
 					find_node_to_schedule(begin,c);
 					printf("NT WHILE ENCOUNTERED LOOP\n");
 					find_start_end(c->node->_while.loop,c->next);
-					nodes[node_index-1]->label = label;
+//					nodes[node_index-1]->label = label;
 					begin = c->next;
 					break;
 				}
