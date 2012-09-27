@@ -34,8 +34,8 @@ static const struct option l_opts[] = {
 		{ "constant_propagation", no_argument, NULL , 'c' },
 		{ "dead_code_elimination", no_argument, NULL , 'd' },
     { "subexpression_elimination", no_argument, NULL, 'e'},
-    { "scheduling", no_argument, NULL , 'e'},
-    {"Enable_graph",no_argument, NULL, 'g'}
+    { "scheduling", no_argument, NULL , 's'},
+    {"enable_graph",no_argument, NULL, 'g'}
 	};
 
 static const char s_opts[] = "ghcdes";
@@ -1415,7 +1415,7 @@ int main(int argc, char* argv[])
       break;
       case 's':
         enable_scheduling = 1;
-        break;
+      break;
 			case 'g':
 				enable_graph = 1;
       break;
